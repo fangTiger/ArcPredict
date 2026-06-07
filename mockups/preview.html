@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-accent="amber" data-density="comfortable" data-poolbar="on">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ArcPredict — v0 mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ============================================================
+       Design tokens
+       ============================================================ */
+    :root {
+      --accent: #ff6b35;
+      --accent-soft: rgba(255, 107, 53, 0.12);
+      --yes: #22c55e;
+      --yes-soft: rgba(34, 197, 94, 0.12);
+      --no: #ef4444;
+      --no-soft: rgba(239, 68, 68, 0.12);
+      --warning: #f59e0b;
+
+      --r-sm: 8px;
+      --r-md: 12px;
+      --r-lg: 16px;
+      --r-xl: 20px;
+
+      --t-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+      --t-mid: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    [data-theme="dark"] {
+      --bg-base: #0b0c0e;
+      --bg-surface: #14161a;
+      --bg-elevated: #1c1f24;
+      --bg-overlay: rgba(11, 12, 14, 0.78);
+      --text-primary: #f4f4f5;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-strong: rgba(255, 255, 255, 0.12);
+      --shadow-modal: 0 30px 80px -20px rgba(0, 0, 0, 0.6);
+    }
+
+    [data-theme="light"] {
+      --bg-base: #fafafa;
+      --bg-surface: #ffffff;
+      --bg-elevated: #ffffff;
+      --bg-overlay: rgba(17, 17, 17, 0.45);
+      --text-primary: #18181b;
+      --text-secondary: #52525b;
+      --text-muted: #a1a1aa;
+      --border-subtle: rgba(17, 17, 17, 0.06);
+      --border-strong: rgba(17, 17, 17, 0.14);
+      --shadow-modal: 0 30px 80px -20px rgba(17, 17, 17, 0.2);
+    }
+
+    [data-accent="amber"]   { --accent: #ff6b35; --accent-soft: rgba(255,107,53,0.12); }
+    [data-accent="teal"]    { --accent: #06b6d4; --accent-soft: rgba(6,182,212,0.14); }
+    [data-accent="crimson"] { --accent: #e11d48; --accent-soft: rgba(225,29,72,0.14); }
+
+    [data-density="compact"] { --row-gap: 12px; --pad-card: 18px 20px; --pad-section: 24px 28px; }
+    [data-density="comfortable"] { --row-gap: 20px; --pad-card: 24px 28px; --pad-section: 36px 32px; }
+
+    /* ============================================================
+       Reset + base
+       ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 1.55;
+      letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums;
+      text-wrap: pretty;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      transition: background var(--t-mid), color var(--t-mid);
+    }
+    .mono { font-family: "Geist Mono", ui-monospace, monospace; letter-spacing: 0; }
+    button { font-family: inherit; cursor: pointer; }
+
+    /* ============================================================
+       Top nav
+       ============================================================ */
+    .nav {
+      position: sticky; top: 0; z-index: 30;
+      backdrop-filter: blur(14px) saturate(140%);
+      background: color-mix(in oklab, var(--bg-base) 78%, transparent);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .nav-inner {
+      max-width: 1200px; margin: 0 auto;
+      padding: 16px 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 24px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--accent) 90%, #fff 10%), var(--accent) 60%, color-mix(in oklab, var(--accent) 70%, #000 30%));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+    }
+    .brand-name {
+      font-weight: 600; letter-spacing: -0.02em;
+      font-size: 16px;
+    }
+    .brand-name span { color: var(--accent); }
+
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 12px;
+      border-radius: var(--r-md);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      font-size: 13px; color: var(--text-secondary);
+      transition: border-color var(--t-fast), background var(--t-fast);
+    }
+    .chip:hover { border-color: var(--border-strong); }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--yes); box-shadow: 0 0 0 3px var(--yes-soft); }
+    .chip-network strong { color: var(--text-primary); font-weight: 500; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 16px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--border-strong);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      font-size: 14px; font-weight: 500;
+      transition: transform var(--t-fast), background var(--t-fast), border-color var(--t-fast);
+    }
+    .btn:hover { background: var(--bg-elevated); transform: translateY(-1px); }
+    .btn-primary {
+      background: var(--accent); color: #0b0c0e;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    .btn-primary:hover {
+      background: color-mix(in oklab, var(--accent) 88%, #fff 12%);
+    }
+    .btn-yes {
+      background: var(--yes-soft); color: var(--yes);
+      border-color: color-mix(in oklab, var(--yes) 40%, transparent);
+    }
+    .btn-yes:hover {
+      background: color-mix(in oklab, var(--yes) 22%, transparent);
+      border-color: var(--yes);
+    }
+    .btn-no {
+      background: var(--no-soft); color: var(--no);
+      border-color: color-mix(in oklab, var(--no) 40%, transparent);
+    }
+    .btn-no:hover {
+      background: color-mix(in oklab, var(--no) 22%, transparent);
+      border-color: var(--no);
+    }
+    .btn-ghost {
+      background: transparent;
+      border-color: var(--border-subtle);
+      color: var(--text-secondary);
+    }
+    .btn-ghost:hover { color: var(--text-primary); border-color: var(--border-strong); }
+
+    .wallet-pill {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 8px 8px 8px 14px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--border-strong);
+      background: var(--bg-surface);
+      font-size: 14px;
+    }
+    .wallet-pill .balance { color: var(--text-secondary); font-size: 13px; }
+    .wallet-pill .addr {
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+    }
+
+    /* ============================================================
+       Layout
+       ============================================================ */
+    main { max-width: 1200px; margin: 0 auto; padding: 36px 28px 120px; }
+
+    .hero-strip {
+      display: flex; align-items: baseline; gap: 28px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 36px;
+    }
+    .hero-strip h1 {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 600; letter-spacing: -0.03em;
+      margin: 0; line-height: 1.1;
+      flex: 1;
+    }
+    .hero-strip h1 em { font-style: normal; color: var(--accent); }
+    .hero-meta { display: flex; gap: 28px; }
+    .hero-meta .stat-label { display: block; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+    .hero-meta .stat-value { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; }
+
+    .section-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .section-head h2 {
+      font-size: 14px; font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.12em;
+      margin: 0;
+    }
+    .section-head h2 span.count {
+      color: var(--text-muted); margin-left: 6px; font-weight: 400;
+    }
+    .section-head .head-link {
+      font-size: 13px; color: var(--text-muted);
+      cursor: pointer;
+      transition: color var(--t-fast);
+    }
+    .section-head .head-link:hover { color: var(--text-primary); }
+
+    /* ============================================================
+       Market cards
+       ============================================================ */
+    .markets {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: var(--row-gap);
+    }
+    .market {
+      position: relative;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-lg);
+      padding: var(--pad-card);
+      display: grid;
+      grid-template-rows: auto 1fr auto auto;
+      gap: 16px;
+      transition: border-color var(--t-fast), transform var(--t-fast);
+    }
+    .market:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+    .market-meta {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 12px; color: var(--text-muted);
+    }
+    .market-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 8px;
+      border-radius: var(--r-sm);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-family: "Geist Mono", monospace;
+      font-size: 11px;
+    }
+    .market-tag .feed-name { color: var(--text-primary); font-weight: 500; }
+    .market-countdown {
+      color: var(--warning);
+      font-family: "Geist Mono", monospace;
+      font-weight: 500;
+    }
+    .market-question {
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: -0.015em;
+      line-height: 1.35;
+      color: var(--text-primary);
+    }
+    .market-stats { display: flex; align-items: baseline; gap: 24px; }
+    .market-stats .label {
+      font-size: 11px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .market-stats .value {
+      font-size: 18px; font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+    .market-stats .value.muted { color: var(--text-secondary); }
+    .pool-bar {
+      display: var(--show-poolbar, flex);
+      height: 6px; border-radius: 3px;
+      background: var(--no-soft);
+      overflow: hidden;
+      position: relative;
+    }
+    [data-poolbar="off"] .pool-bar { display: none; }
+    .pool-bar-fill {
+      height: 100%;
+      background: var(--yes);
+      transition: width var(--t-mid);
+    }
+    .market-actions {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      align-items: stretch;
+    }
+    .market-actions .btn {
+      flex: 1;
+      padding: 12px 14px;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+    .market-actions .btn .pct {
+      font-family: "Geist Mono", monospace;
+      font-weight: 600;
+      font-size: 13px;
+      opacity: 0.85;
+    }
+
+    /* Resolved market variant */
+    .market.resolved {
+      opacity: 0.78;
+    }
+    .market.resolved .resolved-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 8px;
+      border-radius: var(--r-sm);
+      background: var(--yes-soft); color: var(--yes);
+      font-size: 11px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .market.resolved.lost .resolved-badge { background: var(--no-soft); color: var(--no); }
+
+    /* Position cards (compact) */
+    .positions-list {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .position {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 20px; align-items: center;
+      padding: 16px 20px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-md);
+      transition: border-color var(--t-fast);
+    }
+    .position:hover { border-color: var(--border-strong); }
+    .position .q { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+    .position .meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .position .side {
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 4px 10px; border-radius: var(--r-sm);
+    }
+    .position .side.yes { background: var(--yes-soft); color: var(--yes); }
+    .position .side.no { background: var(--no-soft); color: var(--no); }
+    .position .stake {
+      font-family: "Geist Mono", monospace;
+      font-size: 14px; color: var(--text-secondary);
+    }
+    .position .stake strong { color: var(--text-primary); font-weight: 500; }
+
+    /* Collapsible sections */
+    details {
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-lg);
+      background: var(--bg-surface);
+      padding: 22px 28px;
+      margin-top: 28px;
+      transition: border-color var(--t-fast);
+    }
+    details[open] { border-color: var(--border-strong); }
+    details summary {
+      cursor: pointer;
+      list-style: none;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+    }
+    details summary::-webkit-details-marker { display: none; }
+    details summary h2 {
+      font-size: 14px; font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.12em;
+      margin: 0;
+    }
+    details summary h2 .count { color: var(--text-muted); margin-left: 6px; font-weight: 400; }
+    details summary .chev {
+      color: var(--text-muted);
+      transition: transform var(--t-mid);
+    }
+    details[open] summary .chev { transform: rotate(180deg); }
+    details > *:not(summary) { margin-top: 20px; }
+
+    /* ============================================================
+       Bet modal
+       ============================================================ */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: var(--bg-overlay);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 50;
+      padding: 24px;
+      animation: fadeIn 200ms ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .modal {
+      width: 100%; max-width: 460px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--r-xl);
+      box-shadow: var(--shadow-modal);
+      padding: 28px;
+      animation: slideUp 280ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .modal-head {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 22px; gap: 16px;
+    }
+    .modal-head .title {
+      font-size: 12px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+    .modal-head .q {
+      font-size: 18px; font-weight: 500;
+      letter-spacing: -0.015em;
+      line-height: 1.35;
+      color: var(--text-primary);
+    }
+    .modal-close {
+      width: 32px; height: 32px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--border-subtle);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 16px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background var(--t-fast), color var(--t-fast);
+    }
+    .modal-close:hover { background: var(--bg-surface); color: var(--text-primary); }
+
+    .modal-section { margin-bottom: 20px; }
+    .modal-section .label {
+      display: block;
+      font-size: 11px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+    .side-toggle {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .side-toggle .btn {
+      padding: 16px;
+      justify-content: center; flex-direction: column; gap: 6px;
+      font-size: 14px;
+    }
+    .side-toggle .btn .label-tiny { font-size: 11px; opacity: 0.7; }
+    .side-toggle .btn.active.btn-no { background: var(--no); color: #fff; border-color: var(--no); }
+    .side-toggle .btn.active.btn-yes { background: var(--yes); color: #0b0c0e; border-color: var(--yes); }
+
+    .amount-row {
+      display: flex; gap: 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--r-md);
+      padding: 12px 14px;
+      align-items: baseline;
+    }
+    .amount-row input {
+      flex: 1;
+      background: transparent; border: none; outline: none;
+      color: var(--text-primary);
+      font-size: 28px; font-weight: 500;
+      font-family: "Geist", sans-serif;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      width: 100%;
+    }
+    .amount-row .unit {
+      color: var(--text-secondary);
+      font-size: 14px; font-weight: 500;
+    }
+    .quick-amounts {
+      display: flex; gap: 8px; margin-top: 8px;
+    }
+    .quick-amounts button {
+      flex: 1;
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      transition: background var(--t-fast), color var(--t-fast);
+    }
+    .quick-amounts button:hover { background: var(--bg-elevated); color: var(--text-primary); }
+
+    .info-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px;
+      padding: 16px 18px;
+      background: var(--bg-surface);
+      border-radius: var(--r-md);
+      border: 1px solid var(--border-subtle);
+    }
+    .info-grid .row { display: flex; flex-direction: column; gap: 4px; }
+    .info-grid .k {
+      font-size: 11px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .info-grid .v {
+      font-size: 15px; font-weight: 500;
+      font-family: "Geist Mono", monospace;
+      color: var(--text-primary);
+    }
+    .info-grid .v.win { color: var(--yes); }
+
+    .modal-warning {
+      display: flex; gap: 10px; align-items: flex-start;
+      margin-top: 14px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: var(--warning);
+      background: color-mix(in oklab, var(--warning) 10%, transparent);
+      border: 1px solid color-mix(in oklab, var(--warning) 30%, transparent);
+      border-radius: var(--r-sm);
+      line-height: 1.45;
+    }
+    .modal-warning .ico {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--warning);
+      color: #0b0c0e;
+      font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 2px;
+    }
+
+    .modal-actions {
+      display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px;
+      margin-top: 22px;
+    }
+    .modal-actions .btn { padding: 14px; justify-content: center; }
+    .modal-actions .btn-primary { font-size: 15px; }
+
+    /* ============================================================
+       Tweaks panel
+       ============================================================ */
+    .tweaks {
+      position: fixed; bottom: 20px; right: 20px; z-index: 80;
+      transform-origin: bottom right;
+    }
+    .tweaks-toggle {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-strong);
+      color: var(--text-secondary);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 24px -8px rgba(0,0,0,0.4);
+      transition: transform var(--t-fast), background var(--t-fast);
+    }
+    .tweaks-toggle:hover { transform: scale(1.05); background: var(--accent); color: #0b0c0e; }
+    .tweaks-panel {
+      display: none;
+      position: absolute; bottom: 54px; right: 0;
+      width: 280px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--r-lg);
+      padding: 18px;
+      box-shadow: var(--shadow-modal);
+      animation: slideUp 240ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .tweaks.open .tweaks-panel { display: block; }
+    .tweaks-title {
+      font-size: 11px; font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.12em;
+      margin-bottom: 16px;
+    }
+    .tweak-row { margin-bottom: 14px; }
+    .tweak-row:last-child { margin-bottom: 0; }
+    .tweak-row .k {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .seg {
+      display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+      gap: 4px;
+      padding: 3px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-md);
+    }
+    .seg button {
+      padding: 6px 8px;
+      border: none; background: transparent;
+      color: var(--text-secondary);
+      font-size: 12px; font-weight: 500;
+      border-radius: 6px;
+      transition: background var(--t-fast), color var(--t-fast);
+    }
+    .seg button:hover { color: var(--text-primary); }
+    .seg button.active {
+      background: var(--accent);
+      color: #0b0c0e;
+    }
+
+    /* footer */
+    footer {
+      max-width: 1200px; margin: 0 auto;
+      padding: 32px 28px;
+      border-top: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 12px;
+      display: flex; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    footer a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color var(--t-fast);
+    }
+    footer a:hover { color: var(--text-primary); }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============ NAV ============ -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div class="brand-name">Arc<span>Predict</span></div>
+      </div>
+      <div class="nav-right">
+        <div class="chip chip-network">
+          <span class="dot"></span>
+          <span>Connected to <strong>Arc Testnet</strong></span>
+        </div>
+        <div class="wallet-pill">
+          <span class="balance"><span class="mono">128.42</span> USDC</span>
+          <span class="addr mono">0x12a4…b9c2</span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============ MAIN ============ -->
+  <main>
+
+    <!-- Hero -->
+    <div class="hero-strip">
+      <h1>Bet on what the<br/>market <em>actually</em> thinks.</h1>
+      <div class="hero-meta">
+        <div>
+          <span class="stat-label">Active Markets</span>
+          <span class="stat-value mono">7</span>
+        </div>
+        <div>
+          <span class="stat-label">Total Pooled</span>
+          <span class="stat-value mono">12,420 USDC</span>
+        </div>
+        <div>
+          <span class="stat-label">Settled in</span>
+          <span class="stat-value">~1s</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active markets -->
+    <div class="section-head">
+      <h2>Active Markets <span class="count">(4)</span></h2>
+      <span class="head-link">Sort: Closing soon ▾</span>
+    </div>
+
+    <div class="markets">
+
+      <!-- Card 1 -->
+      <article class="market" onclick="openModal()">
+        <div class="market-meta">
+          <span class="market-tag">
+            <span>Oracle:</span>
+            <span class="feed-name">Pyth · BTC/USD</span>
+          </span>
+          <span class="market-countdown">Closes in 2d 14h</span>
+        </div>
+        <div class="market-question">Will BTC/USD be ≥ $70,000 at Jun 10 24:00 UTC?</div>
+        <div class="market-stats">
+          <div>
+            <div class="label">Pool</div>
+            <div class="value mono">5,420 USDC</div>
+          </div>
+          <div>
+            <div class="label">Implied YES</div>
+            <div class="value mono">68%</div>
+          </div>
+          <div>
+            <div class="label">Min Bet</div>
+            <div class="value muted mono">0.1 USDC</div>
+          </div>
+        </div>
+        <div class="pool-bar"><div class="pool-bar-fill" style="width: 68%"></div></div>
+        <div class="market-actions">
+          <button class="btn btn-yes">Bet YES <span class="pct">68%</span></button>
+          <button class="btn btn-no">Bet NO <span class="pct">32%</span></button>
+        </div>
+      </article>
+
+      <!-- Card 2 -->
+      <article class="market">
+        <div class="market-meta">
+          <span class="market-tag">
+            <span>Oracle:</span>
+            <span class="feed-name">Pyth · ETH/USD</span>
+          </span>
+          <span class="market-countdown">Closes in 4d 22h</span>
+        </div>
+        <div class="market-question">Will ETH/USD be ≥ $4,000 at Jun 12 00:00 UTC?</div>
+        <div class="market-stats">
+          <div>
+            <div class="label">Pool</div>
+            <div class="value mono">2,180 USDC</div>
+          </div>
+          <div>
+            <div class="label">Implied YES</div>
+            <div class="value mono">42%</div>
+          </div>
+          <div>
+            <div class="label">Min Bet</div>
+            <div class="value muted mono">0.1 USDC</div>
+          </div>
+        </div>
+        <div class="pool-bar"><div class="pool-bar-fill" style="width: 42%"></div></div>
+        <div class="market-actions">
+          <button class="btn btn-yes">Bet YES <span class="pct">42%</span></button>
+          <button class="btn btn-no">Bet NO <span class="pct">58%</span></button>
+        </div>
+      </article>
+
+      <!-- Card 3 -->
+      <article class="market">
+        <div class="market-meta">
+          <span class="market-tag">
+            <span>Oracle:</span>
+            <span class="feed-name">Pyth · BTC/USD</span>
+          </span>
+          <span class="market-countdown">Closes in 22d</span>
+        </div>
+        <div class="market-question">Will BTC/USD be ≥ $75,000 at Jun 30 00:00 UTC?</div>
+        <div class="market-stats">
+          <div>
+            <div class="label">Pool</div>
+            <div class="value mono">3,920 USDC</div>
+          </div>
+          <div>
+            <div class="label">Implied YES</div>
+            <div class="value mono">31%</div>
+          </div>
+          <div>
+            <div class="label">Min Bet</div>
+            <div class="value muted mono">0.1 USDC</div>
+          </div>
+        </div>
+        <div class="pool-bar"><div class="pool-bar-fill" style="width: 31%"></div></div>
+        <div class="market-actions">
+          <button class="btn btn-yes">Bet YES <span class="pct">31%</span></button>
+          <button class="btn btn-no">Bet NO <span class="pct">69%</span></button>
+        </div>
+      </article>
+
+      <!-- Card 4 -->
+      <article class="market">
+        <div class="market-meta">
+          <span class="market-tag">
+            <span>Oracle:</span>
+            <span class="feed-name">Pyth · ETH/USD</span>
+          </span>
+          <span class="market-countdown">Closes in 53d</span>
+        </div>
+        <div class="market-question">Will ETH/USD be ≥ $5,000 at Jul 31 00:00 UTC?</div>
+        <div class="market-stats">
+          <div>
+            <div class="label">Pool</div>
+            <div class="value mono">900 USDC</div>
+          </div>
+          <div>
+            <div class="label">Implied YES</div>
+            <div class="value mono">22%</div>
+          </div>
+          <div>
+            <div class="label">Min Bet</div>
+            <div class="value muted mono">0.1 USDC</div>
+          </div>
+        </div>
+        <div class="pool-bar"><div class="pool-bar-fill" style="width: 22%"></div></div>
+        <div class="market-actions">
+          <button class="btn btn-yes">Bet YES <span class="pct">22%</span></button>
+          <button class="btn btn-no">Bet NO <span class="pct">78%</span></button>
+        </div>
+      </article>
+
+    </div>
+
+    <!-- My positions -->
+    <details open>
+      <summary>
+        <h2>My Positions <span class="count">(2)</span></h2>
+        <span class="chev mono">▾</span>
+      </summary>
+      <div class="positions-list">
+        <div class="position">
+          <div>
+            <div class="q">BTC/USD ≥ $70,000 @ Jun 10 24:00 UTC</div>
+            <div class="meta">Closes in 2d 14h · Pool 5,420 USDC</div>
+          </div>
+          <span class="side yes">YES</span>
+          <div class="stake">Staked <strong>10.00</strong> USDC</div>
+          <div class="stake">If YES wins: <strong>~14.61</strong> USDC</div>
+        </div>
+        <div class="position">
+          <div>
+            <div class="q">ETH/USD ≥ $4,000 @ Jun 12 00:00 UTC</div>
+            <div class="meta">Closes in 4d 22h · Pool 2,180 USDC</div>
+          </div>
+          <span class="side no">NO</span>
+          <div class="stake">Staked <strong>5.00</strong> USDC</div>
+          <div class="stake">If NO wins: <strong>~8.60</strong> USDC</div>
+        </div>
+      </div>
+    </details>
+
+    <!-- Resolved -->
+    <details>
+      <summary>
+        <h2>Resolved <span class="count">(5)</span></h2>
+        <span class="chev mono">▾</span>
+      </summary>
+      <div class="markets">
+        <article class="market resolved">
+          <div class="market-meta">
+            <span class="market-tag">
+              <span>Oracle:</span>
+              <span class="feed-name">Pyth · BTC/USD</span>
+            </span>
+            <span class="resolved-badge">YES · Won</span>
+          </div>
+          <div class="market-question">BTC/USD was ≥ $65,000 at May 31 24:00 UTC</div>
+          <div class="market-stats">
+            <div>
+              <div class="label">Final Pool</div>
+              <div class="value mono">8,420 USDC</div>
+            </div>
+            <div>
+              <div class="label">Settle Price</div>
+              <div class="value mono">$67,142</div>
+            </div>
+            <div>
+              <div class="label">Your Payout</div>
+              <div class="value mono" style="color: var(--yes)">+12.40 USDC</div>
+            </div>
+          </div>
+          <div class="market-actions">
+            <button class="btn btn-primary">Claim 12.40 USDC</button>
+            <button class="btn btn-ghost">View on Arcscan</button>
+          </div>
+        </article>
+
+        <article class="market resolved lost">
+          <div class="market-meta">
+            <span class="market-tag">
+              <span>Oracle:</span>
+              <span class="feed-name">Pyth · ETH/USD</span>
+            </span>
+            <span class="resolved-badge">NO · Lost</span>
+          </div>
+          <div class="market-question">ETH/USD was ≥ $3,800 at May 28 00:00 UTC</div>
+          <div class="market-stats">
+            <div>
+              <div class="label">Final Pool</div>
+              <div class="value mono">1,840 USDC</div>
+            </div>
+            <div>
+              <div class="label">Settle Price</div>
+              <div class="value mono">$3,712</div>
+            </div>
+            <div>
+              <div class="label">Your Stake</div>
+              <div class="value mono muted">5.00 USDC</div>
+            </div>
+          </div>
+          <div class="market-actions">
+            <button class="btn btn-ghost" disabled style="grid-column: 1 / -1">No payout — outcome resolved as NO</button>
+          </div>
+        </article>
+      </div>
+    </details>
+
+  </main>
+
+  <footer>
+    <div>ArcPredict · Built on Arc Testnet · ChainId <span class="mono">5042002</span></div>
+    <div>
+      <a href="https://testnet.arcscan.app" target="_blank" rel="noopener">Arcscan</a> ·
+      <a href="https://faucet.circle.com" target="_blank" rel="noopener">USDC Faucet</a> ·
+      <a href="#">Contract</a>
+    </div>
+  </footer>
+
+  <!-- ============ BET MODAL (toggleable via Tweaks) ============ -->
+  <div class="modal-backdrop" id="modal" style="display: none" onclick="onBackdropClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-head">
+        <div>
+          <div class="title">Place Bet</div>
+          <div class="q">Will BTC/USD be ≥ $70,000<br/>at Jun 10 24:00 UTC?</div>
+        </div>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+
+      <div class="modal-section">
+        <span class="label">Pick a side</span>
+        <div class="side-toggle">
+          <button class="btn btn-yes" onclick="pickSide(this, 'yes')">
+            <span>YES</span>
+            <span class="label-tiny">Pool 3,686 · 68% flow</span>
+          </button>
+          <button class="btn btn-no active" onclick="pickSide(this, 'no')">
+            <span>NO</span>
+            <span class="label-tiny">Pool 1,734 · 32% flow</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <span class="label">Amount</span>
+        <div class="amount-row">
+          <input type="text" value="10.00" id="amountInput" />
+          <span class="unit">USDC</span>
+        </div>
+        <div class="quick-amounts">
+          <button>+1</button>
+          <button>+5</button>
+          <button>+25</button>
+          <button>Max</button>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="row">
+          <span class="k">Your Stake</span>
+          <span class="v">10.00 USDC</span>
+        </div>
+        <div class="row">
+          <span class="k">Implied Win</span>
+          <span class="v win">~30.50 USDC</span>
+        </div>
+        <div class="row">
+          <span class="k">Platform Fee</span>
+          <span class="v">1.00%</span>
+        </div>
+        <div class="row">
+          <span class="k">Net Profit</span>
+          <span class="v win">+20.50 USDC</span>
+        </div>
+      </div>
+
+      <div class="modal-warning">
+        <span class="ico">!</span>
+        <span>Implied win recalculates each time someone bets. Final odds are locked at market close (Jun 10 24:00 UTC).</span>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary">Confirm Bet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TWEAKS ============ -->
+  <div class="tweaks" id="tweaks">
+    <button class="tweaks-toggle" onclick="toggleTweaks()" aria-label="Open tweaks">
+      <span class="mono" style="font-size: 18px; line-height: 1">⚙</span>
+    </button>
+    <div class="tweaks-panel">
+      <div class="tweaks-title">Tweaks</div>
+
+      <div class="tweak-row">
+        <div class="k">Theme</div>
+        <div class="seg" data-attr="theme">
+          <button data-val="dark" class="active">Dark</button>
+          <button data-val="light">Light</button>
+        </div>
+      </div>
+
+      <div class="tweak-row">
+        <div class="k">Accent</div>
+        <div class="seg" data-attr="accent">
+          <button data-val="amber" class="active">Amber</button>
+          <button data-val="teal">Teal</button>
+          <button data-val="crimson">Crimson</button>
+        </div>
+      </div>
+
+      <div class="tweak-row">
+        <div class="k">Density</div>
+        <div class="seg" data-attr="density">
+          <button data-val="comfortable" class="active">Comfortable</button>
+          <button data-val="compact">Compact</button>
+        </div>
+      </div>
+
+      <div class="tweak-row">
+        <div class="k">Pool Bar</div>
+        <div class="seg" data-attr="poolbar">
+          <button data-val="on" class="active">On</button>
+          <button data-val="off">Off</button>
+        </div>
+      </div>
+
+      <div class="tweak-row">
+        <div class="k">Bet Modal</div>
+        <div class="seg" data-attr="modal">
+          <button data-val="hidden" class="active">Hidden</button>
+          <button data-val="shown">Shown</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ---------- Tweaks ---------- */
+    const tweaks = document.getElementById('tweaks');
+    function toggleTweaks() { tweaks.classList.toggle('open'); }
+    document.addEventListener('click', (e) => {
+      if (!tweaks.contains(e.target)) tweaks.classList.remove('open');
+    });
+
+    document.querySelectorAll('.seg').forEach((seg) => {
+      const attr = seg.dataset.attr;
+      seg.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const val = btn.dataset.val;
+        seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+
+        if (attr === 'modal') {
+          if (val === 'shown') openModal(); else closeModal();
+          return;
+        }
+
+        document.documentElement.dataset[attr] = val;
+      });
+    });
+
+    /* ---------- Modal ---------- */
+    const modal = document.getElementById('modal');
+    function openModal() {
+      modal.style.display = 'flex';
+      const seg = document.querySelector('[data-attr="modal"]');
+      seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.val === 'shown'));
+    }
+    function closeModal() {
+      modal.style.display = 'none';
+      const seg = document.querySelector('[data-attr="modal"]');
+      seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.val === 'hidden'));
+    }
+    function onBackdropClick(e) {
+      if (e.target.classList.contains('modal-backdrop')) closeModal();
+    }
+    function pickSide(btn, side) {
+      const group = btn.parentElement;
+      group.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    /* keyboard */
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+  </script>
+</body>
+</html>
