@@ -1,7 +1,8 @@
 # ArcPredict 设计文档 v3
 
 > **日期**：2026-06-07
-> **状态**：草案，待用户审阅（已完成 3 轮共 5 路 codex 对抗性评审 + Arc testnet 烫手验证）
+> **状态**：✅ **三方一致达成**（Claude 主体 + 4 路对抗性 codex + 1 路收尾确认 codex），待用户终审
+> **评审历程**：4 轮共 6 路 codex 对抗性评审 + Arc testnet 烫手验证
 > **修订记录**：
 > - v1：初版（§3–§7）
 > - v2：第二轮 15 项修订（Pyth API、双 decimals、运营脚本、仓库结构等，详见 A.5）
@@ -158,8 +159,9 @@ address public immutable PYTH;                 // Pyth contract on Arc testnet
 
 ```solidity
 // 基于 OpenZeppelin Contracts v5（Ownable2Step 继承 Ownable）
-import { Ownable, Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
-import { SafeERC20, IERC20 }     from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { Ownable2Step }      from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import { Ownable }           from "@openzeppelin/contracts/access/Ownable.sol";
+import { SafeERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract PredictionMarket is Ownable2Step {
     using SafeERC20 for IERC20;
@@ -214,13 +216,16 @@ function setFeeRecipient(address r) external onlyOwner;
 // ============ user 写 ============
 
 function bet(uint256 id, bool yes, uint128 amount) external;
-// require: id < marketCount
-// require: markets[id].outcome == Unresolved
-// require: block.timestamp < betDeadline
-// require: amount >= MIN_BET
+// require: id < marketCount                          → revert InvalidMarketId
+// require: markets[id].outcome == Unresolved         → revert AlreadyResolved
+// require: block.timestamp < betDeadline             → revert BettingClosed
+// require: amount >= MIN_BET                         → revert BelowMinBet
 // effect:  SafeERC20.safeTransferFrom(USDC, msg.sender, address(this), amount)
 // effect:  yesPool/noPool += amount; yesStake/noStake[user] += amount
 // effect:  emit Bet
+//
+// 注：所有以 `uint256 id` 为入参的外部函数（bet/resolve/claim/forceInvalid/getMarket/userStake/pendingPayout）
+// 第一个 require 都是 `id < marketCount`，否则 revert InvalidMarketId
 
 function resolve(uint256 id, bytes[] calldata updateData) external payable;
 // require: markets[id].outcome == Unresolved         → revert AlreadyResolved
