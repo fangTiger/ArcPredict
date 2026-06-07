@@ -624,6 +624,7 @@ await prediction.write.resolve([id, updateData], { value: fee });
 | Pyth 正常返回但 price ≤ 0 | `outcome = Invalid`（防御性，正常不会发生） |
 | Pyth 正常返回但 expo 不匹配 thresholdExpo | `outcome = Invalid`（owner 创建时参数错或 Pyth 改 expo） |
 | 窗口外尝试 resolve（now < resolveAfter） | revert `NotResolvableYet`（不是 Invalid，可重试） |
+| `resolveAfter + 7 天` 仍 Unresolved（Pyth/Hermes 长期失效） | 任何人调 `forceInvalid(id)` → 永久 Invalid，所有人退款 |
 | **窗口超期但仍可拉到窗口内 Pyth update（hermes 历史回溯）** | 允许任何人拉历史 updateData 并 resolve（Pyth `parsePriceFeedUpdatesUnique` 接受历史更新） |
 | 重复 claim | revert `AlreadyClaimed` |
 | 已下注但输方 claim | revert `NotAWinner`（含本金亏损） |
