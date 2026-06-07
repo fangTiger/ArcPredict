@@ -1,8 +1,11 @@
-# ArcPredict 设计文档 v2
+# ArcPredict 设计文档 v3
 
 > **日期**：2026-06-07
-> **状态**：草案，待用户审阅（已完成 2 轮共 4 路 codex 对抗性评审 + Arc testnet 烫手验证）
-> **修订记录**：v1 → v2 应用第二轮 8+8 项 blocker（详见附录 A.5）
+> **状态**：草案，待用户审阅（已完成 3 轮共 5 路 codex 对抗性评审 + Arc testnet 烫手验证）
+> **修订记录**：
+> - v1：初版（§3–§7）
+> - v2：第二轮 15 项修订（Pyth API、双 decimals、运营脚本、仓库结构等，详见 A.5）
+> - v3：第三轮 11 项修订（claim 语义、view 安全、forceInvalid 逃生口、event 字段、不变量措辞、threshold 换算、错误清理，详见 A.8）
 > **下一步**：用户审阅 → writing-plans 输出实现计划 → 交付 codex 实现
 
 ---
@@ -142,7 +145,8 @@ uint256 public constant MAX_MARKETS = 1000;    // 历史创建总数硬上限（
 uint128 public constant MIN_BET = 1e5;         // 0.1 USDC (6 decimals)
 uint16  public constant MAX_FEE_BPS = 500;     // 5% 上限
 uint64  public constant ORACLE_WINDOW = 5 minutes;
-uint256 public constant MAX_QUESTION_LEN = 200; // 防止恶意 owner gas 膨胀
+uint256 public constant MAX_QUESTION_LEN = 200;  // UTF-8 字节数，中文每字符 3 字节 → 约 66 中文字
+uint64  public constant FORCE_INVALID_DELAY = 7 days; // resolveAfter + 7d 后任何人可永久 Invalid 化（防 oracle 失效资金锁死）
 
 address public feeRecipient;                   // 仅影响**新创建**的市场（旧市场用 snapshot）
 uint16  public feeBps = 100;                   // 默认 1%（仅影响新创建的市场）
@@ -150,24 +154,34 @@ address public immutable USDC;                 // 0x3600...
 address public immutable PYTH;                 // Pyth contract on Arc testnet
 ```
 
-**Constructor**：
+**Constructor + 继承**：
 
 ```solidity
-constructor(
-    address usdc,
-    address pyth,
-    address initialOwner,
-    address initialFeeRecipient
-) Ownable(initialOwner) {
-    if (usdc == address(0) || pyth == address(0)
-        || initialOwner == address(0) || initialFeeRecipient == address(0)) revert ZeroAddress();
-    USDC = usdc;
-    PYTH = pyth;
-    feeRecipient = initialFeeRecipient;
+// 基于 OpenZeppelin Contracts v5（Ownable2Step 继承 Ownable）
+import { Ownable, Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import { SafeERC20, IERC20 }     from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+contract PredictionMarket is Ownable2Step {
+    using SafeERC20 for IERC20;
+
+    constructor(
+        address usdc,
+        address pyth,
+        address initialOwner,
+        address initialFeeRecipient
+    ) Ownable(initialOwner) {
+        if (usdc == address(0) || pyth == address(0)
+            || initialOwner == address(0) || initialFeeRecipient == address(0)) revert ZeroAddress();
+        USDC = usdc;
+        PYTH = pyth;
+        feeRecipient = initialFeeRecipient;
+    }
+
+    // ... 状态、函数 ...
 }
-// 注：基于 OpenZeppelin Contracts v5（`Ownable` 构造接受 initialOwner）。
-// 若用 v4 改为 `_transferOwnership(initialOwner)`。Foundry 安装时优先 v5（forge install OpenZeppelin/openzeppelin-contracts）。
 ```
+若强制必须用 v4：去掉 `Ownable(initialOwner)`，构造内调 `_transferOwnership(initialOwner)`。
+Foundry 安装：`forge install OpenZeppelin/openzeppelin-contracts` 默认拉 v5。
 
 ### 4.2 函数签名
 
@@ -277,24 +291,28 @@ function resolve(uint256 id, bytes[] calldata updateData) external payable;
 function claim(uint256 id) external;
 // require: markets[id].outcome != Unresolved        → revert NotResolved
 // require: !claimed[id][msg.sender]                 → revert AlreadyClaimed
-// effect:  claimed[id][msg.sender] = true           ← CEI: 先置标记
 //
-// 用 internal _calcPayout(id, user) 计算 payout（claim 与 pendingPayout 共用，杜绝漂移）：
-//   if Invalid:
-//       payout = yesStake[id][user] + noStake[id][user]    // 含本金，无利润
-//   else if Yes wins:
-//       if yesStake[id][user] == 0 → revert NotAWinner
-//       payout = uint256(yesStake[id][user]) * winnerPool / yesPool
-//   else if No wins:
-//       if noStake[id][user] == 0  → revert NotAWinner
-//       payout = uint256(noStake[id][user])  * winnerPool / noPool
+// 错误优先级（顺序判断）：
+//   1) totalStake = yesStake[id][user] + noStake[id][user]
+//      if totalStake == 0 → revert NoPayoutAvailable    // 从未下注
+//   2) if outcome == Yes && yesStake[id][user] == 0 → revert NotAWinner
+//   3) if outcome == No  && noStake[id][user]  == 0 → revert NotAWinner
+//   4) payout = _quotePayout(id, user)                  // 此时必 > 0
 //
-// 后置检查：
-//   if payout == 0 → revert NoPayoutAvailable
-//   （仅当 Invalid 且用户从未下注时触发；正常路径上 payout 必 > 0）
-//
+// effect:  claimed[id][msg.sender] = true              ← CEI: 先置标记
 // effect:  SafeERC20.safeTransfer(USDC, msg.sender, payout)
 // effect:  emit Claimed
+
+// ============ Pyth 死锁逃生口 ============
+
+function forceInvalid(uint256 id) external;
+// 任何人可调；只有在 oracle 长期失效场景使用，正常路径绝不应触发
+// require: markets[id].outcome == Unresolved          → revert AlreadyResolved
+// require: block.timestamp >= resolveAfter + FORCE_INVALID_DELAY → revert NotForceInvalidatableYet
+// effect:  markets[id].outcome = Invalid
+// effect:  emit Resolved(id, Invalid, 0, 0, 0, 0)
+// 说明：Pyth Hermes 默认保留 ~30 天历史更新，正常 7 天内 anyone 用历史数据 resolve 即可
+//      forceInvalid 是兜底；触发后所有下注者通过 claim 拿回本金
 
 // ============ view（供前端聚合） ============
 
@@ -304,7 +322,13 @@ function getMarketsPaged(uint256 from, uint256 toExclusive) external view return
 
 function userStake(uint256 id, address u) external view returns (uint128 yes_, uint128 no_);
 function pendingPayout(uint256 id, address u) external view returns (uint256);
-// 对 Unresolved 市场返回 0（不 revert，前端方便聚合）
+// 对 Unresolved / 输方 / 0 stake 用户：返回 0（绝不 revert）
+// 与 claim 的差异：claim 用同一份数学但加上 require 抛错；view 只返回数值
+// 实现要点：
+//   - 抽 internal pure / view 函数 `_quotePayout(...)` 仅做数学（永不 revert）
+//   - claim 调 `_quotePayout` + 上述 require 错误优先级
+//   - pendingPayout / getDashboard 也调 `_quotePayout`，不加错误检查
+// 这样 claim 与 view 数学严格一致，但 view 永不 revert，前端可安全批量聚合
 
 struct DashboardRow {
     uint256 id;
@@ -316,18 +340,21 @@ struct DashboardRow {
 }
 
 function getDashboard(address user, uint256 from, uint256 toExclusive)
-    external view returns (DashboardRow[] memory);
-// 一次 RPC 拿首屏全部所需，避免「先读市场列表，再循环查 userStake」两阶段往返
+    external view returns (DashboardRow[] memory rows, uint256 totalCount);
+// 同时返回 marketCount，避免前端再多一次 RPC
 // require: from <= toExclusive <= marketCount
 
-// pendingPayout 与 claim 共用 internal _calcPayout（避免双份算法漂移）
+function getDashboardLatest(address user, uint256 limit)
+    external view returns (DashboardRow[] memory rows, uint256 totalCount);
+// 便利函数：返回最近 `limit` 个市场（高 id 在前）
+// 因为 marketCount 单调递增，最新市场在 [marketCount - limit, marketCount)
+// 首屏强烈推荐用这个，而不是 getDashboard(user, 0, 100) ← 那个取的是最老的 100 个
 ```
 
 ### 4.3 自定义错误
 
 ```solidity
 // === createMarket ===
-error MarketNotFound();
 error MarketLimitReached();
 error InvalidTimeOrder();           // resolveAfter <= betDeadline
 error TimesInPast();
@@ -339,20 +366,27 @@ error InvalidPriceId();             // pythPriceId == bytes32(0)
 // === bet ===
 error BettingClosed();
 error BelowMinBet();
-error AmountOverflowsUint128();     // 安全 down-cast 防御（实际几乎不会触发）
+// 注：池子 uint128 累加溢出由 Solidity 0.8.x panic 处理（极不可能触发）
 
 // === resolve ===
 error AlreadyResolved();
 error NotResolvableYet();
-error InvalidOracleUpdate();        // Pyth parse 失败（updateData 错 / fee 不足 / Pyth revert）
-                                    // ← 注：合约层让 Pyth revert 透传更省 gas；这条错误用于必要时包装
-error InsufficientPythFee();        // msg.value < getUpdateFee
+error InsufficientPythFee();        // msg.value < getUpdateFee()（本合约预先检查）
+error InvalidOracleUpdate();        // Pyth 合约内部 revert 时，让 Pyth 原生 revert 透传
+                                    // ← 仅在需要包装错误时使用；MVP 实现可省略这条，让 Pyth panic 直接透传
+
+// === forceInvalid ===
+error NotForceInvalidatableYet();   // block.timestamp < resolveAfter + FORCE_INVALID_DELAY
 
 // === claim ===
 error NotResolved();
 error AlreadyClaimed();
-error NotAWinner();
-error NoPayoutAvailable();          // payout 算下来为 0
+error NotAWinner();                 // 用户在输方
+error NoPayoutAvailable();          // 用户从未下注
+
+// === 跨函数 ===
+error InvalidMarketId();            // id >= marketCount
+error RefundFailed();               // resolve 末尾退多付 update fee 失败
 ```
 
 ### 4.4 事件
@@ -366,6 +400,7 @@ event MarketCreated(
     uint64  betDeadline,
     uint64  resolveAfter,
     uint16  feeBpsSnapshot,
+    address feeRecipientSnapshot,   // 创建时快照的 fee 收款地址（用于审计 owner 不影响旧市场）
     string  question
 );
 
@@ -396,13 +431,16 @@ event Claimed(
 
 ### 4.5 关键不变量
 
-1. **资金守恒**：任意时刻
-   `IERC20(USDC).balanceOf(this) >= Σ(yesPool + noPool) - Σ(已 claim 的 payout) - Σ(已转出 protocolFee)`
+1. **资金守恒（≥ 而非 ==，dust 归合约）**：任意时刻
+   `IERC20(USDC).balanceOf(this) ≥ Σ(unresolved 市场池) + Σ(已 resolve 未 claim 的 winnerPool 剩余)`
+   等号差额 = 累计除法 dust（极小，可忽略）
 2. **不超分**：所有 winner 的 payout 之和 ≤ winnerPool（除法向下取整保护）
-3. **Invalid 退款无损**：Invalid 状态下，每个用户 payout = yesStake + noStake，总额等于 yesPool + noPool
-4. **重入安全**：claim 用严格 CEI（先置 `claimed[id][user] = true`，再 transfer）；其他写函数无外部调用入栈
-5. **0.8.24 自带溢出**：所有算术 revert on overflow；uint128 down-cast 显式 `require(x <= type(uint128).max)`
-6. **市场创建后不可改**：`feeBpsSnapshot` 等关键字段创建后只读
+3. **Invalid 退款无损**：Invalid 状态下，每个用户 payout = yesStake + noStake，总额恰等于 yesPool + noPool
+4. **claim 重入安全**：严格 CEI（先置 `claimed[id][user] = true`，再 `safeTransfer`）。外部调用对象 USDC 是可信合约（Arc 原生 USDC facade），不会触发恶意回调
+5. **resolve 外部调用风险界**：resolve 调 Pyth + USDC（fee 转账）+ 可选 native refund 给 resolver。若 refund 失败 → 整笔 revert（设计如此：另一个 resolver 可重试，状态不变）。Pyth 与 USDC 视为可信合约
+6. **0.8.24 自带溢出**：所有算术 revert on overflow
+7. **市场创建后不可改**：`feeBpsSnapshot` / `feeRecipientSnapshot` / `pythPriceId` / `threshold` / `thresholdExpo` / `betDeadline` / `resolveAfter` 创建后只读
+8. **死锁逃生口**：`forceInvalid` 保证任何市场在 `resolveAfter + 7 天` 后都能 finalize，资金永不锁死
 
 ### 4.6 与初版的差异（两轮 codex review 后修订）
 
@@ -443,16 +481,14 @@ event Claimed(
 **读路径（首屏，单次 RPC 调用）**：
 
 ```ts
-// 一次 contract.read.getDashboard 拿首屏所需全部
-const totalCount = await prediction.read.marketCount();
+// 一次 contract.read.getDashboardLatest 拿最新 100 个市场（高 id 在前）
 const PAGE = 100n;
-const rows = await prediction.read.getDashboard([
-  userAddress,
-  0n,
-  totalCount > PAGE ? PAGE : totalCount, // toExclusive，半开
-]);
+const [rows, totalCount] = await prediction.read.getDashboardLatest([userAddress, PAGE]);
 // rows: DashboardRow[] = { id, market, yesStake, noStake, claimed_, pendingPayout }
-// 前端在此基础上做客户端过滤：Active / My Positions / Resolved
+// totalCount: marketCount，前端用来做分页继续读旧市场
+
+// ⚠️ 不要写 getDashboard(user, 0, 100) ← 那是最老的 100 个
+// 如果要按 id 范围读：getDashboard(user, Math.max(0, count - PAGE), count)
 ```
 
 如果合约层暂未提供 `getDashboard`（实现期间临时回退），用两阶段 multicall：
@@ -646,12 +682,14 @@ await prediction.write.resolve([id, updateData], { value: fee });
 2. **单一 oracle 依赖**——Pyth 失效会让所有依赖它的市场进入 Invalid 退款（无资金损失，仅体验损失）
 3. **无紧急暂停**——故意。避免 owner 滥用暂停卡用户钱。代价：出 bug 时无法干预
 4. **dust loss**——余尘归合约（单市场 < $0.000001，可忽略）
-5. **历史保留**——3 个月以上 Bet 事件可能因 RPC log retention 而无法恢复
+5. **历史活动流水保留**——3 个月以上 Bet/Resolved 事件可能因 RPC log retention 而无法恢复。**仓位本身不丢**——yesStake/noStake mapping 是合约永久状态，用户随时可 claim
 6. **冷启动**——testnet USDC 是稀缺资源，初期可能用户少。靠 faucet 链接 + 0.1 USDC min bet + owner seed 双边流动性缓解
 7. **运营依赖**——MVP 期 resolve 由 owner cron 触发（前端任意人可触发但 testnet 用户没动力）。owner 中断运维 → 市场可能错过结算窗口 → Invalid 退款。可接受
 8. **历史总数上限**——`MAX_MARKETS = 1000` 是硬上限。按一周 5-10 个市场节奏，2-4 年可达上限。届时需新部署合约
 9. **Pyth update fee 由 resolver 出**——MVP 期 owner 承担；如未来开放 keeper 网络可加退款激励
-10. **`MAX_QUESTION_LEN = 200`**——题面太长会截断，前端按字符数提前校验
+10. **`MAX_QUESTION_LEN = 200` 字节**——按 UTF-8 字节算（中文每字符 3 字节，约 66 中文字符）。前端按 **`new TextEncoder().encode(s).length`** 校验，**不能按 `s.length`**（JS 字符数）
+11. **不校验 Pyth `conf`**——MVP 信任 owner 选用稳定 feed（BTC/ETH 主流 feed conf < 0.1% 价格）；后续可加 `require(price > conf * RATIO)` 校验
+12. **threshold/expo 单位转换**——createMarket 时 owner 必须按 Pyth feed expo 缩放阈值。例：BTC/USD feed expo = -8，则 "BTC ≥ 70000" 传 `(threshold=70000_00000000, thresholdExpo=-8)`。`script/CreateMarket.s.sol` 提供 helper 函数和 BTC/ETH 等示例
 
 ### 6.6 显式不做（YAGNI）
 
@@ -800,7 +838,9 @@ ArcPredict/
 │   │       └── MockPyth.sol              # 可控制 parsePriceFeedUpdatesUnique 返回 / revert
 │   ├── script/
 │   │   ├── Deploy.s.sol                  # 部署 + 把地址写到 web/lib/addresses.ts
-│   │   ├── CreateMarket.s.sol            # owner 创建市场
+│   │   ├── CreateMarket.s.sol            # owner 创建市场，含 threshold/expo 转换 helper：
+│   │   │                                 #   function scale(int64 humanPrice, int32 feedExpo) → int64
+│   │   │                                 #   示例：scale(70000, -8) == 70000_00000000 ← BTC ≥ $70,000
 │   │   ├── SeedLiquidity.s.sol           # owner 双边各注 5 USDC 种子流动性
 │   │   └── ops/                          # 运营脚本（M5 里程碑）
 │   │       ├── ListMarkets.s.sol         # 列出市场 + 倒计时 + 状态
@@ -938,3 +978,32 @@ ArcPredict/
 | 加 keeper 网络付 Pyth update fee | MVP 期 owner 单点运营足够 |
 | 拆 `getDashboard` 进多个 view | 单接口闭包性更好，gas 限制内能容纳 |
 | 给 feeBps 拆 setFeeBps + setFeeRecipient | 已经是分开的 |
+
+---
+
+### A.7 第三轮 codex 确认评审（2026-06-07）
+
+针对 v2 spec 做"确认性"审查。Codex 结论：**反对**。指出 6 项未彻底解决、4 项 v2 引入的新问题、5 项隐藏隐患。
+
+### A.8 第三轮收敛修订（已合并 → v3）
+
+| # | 修订项 | 落点 |
+|---|---|---|
+| ① | 拆 `_quotePayout`（view 安全 / 不 revert）+ claim 错误优先级（NoPayoutAvailable > NotAWinner） | §4.2 |
+| ② | `getDashboard` 同时返回 `totalCount`；新增 `getDashboardLatest(user, limit)` 取最新而非最老 | §4.2 / §5.2 |
+| ③ | **新增 `forceInvalid(id)`**：`resolveAfter + 7 天` 后任何人可永久 Invalid 化（防 Pyth Hermes 长期失败资金锁死） | §4.1 / §4.2 / §6.1 |
+| ④ | `MarketCreated` 事件加 `feeRecipientSnapshot` 字段 | §4.4 |
+| ⑤ | 不变量措辞修正：`balanceOf ≥ Σ owed`；删"无外部调用入栈"错述；明确 resolve 外部调用风险界 | §4.5 |
+| ⑥ | constructor 段补 `is Ownable2Step` 继承 + SafeERC20 import | §4.1 |
+| ⑦ | CreateMarket.s.sol 加 threshold/expo 转换 helper 示例 | §7.6 |
+| ⑧ | 错误清理：删 `MarketNotFound` `AmountOverflowsUint128`；加 `InvalidMarketId` `RefundFailed` `NotForceInvalidatableYet` | §4.3 |
+| ⑨ | `MAX_QUESTION_LEN` 明确为 UTF-8 字节，前端按 `TextEncoder` 校验 | §4.1 / §6.5 |
+| ⑩ | 历史保留风险措辞收紧："仓位永远可 claim，仅活动流水可能丢" | §6.5 |
+| ⑪ | 显式声明 Pyth `conf` 不校验，MVP 接受 | §6.5 |
+
+### A.9 第三轮故意未采纳的建议
+
+| 建议 | 理由 |
+|---|---|
+| 校验 Pyth `conf` 置信区间 | MVP 选稳定 feed（BTC/ETH 主流）conf 极小，YAGNI |
+| 给 dust sweep | 已显式接受，且 owner sweep 引入新攻击面 |
