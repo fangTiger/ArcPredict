@@ -1,8 +1,8 @@
-# ArcPredict 设计文档 v1
+# ArcPredict 设计文档 v2
 
 > **日期**：2026-06-07
-> **状态**：草案，待用户审阅
-> **基础**：与用户 brainstorming 对齐 + 双 codex 并行评审 + Arc testnet 烫手验证
+> **状态**：草案，待用户审阅（已完成 2 轮共 4 路 codex 对抗性评审 + Arc testnet 烫手验证）
+> **修订记录**：v1 → v2 应用第二轮 8+8 项 blocker（详见附录 A.5）
 > **下一步**：用户审阅 → writing-plans 输出实现计划 → 交付 codex 实现
 
 ---
@@ -87,16 +87,17 @@
 
 ### 3.2 关键架构决策
 
-1. **无后端**。所有状态从合约读，无 subgraph 也无事件索引。代价：用户仓位枚举受限——通过**硬上限 100 个 active markets** 控制。
+1. **无后端**。所有状态从合约读，无 subgraph 也无事件索引。代价：用户仓位枚举受限——通过**总市场数上限 1000**（单调递增 marketCount）+ 前端分页控制 RPC 负载，owner 自律不滥建。
 2. **ERC-20 USDC 路径**。用户首次下注前 approve 一次（建议 `max`），后续 bet / claim 不需要 approve。**所有数学按 6 decimals**。
-3. **Pyth 作为唯一 oracle**。pull 模式，resolve 时调用方需附带 `priceUpdate` payload 和 update fee（native ETH 等价值，msg.value 18 decimals 计）。
+3. **Pyth Core 作为唯一 oracle，固定时间结算**。pull 模式，resolve 时调用方附带 `priceUpdate` payload + update fee。合约用 **`parsePriceFeedUpdatesUnique(updateData, [priceId], resolveAfter, resolveAfter + ORACLE_WINDOW)`** 获取窗口内首条价格——**不读 Pyth 全局最新价格**，因此避免延迟结算时的"时间套利"和"全局价格已被推到窗口外"两类风险。
 4. **公开 resolve**。`resolve()` 无 onlyOwner，任何人都可触发，避免管理员卡结算。
+5. **运营脚本驱动**。owner 用 Foundry script 周期性扫描可结算市场并触发 resolve（不依赖任何人主动 resolve）。
 
 ### 3.3 范围与边界
 
 | 维度 | 边界 |
 |---|---|
-| 同时存在的 active markets | 硬上限 **100** |
+| 总市场数（创建后只增） | 上限 **1000**（MVP 阶段绝对够用，owner 自律分配节奏） |
 | 单注最小金额 | **0.1 USDC** |
 | 单注最大金额 | 不限（合约 uint128 上限远超实际） |
 | 平台费率 | 默认 1%，上限 5%（仅对新创建市场生效） |
@@ -114,20 +115,21 @@
 enum Outcome { Unresolved, Yes, No, Invalid }
 
 struct Market {
-    bytes32 pythPriceId;       // Pyth price feed ID（不是 EVM 地址）
-    int64   threshold;         // 按 Pyth feed 的 expo 缩放（例如 BTC ≥ 70000 → 70000e8 with expo=-8）
-    int32   thresholdExpo;     // threshold 的指数（用于与 Pyth price.expo 对齐）
-    uint64  betDeadline;       // 截止下注时间戳
-    uint64  resolveAfter;      // 最早可结算时间戳
-    uint128 yesPool;           // 累计 YES 下注（USDC 6 decimals）
-    uint128 noPool;            // 累计 NO 下注
-    uint128 winnerPool;        // resolve 时锁定，claim 用
-    uint128 protocolFee;       // resolve 时计算，立即转 feeRecipient
-    uint16  feeBpsSnapshot;    // 创建时快照费率
+    bytes32 pythPriceId;            // Pyth price feed ID（不是 EVM 地址）
+    int64   threshold;              // 按 Pyth feed 的 expo 缩放（例如 BTC ≥ 70000 → 70000e8 with expo=-8）
+    int32   thresholdExpo;          // 期望的 price.expo（resolve 时严格 == 即可）
+    uint64  betDeadline;            // 截止下注时间戳
+    uint64  resolveAfter;           // 最早可结算时间戳；窗口 = [resolveAfter, resolveAfter + ORACLE_WINDOW]
+    uint128 yesPool;                // 累计 YES 下注（USDC 6 decimals）
+    uint128 noPool;                 // 累计 NO 下注
+    uint128 winnerPool;             // resolve 时锁定，claim 用
+    uint128 protocolFee;            // resolve 时计算，立即转 feeRecipient
+    uint16  feeBpsSnapshot;         // 创建时快照费率
+    address feeRecipientSnapshot;   // 创建时快照收款地址（保证 owner 中途改 feeRecipient 不影响已有市场）
     Outcome outcome;
-    int64   settlePrice;       // resolve 时记录
-    uint64  settleTime;        // resolve 时记录的 Pyth publishTime
-    string  question;          // 展示用文本
+    int64   settlePrice;            // resolve 时记录（Invalid 时为 0）
+    uint64  settleTime;             // resolve 时记录的 Pyth publishTime（Invalid 时为 0）
+    string  question;               // 展示用文本（建议合约层强约束 length <= 200）
 }
 
 mapping(uint256 => Market) public markets;
@@ -135,16 +137,36 @@ mapping(uint256 => mapping(address => uint128)) public yesStake;
 mapping(uint256 => mapping(address => uint128)) public noStake;
 mapping(uint256 => mapping(address => bool))    public claimed;
 
-uint256 public marketCount;                 // 当前总市场数
-uint256 public constant MAX_MARKETS = 100;  // 硬上限
-uint128 public constant MIN_BET = 1e5;      // 0.1 USDC (6 decimals)
-uint16  public constant MAX_FEE_BPS = 500;  // 5% 上限
+uint256 public marketCount;                    // 历史总创建数（单调递增）
+uint256 public constant MAX_MARKETS = 1000;    // 历史创建总数硬上限（不是 active）
+uint128 public constant MIN_BET = 1e5;         // 0.1 USDC (6 decimals)
+uint16  public constant MAX_FEE_BPS = 500;     // 5% 上限
 uint64  public constant ORACLE_WINDOW = 5 minutes;
+uint256 public constant MAX_QUESTION_LEN = 200; // 防止恶意 owner gas 膨胀
 
-address public feeRecipient;
-uint16  public feeBps = 100;                // 默认 1%
-address public immutable USDC;              // 0x3600...
-address public immutable PYTH;              // Pyth contract on Arc testnet
+address public feeRecipient;                   // 仅影响**新创建**的市场（旧市场用 snapshot）
+uint16  public feeBps = 100;                   // 默认 1%（仅影响新创建的市场）
+address public immutable USDC;                 // 0x3600...
+address public immutable PYTH;                 // Pyth contract on Arc testnet
+```
+
+**Constructor**：
+
+```solidity
+constructor(
+    address usdc,
+    address pyth,
+    address initialOwner,
+    address initialFeeRecipient
+) Ownable(initialOwner) {
+    if (usdc == address(0) || pyth == address(0)
+        || initialOwner == address(0) || initialFeeRecipient == address(0)) revert ZeroAddress();
+    USDC = usdc;
+    PYTH = pyth;
+    feeRecipient = initialFeeRecipient;
+}
+// 注：基于 OpenZeppelin Contracts v5（`Ownable` 构造接受 initialOwner）。
+// 若用 v4 改为 `_transferOwnership(initialOwner)`。Foundry 安装时优先 v5（forge install OpenZeppelin/openzeppelin-contracts）。
 ```
 
 ### 4.2 函数签名
@@ -160,10 +182,13 @@ function createMarket(
     uint64  resolveAfter,
     string  calldata question
 ) external onlyOwner returns (uint256 id);
-// require: marketCount < MAX_MARKETS
-// require: betDeadline > block.timestamp
-// require: resolveAfter > betDeadline
-// effect:  快照 feeBps 进 Market.feeBpsSnapshot
+// require: marketCount < MAX_MARKETS                 → revert MarketLimitReached
+// require: betDeadline > block.timestamp             → revert TimesInPast
+// require: resolveAfter > betDeadline                → revert InvalidTimeOrder
+// require: bytes(question).length <= MAX_QUESTION_LEN → revert QuestionTooLong
+// require: pythPriceId != bytes32(0)                 → revert InvalidPriceId
+// effect:  快照 feeBps 进 feeBpsSnapshot
+// effect:  快照 feeRecipient 进 feeRecipientSnapshot
 // effect:  emit MarketCreated
 
 function setFeeBps(uint16 bps) external onlyOwner;
@@ -183,40 +208,90 @@ function bet(uint256 id, bool yes, uint128 amount) external;
 // effect:  yesPool/noPool += amount; yesStake/noStake[user] += amount
 // effect:  emit Bet
 
-function resolve(uint256 id, bytes[] calldata priceUpdate) external payable;
-// require: markets[id].outcome == Unresolved
-// require: block.timestamp >= resolveAfter
+function resolve(uint256 id, bytes[] calldata updateData) external payable;
+// require: markets[id].outcome == Unresolved         → revert AlreadyResolved
+// require: block.timestamp >= resolveAfter           → revert NotResolvableYet
+//
+// === 关键：用 parsePriceFeedUpdatesUnique 而不是 updatePriceFeeds+getPriceUnsafe ===
+// 后者读 Pyth 全局最新价格，可能被其他人推到窗口外，且允许结算者择时套利。
+// 前者由 Pyth 严格保证返回的价格 publishTime ∈ [minPublishTime, maxPublishTime]，
+// 否则在 Pyth 合约内 revert（不消耗本合约状态，可重试）。
+//
 // flow:
-//   1) 调 IPyth(PYTH).updatePriceFeeds{value: msg.value}(priceUpdate)
-//      （msg.value 是 native ETH-equivalent，用 18 decimals；前端需先 getUpdateFee）
-//   2) 读 IPyth(PYTH).getPriceUnsafe(pythPriceId)
-//   3) require price.publishTime ∈ [resolveAfter, resolveAfter + ORACLE_WINDOW]
-//      → 否则 outcome = Invalid
-//   4) require price.price > 0 && price.expo 与 thresholdExpo 对齐
-//      → 否则 outcome = Invalid
-//   5) if yesPool + noPool == 0 → outcome = Invalid
-//   6) 计算 outcome：price.price >= threshold → Yes else No
-//   7) winningPool = (outcome == Yes) ? yesPool : noPool
-//   8) if winningPool == 0 → outcome = Invalid（单边输）
-//   9) losingPool = (outcome == Yes) ? noPool : yesPool
-//  10) protocolFee = losingPool * feeBpsSnapshot / 10000
-//  11) winnerPool  = winningPool + losingPool - protocolFee
-//  12) 立即 SafeERC20.safeTransfer(USDC, feeRecipient, protocolFee)
-//  13) 记录 settlePrice / settleTime
-//  14) emit Resolved
-// 注意：失败路径（步骤 3/4/8 触发 Invalid）也要 emit Resolved 让前端能更新状态
+//   1) 准备 fee：updateFee = IPyth(PYTH).getUpdateFee(updateData);
+//      require(msg.value >= updateFee, "fee");
+//   2) bytes32[] memory ids = new bytes32[](1); ids[0] = m.pythPriceId;
+//   3) PythStructs.PriceFeed[] memory feeds = IPyth(PYTH).parsePriceFeedUpdatesUnique{value: updateFee}(
+//          updateData,
+//          ids,
+//          uint64(m.resolveAfter),
+//          uint64(m.resolveAfter + ORACLE_WINDOW)
+//      );
+//      ← Pyth 内部 revert 时本函数 revert（updateData 错误/fee 不足 → InvalidOracleUpdate）
+//        ← revert 是「可重试」语义：状态未变，任何人可换更好的 updateData 再调
+//
+//   4) PythStructs.Price memory p = feeds[0].price;
+//   5) 永久 Invalid 终态分支（即便 Pyth 正常返回也走 Invalid）：
+//      a) p.price <= 0                  → Invalid（永远不应发生，防御性）
+//      b) p.expo != m.thresholdExpo     → Invalid（owner 创建时填错或 Pyth 改 expo）
+//      c) m.yesPool + m.noPool == 0     → Invalid（0 注）
+//
+//   6) 如果不是 Invalid：
+//      Outcome o = (p.price >= m.threshold) ? Outcome.Yes : Outcome.No;
+//      winningPool = (o == Yes) ? m.yesPool : m.noPool;
+//      losingPool  = (o == Yes) ? m.noPool : m.yesPool;
+//      // 单边市场 + 该边输 → 改判 Invalid 退款（赢方无对手，无意义）
+//      if (winningPool == 0) o = Outcome.Invalid;
+//
+//   7) 写状态：
+//      m.outcome      = o;
+//      m.settlePrice  = (o == Invalid) ? int64(0) : p.price;
+//      m.settleTime   = (o == Invalid) ? uint64(0) : uint64(p.publishTime);
+//      if (o != Invalid) {
+//          m.protocolFee = uint128(uint256(losingPool) * m.feeBpsSnapshot / 10000);
+//          m.winnerPool  = winningPool + losingPool - m.protocolFee;
+//      }
+//      // Invalid 时不留 protocolFee（用户全额退款）
+//
+//   8) 副作用：
+//      if (m.protocolFee > 0) SafeERC20.safeTransfer(USDC, m.feeRecipientSnapshot, m.protocolFee);
+//      if (msg.value > updateFee) {
+//          (bool ok,) = msg.sender.call{value: msg.value - updateFee}("");
+//          require(ok, "refund");
+//      }
+//      emit Resolved(id, m.outcome, m.settlePrice, m.settleTime, m.winnerPool, m.protocolFee);
+
+// === revert vs Invalid 的清晰边界 ===
+//
+// 「revert」（状态不变，可重试）：
+//   • updateData 格式错 / 缺 fee / Pyth 合约层 revert  → InvalidOracleUpdate（包装 Pyth 错误）
+//   • block.timestamp < resolveAfter                  → NotResolvableYet
+//   • outcome != Unresolved                           → AlreadyResolved
+//
+// 「Invalid」（永久终态，所有人退款）：
+//   • Pyth 正常返回但 price <= 0
+//   • Pyth 正常返回但 expo 与创建时记录不匹配
+//   • 0 注市场到期
+//   • 单边市场 + 该边输（赢方为空）
 
 function claim(uint256 id) external;
-// require: markets[id].outcome != Unresolved
-// require: !claimed[id][msg.sender]
-// effect:  claimed[id][msg.sender] = true   ← CEI: 先置标记
+// require: markets[id].outcome != Unresolved        → revert NotResolved
+// require: !claimed[id][msg.sender]                 → revert AlreadyClaimed
+// effect:  claimed[id][msg.sender] = true           ← CEI: 先置标记
 //
-// 三种分支：
-// a) Invalid → payout = yesStake[id][user] + noStake[id][user]
-// b) Yes 赢   → payout = yesStake[id][user] * winnerPool / yesPool
-// c) No 赢    → payout = noStake[id][user]  * winnerPool / noPool
-// d) 用户未在赢方且 outcome != Invalid → revert NotAWinner
-// e) 算出 payout == 0（如 Invalid 但用户从未下注） → revert NoPayoutAvailable
+// 用 internal _calcPayout(id, user) 计算 payout（claim 与 pendingPayout 共用，杜绝漂移）：
+//   if Invalid:
+//       payout = yesStake[id][user] + noStake[id][user]    // 含本金，无利润
+//   else if Yes wins:
+//       if yesStake[id][user] == 0 → revert NotAWinner
+//       payout = uint256(yesStake[id][user]) * winnerPool / yesPool
+//   else if No wins:
+//       if noStake[id][user] == 0  → revert NotAWinner
+//       payout = uint256(noStake[id][user])  * winnerPool / noPool
+//
+// 后置检查：
+//   if payout == 0 → revert NoPayoutAvailable
+//   （仅当 Invalid 且用户从未下注时触发；正常路径上 payout 必 > 0）
 //
 // effect:  SafeERC20.safeTransfer(USDC, msg.sender, payout)
 // effect:  emit Claimed
@@ -224,35 +299,60 @@ function claim(uint256 id) external;
 // ============ view（供前端聚合） ============
 
 function getMarket(uint256 id) external view returns (Market memory);
-function getMarketsPaged(uint256 from, uint256 to) external view returns (Market[] memory);
+function getMarketsPaged(uint256 from, uint256 toExclusive) external view returns (Market[] memory);
+// require: from <= toExclusive <= marketCount
+
 function userStake(uint256 id, address u) external view returns (uint128 yes_, uint128 no_);
 function pendingPayout(uint256 id, address u) external view returns (uint256);
-// pendingPayout 必须与 claim 共用同一份算法（实现上提取 internal _calcPayout，
-// claim 和 pendingPayout 都调它，避免漂移）
+// 对 Unresolved 市场返回 0（不 revert，前端方便聚合）
+
+struct DashboardRow {
+    uint256 id;
+    Market  market;
+    uint128 yesStake;
+    uint128 noStake;
+    bool    claimed_;
+    uint256 pendingPayout;
+}
+
+function getDashboard(address user, uint256 from, uint256 toExclusive)
+    external view returns (DashboardRow[] memory);
+// 一次 RPC 拿首屏全部所需，避免「先读市场列表，再循环查 userStake」两阶段往返
+// require: from <= toExclusive <= marketCount
+
+// pendingPayout 与 claim 共用 internal _calcPayout（避免双份算法漂移）
 ```
 
 ### 4.3 自定义错误
 
 ```solidity
+// === createMarket ===
 error MarketNotFound();
 error MarketLimitReached();
-error InvalidTimeOrder();           // betDeadline >= resolveAfter
+error InvalidTimeOrder();           // resolveAfter <= betDeadline
 error TimesInPast();
 error ZeroAddress();
 error FeeTooHigh();
+error QuestionTooLong();            // bytes(question).length > MAX_QUESTION_LEN
+error InvalidPriceId();             // pythPriceId == bytes32(0)
 
+// === bet ===
 error BettingClosed();
-error AlreadyResolved();
-error NotResolved();
-error NotResolvableYet();
 error BelowMinBet();
+error AmountOverflowsUint128();     // 安全 down-cast 防御（实际几乎不会触发）
 
-error PythUpdateFailed();           // updatePriceFeeds revert 包装
-error AmountOverflowsUint128();     // 安全 down-cast
+// === resolve ===
+error AlreadyResolved();
+error NotResolvableYet();
+error InvalidOracleUpdate();        // Pyth parse 失败（updateData 错 / fee 不足 / Pyth revert）
+                                    // ← 注：合约层让 Pyth revert 透传更省 gas；这条错误用于必要时包装
+error InsufficientPythFee();        // msg.value < getUpdateFee
 
+// === claim ===
+error NotResolved();
 error AlreadyClaimed();
 error NotAWinner();
-error NoPayoutAvailable();          // payout 算下来为 0（防 transfer(0) 浪费 gas）
+error NoPayoutAvailable();          // payout 算下来为 0
 ```
 
 ### 4.4 事件
@@ -304,16 +404,27 @@ event Claimed(
 5. **0.8.24 自带溢出**：所有算术 revert on overflow；uint128 down-cast 显式 `require(x <= type(uint128).max)`
 6. **市场创建后不可改**：`feeBpsSnapshot` 等关键字段创建后只读
 
-### 4.6 与原版本的差异（codex review 后修订）
+### 4.6 与初版的差异（两轮 codex review 后修订）
 
-- ✅ 新增 `winnerPool`、`protocolFee`、`feeBpsSnapshot` 字段（resolve 时一次性锁定，claim 用，杜绝漂移）
-- ✅ `resolve` 改为 Pyth pull 模式，签名 `(uint256, bytes[]) payable`
-- ✅ 用 Pyth `publishTime ∈ [resolveAfter, resolveAfter + 5min]` 校验，解决"延迟结算套利"问题
-- ✅ 单边输方赢的不可能分支 → 显式 Invalid
-- ✅ 0 注市场到期 → 显式 Invalid + emit Resolved（不再静默 return）
-- ✅ 资金从 native `msg.value` 路径改为 ERC-20 `transferFrom`，单位 6 decimals
-- ✅ 加 `getMarketsPaged` 分页 view
-- ✅ `pendingPayout` 与 `claim` 共用 internal `_calcPayout`，强一致
+**Round 1（USDC + Pyth + 边界）**：
+- 新增 `winnerPool`、`protocolFee`、`feeBpsSnapshot` 字段（resolve 时一次性锁定）
+- `resolve` 改为 Pyth pull 模式
+- 单边输方赢、0 注到期 → 显式 Invalid + emit Resolved
+- 资金从 native `msg.value` 改为 ERC-20 `transferFrom`，单位 6 decimals
+- 加 `getMarketsPaged` 分页 view
+- `pendingPayout` 与 `claim` 共用 internal `_calcPayout`
+
+**Round 2（Pyth API + 一致性 + 闭环）**：
+- ⭐ `resolve` 从 `updatePriceFeeds + getPriceUnsafe` 改为 **`parsePriceFeedUpdatesUnique`**——避免读 Pyth 全局最新价格被推到窗口外，从 Pyth 合约层保证返回价格在窗口内
+- ⭐ 明确 **revert（可重试） vs Invalid（永久终态）** 的边界
+- ⭐ 新增 `feeRecipientSnapshot` 字段——保证 owner 中途改 feeRecipient 不影响已存在市场
+- ⭐ 显式补充 `constructor` 签名 + 4 个零地址检查
+- 把"硬上限 100 active markets"改为"总数上限 1000"（marketCount 单调递增，原 100 上限会让项目永久无法新建市场）
+- 新增 `MAX_QUESTION_LEN = 200` 防 owner 误传超长字符串
+- 新增 `getDashboard(user, from, toExclusive)` 一次 RPC 拿首屏全部数据
+- `getMarketsPaged` 明确 `toExclusive` 半开区间
+- `resolve` 末尾退多付的 update fee（避免误转给 Pyth）
+- 错误名拆分：`PythUpdateFailed` → `InvalidOracleUpdate` + `InsufficientPythFee`
 
 ---
 
@@ -329,60 +440,109 @@ event Claimed(
 
 ### 5.2 数据流
 
-**读路径（首屏）**：
+**读路径（首屏，单次 RPC 调用）**：
 
 ```ts
-// 一次 multicall 拿首屏所需全部
-const [marketCount, markets, ...userStakes] = await multicall([
-  { contract, fn: 'marketCount' },
-  { contract, fn: 'getMarketsPaged', args: [0n, 100n] },
-  // 然后对返回的每个 market id 查 userStake + pendingPayout
+// 一次 contract.read.getDashboard 拿首屏所需全部
+const totalCount = await prediction.read.marketCount();
+const PAGE = 100n;
+const rows = await prediction.read.getDashboard([
+  userAddress,
+  0n,
+  totalCount > PAGE ? PAGE : totalCount, // toExclusive，半开
 ]);
+// rows: DashboardRow[] = { id, market, yesStake, noStake, claimed_, pendingPayout }
+// 前端在此基础上做客户端过滤：Active / My Positions / Resolved
+```
+
+如果合约层暂未提供 `getDashboard`（实现期间临时回退），用两阶段 multicall：
+
+```ts
+// 阶段 1：拿市场
+const markets = await prediction.read.getMarketsPaged([0n, count]);
+// 阶段 2：批量读用户态
+const calls = markets.map((_, i) => [
+  { ...prediction, fn: 'userStake',     args: [BigInt(i), user] },
+  { ...prediction, fn: 'pendingPayout', args: [BigInt(i), user] },
+  { ...prediction, fn: 'claimed',       args: [BigInt(i), user] },
+]).flat();
+const userData = await publicClient.multicall({ contracts: calls });
 ```
 
 **写路径**：
 
 ```ts
-// 首次：approve（建议 max，后续免）
+// === 首次：approve（独立交易，需用户确认） ===
 await usdc.write.approve([PREDICTION_ADDR, maxUint256]);
 
-// 下注
+// === 下注（独立交易，需用户第二次确认） ===
+// UI 必须明示这是「Step 2/2: Place Bet」，并展示 Approve 已完成状态
 await prediction.write.bet([id, isYes, parseUnits(amount, 6)]);
 
-// 结算（任何人，前端可在 resolveAfter 后展示"自动 Resolve"按钮）
-const priceUpdate = await pythHermes.getPriceFeedsUpdateData([priceId]);
-const updateFee   = await pyth.read.getUpdateFee([priceUpdate]);
-await prediction.write.resolve([id, priceUpdate], { value: updateFee });
+// === 结算（任何人可触发，但 MVP 期由 owner 运营脚本周期调用） ===
+const updateData = await pythHermes.getPriceFeedsUpdateData([priceId]);
+const updateFee  = await pyth.read.getUpdateFee([updateData]);
+await prediction.write.resolve([id, updateData], { value: updateFee });
+// 注意：updateFee 是 Pyth 用 native value 收取（Arc 上单位是 18 decimals 的 USDC raw wei）
+// 前端读余额做 18 decimals 解释；下注金额做 6 decimals 解释；千万别混用
 
-// 领奖
+// === 领奖 ===
 await prediction.write.claim([id]);
 ```
 
 ### 5.3 钱包与 chain 配置
 
+**注意：Arc 的 USDC 有双精度**。viem `nativeCurrency.decimals` 会传给 `wallet_addEthereumChain` 用于**钱包余额显示**——Arc 官方对钱包添加链推荐 **6 decimals**（用户体验上是 ERC-20 USDC 视角），但合约层 `msg.value` 仍是 **18 decimals**。我们用**两个独立常量**严格分离：
+
 ```ts
 // lib/chain.ts
 import { defineChain } from 'viem';
 
+/** 钱包/UI 展示用 USDC decimals（ERC-20 视角，匹配 Arc 钱包文档推荐） */
+export const USDC_DECIMALS = 6;
+
+/** 链上 native value（msg.value、tx.value、gas、Pyth update fee）的 raw wei decimals */
+export const NATIVE_VALUE_DECIMALS = 18;
+
 export const arcTestnet = defineChain({
   id: 5042002,
   name: 'Arc Testnet',
-  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 }, // ← native 18
+  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: USDC_DECIMALS }, // ← 6
   rpcUrls: { default: { http: ['https://rpc.testnet.arc.network'] } },
   blockExplorers: { default: { name: 'Arcscan', url: 'https://testnet.arcscan.app' } },
   contracts: {
     multicall3: {
-      address: '0xcA11bde05977b3631167028862bE2a173976CA11', // 部署前再用 cast 验证一次
-      // blockCreated: <部署时填入 Arc 上该合约部署的 block 号，提高 multicall 性能>
+      address: '0xcA11bde05977b3631167028862bE2a173976CA11', // 标准地址，部署前再用 cast 验证
+      // blockCreated: <部署时填入提高 multicall 性能>
     },
   },
   testnet: true,
 });
 ```
 
+**严格规则**（codex 实现时务必照搬）：
+
+```ts
+// ✅ USDC 余额（前端展示）：从 ERC-20 facade 读，按 USDC_DECIMALS 解释
+const balance = await usdc.read.balanceOf([user]);    // 6 decimals
+formatUnits(balance, USDC_DECIMALS);                  // 显示 "12.34"
+
+// ✅ 下注金额：完全用 USDC_DECIMALS
+parseUnits("10", USDC_DECIMALS);                      // 10_000_000n
+
+// ✅ Pyth update fee：完全用 NATIVE_VALUE_DECIMALS
+const fee = await pyth.read.getUpdateFee([updateData]);
+// fee 是 raw wei (18 decimals)，直接当 value 传给 resolve 调用
+await prediction.write.resolve([id, updateData], { value: fee });
+
+// ❌ 严禁：formatEther / parseEther（会用 18 decimals，前端展示数字会爆炸）
+// ❌ 严禁：把 ERC-20 余额和 native 余额相加显示给用户
+```
+
 - RainbowKit 配置自定义 chain
-- `wallet_addEthereumChain` UX：用 RainbowKit 自带流程；失败时引导用户到 `/connect` 手动添加
+- `wallet_addEthereumChain` UX：用 RainbowKit 自带流程；失败时引导用户到 `/connect` 手动添加（页面贴出 chainId / RPC / symbol / explorer 让用户手动填）
 - SSR：钱包 provider 用 client-only（Next.js App Router `'use client'`），避免 hydration mismatch
+- 主页钱包 pill 仅显示 **ERC-20 USDC 余额**（一个数字），不并列展示 native 余额——避免用户混淆
 
 ### 5.4 关键 UX 决策
 
@@ -394,7 +554,9 @@ export const arcTestnet = defineChain({
 | YES% bar | 数字旁加 tooltip："资金流向比例，非真实概率" |
 | 链不对 | 全局红条 + 一键 switch |
 | 交易失败 | viem 解码 revert reason → toast 中文化提示 |
-| Approve 体验 | 首次交易合并 approve + bet（用户点 Bet 后自动顺序触发两笔） |
+| Approve 体验 | **两步顺序交易**（不是一签）：用户在 Bet Modal 点 Confirm 后，UI 先展示 "Step 1/2: Approve USDC"，钱包确认后自动发起 "Step 2/2: Place Bet"。已 approve 过 max 的用户只看到 Step 2 |
+| 结算窗口指示 | 市场卡片在 resolveAfter 到达前显示倒计时；进入 [resolveAfter, +5min] 窗口时显示橙色 "Resolving Window Open"；窗口关闭后未 resolve 显示灰色 "Awaiting Resolution"（owner 运营脚本会自动跟进，但页面允许任何人手动触发） |
+| seed 流动性 | owner 用独立 seed 钱包给每个新市场双边各注 ~5 USDC，避免单边输方赢=Invalid 的死循环，让普通用户进来就有真实赔率 |
 
 ### 5.5 视觉
 
@@ -406,27 +568,36 @@ export const arcTestnet = defineChain({
 - 池子流向条（YES/NO 资金占比）作为差异化设计
 - 移动端响应式：market grid 在 < 640px 时单列
 
+**与 mockup 的语义对齐**：
+- mockup 显示的 "View on Arcscan" 链接 → 实现时改为指向 **合约页 / 用户地址过滤页**（无事件索引，无法精确链接到具体 bet/claim tx hash）
+- "Settle Price" / "Won/Lost" 状态 → 从 `Market.settlePrice` + `Market.outcome` + `claimed[id][user]` + 用户在赢方的 stake 综合派生
+- "Claim X USDC" 按钮 → 用 `pendingPayout(id, user)` 显示；点击触发 `claim(id)`
+
 ---
 
 ## 6. § 4 错误处理 / 安全 / 边缘案例
 
 ### 6.1 边缘案例处理表
 
-| 场景 | 行为 |
+| 场景 | 行为（revert / Invalid 边界已严格区分） |
 |---|---|
 | 0 注市场到期 | resolve 写 `outcome = Invalid` + emit Resolved |
 | 单边市场 + 该边赢（winningPool > 0, losingPool == 0） | 正常 claim，每人拿回本金（无利润） |
 | 单边市场 + 该边输（winningPool == 0, losingPool > 0） | `outcome = Invalid`，losingPool 全额退款 |
-| oracle updatePriceFeeds revert | 整个 resolve 调用 revert（不消耗状态），可重试 |
-| oracle 返回 price ≤ 0 | `outcome = Invalid` |
-| oracle publishTime ∉ [resolveAfter, +5min] | `outcome = Invalid` |
+| **updateData 错 / fee 不足 / Pyth 合约层 revert** | resolve 整个 **revert**（状态不变，可换新 updateData 重试） |
+| Pyth 正常返回但 price ≤ 0 | `outcome = Invalid`（防御性，正常不会发生） |
+| Pyth 正常返回但 expo 不匹配 thresholdExpo | `outcome = Invalid`（owner 创建时参数错或 Pyth 改 expo） |
+| 窗口外尝试 resolve（now < resolveAfter） | revert `NotResolvableYet`（不是 Invalid，可重试） |
+| **窗口超期但仍可拉到窗口内 Pyth update（hermes 历史回溯）** | 允许任何人拉历史 updateData 并 resolve（Pyth `parsePriceFeedUpdatesUnique` 接受历史更新） |
 | 重复 claim | revert `AlreadyClaimed` |
-| 没下注用户 claim | revert `NotAWinner`（或在 Invalid + 0 stake 时静默 payout=0） |
-| 重入攻击 | CEI（先置 claimed，再 transfer）+ 0.8.x 自带防护 |
+| 已下注但输方 claim | revert `NotAWinner`（含本金亏损） |
+| 从未下注用户 claim（任意 outcome） | revert `NoPayoutAvailable` |
+| 重入攻击 | CEI（先置 claimed，再 transfer）+ 0.8.x 自带防护 + 信任 USDC/Pyth |
 | 已结算后再 resolve | revert `AlreadyResolved` |
 | betDeadline 后下注 | revert `BettingClosed` |
-| owner 中途调 setFeeBps | 只影响新创建市场（feeBpsSnapshot 已在 createMarket 锁定） |
+| owner 中途调 setFeeBps / setFeeRecipient | 只影响新创建市场（snapshot 已锁定） |
 | 整数除法余尘 | 接受 dust loss 留合约（不维护"最后 claimer"逻辑） |
+| owner 部署后丢失私钥 | 已存在市场仍可正常 resolve（任何人触发）+ claim；新市场无法创建——MVP 可接受 |
 
 ### 6.2 前端错误处理
 
@@ -452,21 +623,35 @@ export const arcTestnet = defineChain({
 
 ### 6.4 部署清单（不算"安全"措施，但必做）
 
-- [ ] 部署前 cast 验证 Multicall3 在 Arc testnet 实际地址
-- [ ] 部署前 cast 验证 Pyth contract 在 Arc testnet 地址
-- [ ] 部署 script 自动落盘 ABI / 地址 / chain config 给前端
-- [ ] 部署后立即 `verify` 到 Arcscan
-- [ ] feeRecipient 设为 owner 地址（MVP）或独立 EOA
-- [ ] 用 `script/CreateMarket.s.sol` 创建 3-5 个初始市场作为冷启动
+**预部署**：
+- [ ] cast 验证 Multicall3 在 Arc testnet 部署（应在 `0xcA11...CA11`）
+- [ ] cast 验证 Pyth contract 在 Arc testnet 部署，确定实际地址
+- [ ] 从 Pyth `price-feeds.json` 拿到 BTC/USD、ETH/USD 的真实 `bytes32 priceId`（同一 feed 各链通用）
+- [ ] 用 Pyth Hermes 端点拿一次真实 updateData，本地 forge test fork Arc testnet 跑通 `parsePriceFeedUpdatesUnique` 整条链路
+
+**部署**：
+- [ ] 用 `script/Deploy.s.sol` 部署 PredictionMarket，构造参数 = (USDC, PYTH, ownerEOA, feeRecipientEOA)
+- [ ] feeRecipient 设为独立 EOA（不是 owner 同地址）便于审计资金流
+- [ ] 部署 script 自动落盘 `web/lib/addresses.ts` + `web/lib/abis/PredictionMarket.json`
+
+**部署后**：
+- [ ] 立即 `verify` 到 Arcscan（让用户能审计代码）
+- [ ] 用 `script/CreateMarket.s.sol` 创建 3-5 个初始市场
+- [ ] 用独立 **seed 钱包**给每个新市场双边各注 ~5 USDC（防止单边输方赢=Invalid 死循环；让普通用户进来就能看到双边赔率）
+- [ ] 配置运营脚本 cron（见 §7.6 ops 目录）：每 30 秒扫描 `marketCount`，对 `outcome == Unresolved && now >= resolveAfter` 的市场自动拉 Pyth updateData 并触发 resolve
 
 ### 6.5 显式接受的风险
 
-1. **owner 单一信任点**——owner 控制创建市场和费率，**但无法影响已存在市场的结算和提款**。MVP 可接受
+1. **owner 单一信任点**——owner 控制创建市场和费率，**但无法影响已存在市场的结算和提款**（feeBps + feeRecipient 创建时快照、resolve 任何人可触发、CEI claim）。MVP 可接受
 2. **单一 oracle 依赖**——Pyth 失效会让所有依赖它的市场进入 Invalid 退款（无资金损失，仅体验损失）
 3. **无紧急暂停**——故意。避免 owner 滥用暂停卡用户钱。代价：出 bug 时无法干预
 4. **dust loss**——余尘归合约（单市场 < $0.000001，可忽略）
 5. **历史保留**——3 个月以上 Bet 事件可能因 RPC log retention 而无法恢复
-6. **冷启动**——testnet USDC 是稀缺资源，初期可能用户少。靠 faucet 链接和低门槛 0.1 USDC min bet 缓解
+6. **冷启动**——testnet USDC 是稀缺资源，初期可能用户少。靠 faucet 链接 + 0.1 USDC min bet + owner seed 双边流动性缓解
+7. **运营依赖**——MVP 期 resolve 由 owner cron 触发（前端任意人可触发但 testnet 用户没动力）。owner 中断运维 → 市场可能错过结算窗口 → Invalid 退款。可接受
+8. **历史总数上限**——`MAX_MARKETS = 1000` 是硬上限。按一周 5-10 个市场节奏，2-4 年可达上限。届时需新部署合约
+9. **Pyth update fee 由 resolver 出**——MVP 期 owner 承担；如未来开放 keeper 网络可加退款激励
+10. **`MAX_QUESTION_LEN = 200`**——题面太长会截断，前端按字符数提前校验
 
 ### 6.6 显式不做（YAGNI）
 
@@ -489,47 +674,59 @@ export const arcTestnet = defineChain({
 必须覆盖的测试场景：
 
 ```
+# constructor
+test_Constructor_RevertsOnZeroAddress
+test_Constructor_SetsImmutables
+
 # createMarket
 test_CreateMarket_RevertsIfTimesInPast
 test_CreateMarket_RevertsIfBetDeadlineGEResolveAfter
-test_CreateMarket_RevertsIfMarketLimitReached
-test_CreateMarket_EmitsEvent
-test_CreateMarket_SnapshotsCurrentFeeBps
+test_CreateMarket_RevertsIfMarketLimitReached       # marketCount == MAX_MARKETS
+test_CreateMarket_RevertsIfQuestionTooLong
+test_CreateMarket_RevertsIfPriceIdZero
+test_CreateMarket_EmitsEventWithSnapshots
+test_CreateMarket_SnapshotsCurrentFeeBpsAndRecipient # owner 改 feeRecipient 后旧市场不受影响
 
 # bet
 test_Bet_TransfersUSDCFromUser
-test_Bet_IncrementsPools
+test_Bet_IncrementsPoolsAndStakes
 test_Bet_RevertsIfBelowMinBet
 test_Bet_RevertsAfterDeadline
 test_Bet_RevertsIfAlreadyResolved
 test_Bet_AccumulatesMultipleBetsFromSameUser
 
-# resolve
+# resolve（Pyth parsePriceFeedUpdatesUnique 路径）
 test_Resolve_Yes_WhenPriceAboveThreshold
 test_Resolve_No_WhenPriceBelowThreshold
-test_Resolve_Invalid_OnPythRevert
-test_Resolve_Invalid_OnNegativePrice
-test_Resolve_Invalid_OnPriceOutsideWindow
-test_Resolve_Invalid_OnZeroTotalPool
-test_Resolve_Invalid_OnOneSidedLosingPool
+test_Resolve_YesAtExactThreshold                   # price == threshold 算 YES
 test_Resolve_RevertsIfBeforeResolveAfter
 test_Resolve_RevertsIfAlreadyResolved
-test_Resolve_TransfersFeeImmediately
+test_Resolve_RevertsOnPythParseRevert              # MockPyth 模拟 parsePriceFeedUpdatesUnique revert
+test_Resolve_RevertsOnInsufficientFee
+test_Resolve_Invalid_OnNegativePrice
+test_Resolve_Invalid_OnExpoMismatch
+test_Resolve_Invalid_OnZeroTotalPool
+test_Resolve_Invalid_OnOneSidedLosingPool
+test_Resolve_TransfersFeeToSnapshottedRecipient
+test_Resolve_RefundsExtraValueToCaller             # msg.value > updateFee 时退款
+test_Resolve_EmitsResolvedEvenOnInvalid
 
 # claim
 test_Claim_PayoutCorrect_YesWinner
 test_Claim_PayoutCorrect_NoWinner
-test_Claim_PayoutCorrect_OneSidedWinner（拿回本金，无利润）
+test_Claim_PayoutCorrect_OneSidedWinner            # 拿回本金，无利润
 test_Claim_FullRefund_InvalidOutcome
-test_Claim_RevertsForLoser
+test_Claim_RevertsForLoser                          # NotAWinner
+test_Claim_RevertsForNoStakeUser                    # NoPayoutAvailable
 test_Claim_RevertsIfNotResolved
 test_Claim_RevertsIfAlreadyClaimed
-test_Claim_PreventsReentrancy（用恶意 token mock）
+test_Claim_PreventsReentrancy                       # 用恶意 USDC mock
 
 # fuzz / invariant
-invariant_FundsConservation
-invariant_NoOverpayment
-invariant_PoolMath
+invariant_FundsConservation                         # balanceOf >= owed
+invariant_NoOverpayment                             # Σ winner payout <= winnerPool
+invariant_PoolMath                                  # yesPool + noPool = Σ stakes
+invariant_OnlyOwnerCanCreate                        # 无创建越权
 ```
 
 工具：`forge test` + invariant fuzzing（建议 ≥ 1000 runs）。
@@ -571,65 +768,89 @@ MVP 仅做**手动 QA**，不做 e2e 自动化（YAGNI）。
 
 | 里程碑 | 内容 | 估时 | 验收 |
 |---|---|---|---|
-| M1 | 合约编写 + Foundry 单测全过 | 3-4 天 | `forge test` 100% 通过；invariant fuzz 1000 runs 无异常 |
-| M2 | 部署到 Arc testnet + verify + 创建 3 个初始市场 | 1 天 | Arcscan 可读源码；3 个市场可见 |
-| M3 | 前端 MVP（连钱包、市场列表、Bet Modal、approve+bet） | 4-5 天 | 用户可完成 connect → approve → bet 全流程 |
-| M4 | 完整 UX（claim、resolved 区、faucet 提示、响应式） | 2-3 天 | 手动 QA 清单全过 |
-| M5 | 双 codex 并行 review 实现代码 + 修复 | 2 天 | 三方一致同意 |
-| M6 | Vercel 部署 + 最终回归 | 0.5 天 | 生产 URL 可访问，QA 清单复跑 |
+| M1 | 合约编写 + Foundry 单测 + invariant fuzz + MockPyth/MockUSDC | **4-5 天** | `forge test` 100% 通过；invariant fuzz ≥ 1000 runs 无异常 |
+| M2 | Arc testnet 部署 + verify + Pyth 地址确认 + seed 钱包准备 + 3 个初始市场 + 双边 seed 流动性 | **1.5-2 天** | Arcscan 源码可读；3 市场可见且 YES/NO 均非空 |
+| M3 | 前端核心闭环（连钱包、市场列表、Bet Modal **两步签名**、claim、resolved 区） | **5-6 天** | 用户可完成 connect → approve → bet → resolve → claim 全流程 |
+| M4 | 完整 UX（faucet 卡片、网络兜底页 `/connect`、深链 `/market/[id]`、响应式、移动端 QA） | **2-3 天** | 手动 QA 清单全过 |
+| M5 | 运营脚本（`ResolveDueMarkets.s.sol` + cron README） + 监控 | **1-1.5 天** | cron 自动结算到期市场无遗漏 |
+| M6 | 双 codex 并行 review 实现代码 + 修复 | **2-3 天** | 三方一致同意 |
+| M7 | Vercel 部署 + 最终回归 | **0.5 天** | 生产 URL 可访问，QA 清单复跑 |
 
-**总计：12.5-15.5 天**
+**总计：16-21 天**
+
+里程碑被低估的常见点：Pyth/Arc 联调（MockPyth 不等于真实 Pyth）、RainbowKit 自定义链 + 双 decimals 反复 debug、移动钱包深链 QA。
 
 ### 7.6 仓库结构（codex 实现时遵循）
 
 ```
 ArcPredict/
-├── contracts/                       # Foundry 项目根
+├── contracts/                            # Foundry 项目根
 │   ├── foundry.toml
+│   ├── remappings.txt                    # OpenZeppelin / forge-std / Pyth SDK 映射
+│   ├── .env.example                      # PRIVATE_KEY / RPC_URL / PYTH_ADDR / USDC_ADDR / FEE_RECIPIENT
 │   ├── src/
 │   │   ├── PredictionMarket.sol
 │   │   └── interfaces/
-│   │       └── IPyth.sol            # 简化版 Pyth interface
+│   │       └── IPyth.sol                 # Pyth Network EVM interface（含 PythStructs）
 │   ├── test/
 │   │   ├── PredictionMarket.t.sol
 │   │   ├── PredictionMarket.invariant.t.sol
 │   │   └── mocks/
-│   │       ├── MockUSDC.sol
-│   │       └── MockPyth.sol
+│   │       ├── MockUSDC.sol              # 6 decimals ERC-20，含恶意重入变体
+│   │       └── MockPyth.sol              # 可控制 parsePriceFeedUpdatesUnique 返回 / revert
 │   ├── script/
-│   │   ├── Deploy.s.sol
-│   │   └── CreateMarket.s.sol
-│   └── lib/                         # forge install 依赖
+│   │   ├── Deploy.s.sol                  # 部署 + 把地址写到 web/lib/addresses.ts
+│   │   ├── CreateMarket.s.sol            # owner 创建市场
+│   │   ├── SeedLiquidity.s.sol           # owner 双边各注 5 USDC 种子流动性
+│   │   └── ops/                          # 运营脚本（M5 里程碑）
+│   │       ├── ListMarkets.s.sol         # 列出市场 + 倒计时 + 状态
+│   │       ├── ListResolvable.s.sol      # 筛选可结算市场
+│   │       ├── ResolveDueMarkets.s.sol   # 拉 Pyth Hermes updateData + 批量 resolve
+│   │       └── README.md                 # cron + 监控指南（每 30s 跑一次）
+│   └── lib/                              # forge install 依赖（gitignored）
 │
-├── web/                             # Next.js 14 项目根
+├── web/                                  # Next.js 14 项目根
 │   ├── package.json
+│   ├── pnpm-lock.yaml                    # 或 package-lock.json
 │   ├── next.config.js
 │   ├── tailwind.config.ts
+│   ├── postcss.config.js
+│   ├── tsconfig.json
+│   ├── eslint.config.mjs
+│   ├── .env.example                      # NEXT_PUBLIC_WALLETCONNECT_ID / NEXT_PUBLIC_RPC_URL
 │   ├── app/
 │   │   ├── layout.tsx
-│   │   ├── providers.tsx            # RainbowKit / wagmi（client-only）
-│   │   ├── page.tsx                 # 主页
+│   │   ├── providers.tsx                 # RainbowKit / wagmi（client-only）
+│   │   ├── globals.css                   # Tailwind base + 设计 tokens（CSS 变量）
+│   │   ├── page.tsx                      # 主页
 │   │   ├── market/[id]/page.tsx
 │   │   └── connect/page.tsx
 │   ├── components/
 │   │   ├── MarketCard.tsx
-│   │   ├── BetModal.tsx
+│   │   ├── BetModal.tsx                  # 两步签名 UX
 │   │   ├── PositionList.tsx
 │   │   ├── ResolvedList.tsx
 │   │   ├── NetworkBanner.tsx
-│   │   └── WalletPill.tsx
+│   │   ├── WalletPill.tsx
+│   │   ├── FaucetCard.tsx
+│   │   └── ResolveCountdown.tsx
 │   ├── lib/
-│   │   ├── chain.ts                 # arcTestnet defineChain
-│   │   ├── contract.ts              # ABI + 地址
-│   │   ├── pyth.ts                  # Pyth Hermes 客户端
-│   │   └── format.ts                # USDC 6 decimals 格式化
+│   │   ├── chain.ts                      # arcTestnet defineChain + USDC_DECIMALS=6 / NATIVE_VALUE_DECIMALS=18
+│   │   ├── addresses.ts                  # 部署 script 自动生成
+│   │   ├── abis/
+│   │   │   ├── PredictionMarket.json
+│   │   │   ├── ERC20.json
+│   │   │   └── IPyth.json
+│   │   ├── pyth.ts                       # Pyth Hermes 客户端封装
+│   │   ├── format.ts                     # 6 decimals 格式化助手
+│   │   └── derivePosition.ts             # 把 DashboardRow 派生成 UI 状态（Won/Lost/Claimable/Claimed）
 │   └── public/
 │
 ├── mockups/
-│   └── preview.html                 # v0 视觉参考（含 Tweaks）
+│   └── preview.html                      # v0 视觉参考（含 Tweaks）
 │
 └── docs/superpowers/specs/
-    └── 2026-06-07-arc-predict-design.md   # 本文档
+    └── 2026-06-07-arc-predict-design.md  # 本文档
 ```
 
 ---
@@ -644,7 +865,8 @@ ArcPredict/
 - Oracles：https://docs.arc.io/arc/tools/oracles
 - Sample Applications：https://docs.arc.io/arc/references/sample-applications
 - Pyth Network EVM contracts：https://docs.pyth.network/price-feeds/core/contract-addresses/evm
-- ChainList Arc Testnet：https://chainlist.org/chain/1244
+- Pyth `parsePriceFeedUpdatesUnique`：https://api-reference.pyth.network/price-feeds/evm/parsePriceFeedUpdatesUnique
+- Pyth Hermes 端点：https://hermes.pyth.network/docs/
 
 ---
 
@@ -678,3 +900,41 @@ ArcPredict/
 | 维护"剩余 winning stake"为最后 claimer 兜余尘 | 复杂度高，dust loss 可接受 |
 | 新增 `NoLiquidity` 枚举 | 复用 Invalid 即可，少一种状态 |
 | 加紧急暂停 | 故意接受的风险，简洁换信任 |
+
+---
+
+### A.4 第二轮双 codex 评审（2026-06-07）
+
+针对整合修订后的 spec 全文做对抗性审查，两路独立 codex：
+
+- **Codex A**（合约审计 + 实施性）：**反对**。8 项 blocker，其中最严重的是 `updatePriceFeeds + getPriceUnsafe` 不能保证读到窗口内价格，应改用 `parsePriceFeedUpdatesUnique`
+- **Codex B**（实施 + 产品 + 运营闭环）：**有条件同意**。8 项 blocker，其中最严重的是 chain 配置 `decimals: 18` 与 Arc 钱包文档推荐的 `6` 不符、approve+bet 表述误导、运营闭环缺失
+
+### A.5 第二轮收敛后修订（已合并进文档）
+
+| # | 修订项 | 落点 |
+|---|---|---|
+| ① | Pyth 改用 `parsePriceFeedUpdatesUnique` 严格窗口取值 | §4.2 resolve / §6.1 / §7.1 |
+| ② | revert vs Invalid 边界明确化（可重试 vs 永久终态） | §4.2 / §6.1 |
+| ③ | ChainList 1244 链接误指向（非 Arc Testnet），删除 | §8 |
+| ④ | `MAX_MARKETS = 100` 实为总数，提到 1000 上限 + 文档措辞修正 | §3.2 / §3.3 / §4.1 |
+| ⑤ | 补 `constructor` 签名 + 零地址校验 | §4.1 |
+| ⑥ | 新增 `feeRecipientSnapshot` 字段（防 owner 中途改影响旧市场） | §4.1 / §4.2 / §6.1 |
+| ⑦ | claim 错误语义固定：NotAWinner vs NoPayoutAvailable | §4.2 / §6.1 |
+| ⑧ | chain `decimals: 6`，加 `NATIVE_VALUE_DECIMALS = 18` 严格分离 | §5.3 |
+| ⑨ | "approve+bet 合并签名" 改为明确的两步签名 UX | §5.4 |
+| ⑩ | 加 `getDashboard(user, from, toExclusive)` 一次 RPC 读首屏 | §4.2 / §5.2 |
+| ⑪ | 补运营脚本目录 `contracts/script/ops/*` + cron 流程 | §6.4 / §7.5 / §7.6 |
+| ⑫ | 加 seed 钱包双边流动性策略（每市场 ~5 USDC × 2） | §5.4 / §6.4 |
+| ⑬ | 仓库结构补 globals.css / tsconfig / postcss / .env.example / lib/abis/ / addresses.ts | §7.6 |
+| ⑭ | mockup UI 语义对齐（View on Arcscan → 用户地址过滤页） | §5.5 |
+| ⑮ | 估时从 12.5-15.5 天调整到 16-21 天 | §7.5 |
+
+### A.6 第二轮故意未采纳的建议
+
+| 建议 | 理由 |
+|---|---|
+| 给 question 改 IPFS hash | MVP 200 字符够用，链上字符串成本可控 |
+| 加 keeper 网络付 Pyth update fee | MVP 期 owner 单点运营足够 |
+| 拆 `getDashboard` 进多个 view | 单接口闭包性更好，gas 限制内能容纳 |
+| 给 feeBps 拆 setFeeBps + setFeeRecipient | 已经是分开的 |
