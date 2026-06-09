@@ -372,3 +372,71 @@ contract BetTest is PredictionMarketTestBase {
         market.userStake(99, alice);
     }
 }
+
+contract ResolveTest is PredictionMarketTestBase {
+    function _setupAndBet() internal returns (uint256 id) {
+        id = _makeMarket(70000_00000000, 24);
+
+        vm.prank(alice);
+        market.bet(id, true, 100_000_000);
+
+        vm.prank(bob);
+        market.bet(id, false, 50_000_000);
+    }
+
+    function _resolve(uint256 id, int64 price, uint64 ts) internal {
+        pyth.setNextPrice(price, EXPO_8, ts, 0);
+
+        bytes[] memory updateData = new bytes[](1);
+
+        vm.warp(ts + 1);
+        vm.deal(address(this), 1 ether);
+        market.resolve{value: 1 wei}(id, updateData);
+    }
+
+    function test_Resolve_Yes_WhenPriceAboveThreshold() public {
+        uint256 id = _setupAndBet();
+        PredictionMarket.Market memory mBefore = market.getMarket(id);
+
+        _resolve(id, 75000_00000000, mBefore.resolveAfter);
+
+        PredictionMarket.Market memory m = market.getMarket(id);
+        assertEq(uint8(m.outcome), uint8(PredictionMarket.Outcome.Yes));
+        assertEq(m.settlePrice, 75000_00000000);
+        assertEq(m.protocolFee, 500_000);
+        assertEq(m.winnerPool, 149_500_000);
+        assertEq(usdc.balanceOf(feeRecipient), 500_000);
+    }
+
+    function test_Resolve_No_WhenPriceBelowThreshold() public {
+        uint256 id = _setupAndBet();
+        PredictionMarket.Market memory mBefore = market.getMarket(id);
+
+        _resolve(id, 60000_00000000, mBefore.resolveAfter);
+
+        PredictionMarket.Market memory m = market.getMarket(id);
+        assertEq(uint8(m.outcome), uint8(PredictionMarket.Outcome.No));
+        assertEq(m.protocolFee, 1_000_000);
+        assertEq(m.winnerPool, 149_000_000);
+    }
+
+    function test_Resolve_YesAtExactThreshold() public {
+        uint256 id = _setupAndBet();
+        PredictionMarket.Market memory mBefore = market.getMarket(id);
+
+        _resolve(id, 70000_00000000, mBefore.resolveAfter);
+
+        assertEq(uint8(market.getMarket(id).outcome), uint8(PredictionMarket.Outcome.Yes));
+    }
+
+    function test_Bet_RevertsIfAlreadyResolved() public {
+        uint256 id = _setupAndBet();
+        PredictionMarket.Market memory mBefore = market.getMarket(id);
+
+        _resolve(id, 75000_00000000, mBefore.resolveAfter);
+
+        vm.prank(alice);
+        vm.expectRevert(PredictionMarket.AlreadyResolved.selector);
+        market.bet(id, true, 1_000_000);
+    }
+}

@@ -4,6 +4,7 @@ pragma solidity 0.8.24;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IPyth, PythStructs} from "./interfaces/IPyth.sol";
 
 /// @title ArcPredict 预测市场合约
 /// @notice 当前 task 仅提供状态骨架、事件、错误和构造函数
@@ -241,6 +242,73 @@ contract PredictionMarket is Ownable2Step {
         }
 
         emit Bet(id, msg.sender, yes, amount, m.yesPool, m.noPool);
+    }
+
+    function resolve(uint256 id, bytes[] calldata updateData) external payable {
+        if (id >= marketCount) revert InvalidMarketId();
+
+        Market storage m = _markets[id];
+        if (m.outcome != Outcome.Unresolved) revert AlreadyResolved();
+        if (block.timestamp < m.resolveAfter) revert NotResolvableYet();
+
+        uint256 fee = IPyth(PYTH).getUpdateFee(updateData);
+        if (msg.value < fee) revert InsufficientPythFee();
+
+        bytes32[] memory ids = new bytes32[](1);
+        ids[0] = m.pythPriceId;
+
+        PythStructs.PriceFeed[] memory feeds = IPyth(PYTH).parsePriceFeedUpdatesUnique{value: fee}(
+            updateData, ids, m.resolveAfter, m.resolveAfter + ORACLE_WINDOW
+        );
+        PythStructs.Price memory p = feeds[0].price;
+
+        bool isInvalid;
+        if (p.price <= 0) {
+            isInvalid = true;
+        } else if (p.expo != m.thresholdExpo) {
+            isInvalid = true;
+        } else if (m.yesPool + m.noPool == 0) {
+            isInvalid = true;
+        }
+
+        Outcome outcome;
+        uint128 winningPool;
+        uint128 losingPool;
+
+        if (!isInvalid) {
+            outcome = p.price >= m.threshold ? Outcome.Yes : Outcome.No;
+            winningPool = outcome == Outcome.Yes ? m.yesPool : m.noPool;
+            losingPool = outcome == Outcome.Yes ? m.noPool : m.yesPool;
+
+            if (winningPool == 0) {
+                isInvalid = true;
+                outcome = Outcome.Invalid;
+            }
+        }
+
+        if (isInvalid) {
+            outcome = Outcome.Invalid;
+        }
+
+        m.outcome = outcome;
+
+        if (outcome != Outcome.Invalid) {
+            m.settlePrice = p.price;
+            m.settleTime = uint64(p.publishTime);
+            m.protocolFee = uint128(uint256(losingPool) * m.feeBpsSnapshot / 10_000);
+            m.winnerPool = winningPool + losingPool - m.protocolFee;
+
+            if (m.protocolFee > 0) {
+                IERC20(USDC).safeTransfer(m.feeRecipientSnapshot, m.protocolFee);
+            }
+        }
+
+        emit Resolved(id, m.outcome, m.settlePrice, m.settleTime, m.winnerPool, m.protocolFee);
+
+        if (msg.value > fee) {
+            (bool ok,) = msg.sender.call{value: msg.value - fee}("");
+            if (!ok) revert RefundFailed();
+        }
     }
 
     function userStake(uint256 id, address u) external view returns (uint128 yes_, uint128 no_) {
