@@ -126,4 +126,149 @@ contract CreateMarketTest is PredictionMarketTestBase {
             "x"
         );
     }
+
+    function test_CreateMarket_RevertsIfTimesInPast() public {
+        vm.prank(owner);
+        vm.expectRevert(PredictionMarket.TimesInPast.selector);
+        market.createMarket(
+            PRICE_ID_BTC,
+            70000_00000000,
+            EXPO_8,
+            uint64(block.timestamp),
+            uint64(block.timestamp + 1 minutes),
+            "BTC >= 70k"
+        );
+    }
+
+    function test_CreateMarket_RevertsIfInvalidTimeOrder() public {
+        uint64 betDeadline = uint64(block.timestamp + 1 days);
+
+        vm.prank(owner);
+        vm.expectRevert(PredictionMarket.InvalidTimeOrder.selector);
+        market.createMarket(PRICE_ID_BTC, 70000_00000000, EXPO_8, betDeadline, betDeadline, "BTC >= 70k");
+    }
+
+    function test_CreateMarket_RevertsIfQuestionTooLong() public {
+        string memory question = _questionWithLength(market.MAX_QUESTION_LEN() + 1);
+
+        vm.prank(owner);
+        vm.expectRevert(PredictionMarket.QuestionTooLong.selector);
+        market.createMarket(
+            PRICE_ID_BTC,
+            70000_00000000,
+            EXPO_8,
+            uint64(block.timestamp + 1 days),
+            uint64(block.timestamp + 1 days + 1 minutes),
+            question
+        );
+    }
+
+    function test_CreateMarket_RevertsIfPriceIdZero() public {
+        vm.prank(owner);
+        vm.expectRevert(PredictionMarket.InvalidPriceId.selector);
+        market.createMarket(
+            bytes32(0),
+            70000_00000000,
+            EXPO_8,
+            uint64(block.timestamp + 1 days),
+            uint64(block.timestamp + 1 days + 1 minutes),
+            "BTC >= 70k"
+        );
+    }
+
+    function test_CreateMarket_RevertsIfMarketLimitReached() public {
+        vm.store(address(market), bytes32(uint256(6)), bytes32(uint256(market.MAX_MARKETS())));
+
+        vm.prank(owner);
+        vm.expectRevert(PredictionMarket.MarketLimitReached.selector);
+        market.createMarket(
+            PRICE_ID_BTC,
+            70000_00000000,
+            EXPO_8,
+            uint64(block.timestamp + 1 days),
+            uint64(block.timestamp + 1 days + 1 minutes),
+            "BTC >= 70k"
+        );
+    }
+
+    function test_CreateMarket_SnapshotsFeeAcrossOwnerChange() public {
+        vm.prank(owner);
+        uint256 firstId = market.createMarket(
+            PRICE_ID_BTC,
+            70000_00000000,
+            EXPO_8,
+            uint64(block.timestamp + 1 days),
+            uint64(block.timestamp + 1 days + 1 minutes),
+            "BTC >= 70k"
+        );
+
+        vm.startPrank(owner);
+        market.setFeeBps(300);
+        market.setFeeRecipient(alice);
+        uint256 secondId = market.createMarket(
+            PRICE_ID_BTC,
+            71000_00000000,
+            EXPO_8,
+            uint64(block.timestamp + 2 days),
+            uint64(block.timestamp + 2 days + 1 minutes),
+            "BTC >= 71k"
+        );
+        vm.stopPrank();
+
+        PredictionMarket.Market memory firstMarket = market.getMarket(firstId);
+        PredictionMarket.Market memory secondMarket = market.getMarket(secondId);
+
+        assertEq(firstMarket.feeBpsSnapshot, 100);
+        assertEq(firstMarket.feeRecipientSnapshot, feeRecipient);
+        assertEq(secondMarket.feeBpsSnapshot, 300);
+        assertEq(secondMarket.feeRecipientSnapshot, alice);
+    }
+
+    function test_SetFeeBps_OwnerCanUpdateFee() public {
+        vm.prank(owner);
+        market.setFeeBps(300);
+
+        assertEq(market.feeBps(), 300);
+    }
+
+    function test_SetFeeBps_RevertsIfFeeTooHigh() public {
+        uint16 tooHigh = market.MAX_FEE_BPS() + 1;
+
+        vm.prank(owner);
+        vm.expectRevert(PredictionMarket.FeeTooHigh.selector);
+        market.setFeeBps(tooHigh);
+    }
+
+    function test_SetFeeBps_NonOwnerReverts() public {
+        vm.prank(alice);
+        vm.expectRevert();
+        market.setFeeBps(300);
+    }
+
+    function test_SetFeeRecipient_OwnerCanUpdateRecipient() public {
+        vm.prank(owner);
+        market.setFeeRecipient(alice);
+
+        assertEq(market.feeRecipient(), alice);
+    }
+
+    function test_SetFeeRecipient_RevertsIfZeroAddress() public {
+        vm.prank(owner);
+        vm.expectRevert(PredictionMarket.ZeroAddress.selector);
+        market.setFeeRecipient(address(0));
+    }
+
+    function test_SetFeeRecipient_NonOwnerReverts() public {
+        vm.prank(alice);
+        vm.expectRevert();
+        market.setFeeRecipient(bob);
+    }
+
+    function _questionWithLength(uint256 length) internal pure returns (string memory) {
+        bytes memory questionBytes = new bytes(length);
+        for (uint256 i = 0; i < length; i++) {
+            questionBytes[i] = 0x61;
+        }
+        return string(questionBytes);
+    }
 }

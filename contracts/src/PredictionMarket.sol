@@ -164,6 +164,16 @@ contract PredictionMarket is Ownable2Step {
         );
     }
 
+    function setFeeBps(uint16 bps) external onlyOwner {
+        if (bps > MAX_FEE_BPS) revert FeeTooHigh();
+        feeBps = bps;
+    }
+
+    function setFeeRecipient(address r) external onlyOwner {
+        if (r == address(0)) revert ZeroAddress();
+        feeRecipient = r;
+    }
+
     function markets(uint256 id)
         external
         view
