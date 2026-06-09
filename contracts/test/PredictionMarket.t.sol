@@ -87,6 +87,11 @@ contract PredictionMarketSmokeTest is PredictionMarketTestBase {
 }
 
 contract CreateMarketTest is PredictionMarketTestBase {
+    function test_MarketsGetter_RevertsOnInvalidMarketId() public {
+        vm.expectRevert(PredictionMarket.InvalidMarketId.selector);
+        market.markets(0);
+    }
+
     function test_CreateMarket_HappyPath() public {
         vm.prank(owner);
         uint256 id = market.createMarket(

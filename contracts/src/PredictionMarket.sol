@@ -46,7 +46,7 @@ contract PredictionMarket is Ownable2Step {
     }
 
     // ============ 存储 ============
-    mapping(uint256 => Market) public markets;
+    mapping(uint256 => Market) private _markets;
     mapping(uint256 => mapping(address => uint128)) public yesStake;
     mapping(uint256 => mapping(address => uint128)) public noStake;
     mapping(uint256 => mapping(address => bool)) public claimed;
@@ -141,7 +141,7 @@ contract PredictionMarket is Ownable2Step {
         if (pythPriceId == bytes32(0)) revert InvalidPriceId();
 
         id = marketCount++;
-        Market storage m = markets[id];
+        Market storage m = _markets[id];
         m.pythPriceId = pythPriceId;
         m.threshold = threshold;
         m.thresholdExpo = thresholdExpo;
@@ -164,8 +164,51 @@ contract PredictionMarket is Ownable2Step {
         );
     }
 
+    function markets(uint256 id)
+        external
+        view
+        returns (
+            bytes32 pythPriceId,
+            int64 threshold,
+            int32 thresholdExpo,
+            uint64 betDeadline,
+            uint64 resolveAfter,
+            uint128 yesPool,
+            uint128 noPool,
+            uint128 winnerPool,
+            uint128 protocolFee,
+            uint16 feeBpsSnapshot,
+            address feeRecipientSnapshot,
+            Outcome outcome,
+            int64 settlePrice,
+            uint64 settleTime,
+            string memory question
+        )
+    {
+        if (id >= marketCount) revert InvalidMarketId();
+
+        Market storage m = _markets[id];
+        return (
+            m.pythPriceId,
+            m.threshold,
+            m.thresholdExpo,
+            m.betDeadline,
+            m.resolveAfter,
+            m.yesPool,
+            m.noPool,
+            m.winnerPool,
+            m.protocolFee,
+            m.feeBpsSnapshot,
+            m.feeRecipientSnapshot,
+            m.outcome,
+            m.settlePrice,
+            m.settleTime,
+            m.question
+        );
+    }
+
     function getMarket(uint256 id) external view returns (Market memory) {
         if (id >= marketCount) revert InvalidMarketId();
-        return markets[id];
+        return _markets[id];
     }
 }
