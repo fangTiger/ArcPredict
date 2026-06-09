@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Test} from "forge-std/Test.sol";
 import {PredictionMarket} from "../src/PredictionMarket.sol";
 
@@ -37,8 +36,8 @@ contract PredictionMarketSkeletonTest is Test {
         _deploy(usdc, pyth, initialOwner, address(0));
     }
 
-    function test_Constructor_RevertsOnZeroOwner_PerOpenZeppelinV5Behavior() external {
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableInvalidOwner.selector, address(0)));
+    function test_Constructor_RevertsOnZeroOwner() external {
+        vm.expectRevert(PredictionMarket.ZeroAddress.selector);
         _deploy(usdc, pyth, address(0), initialFeeRecipient);
     }
 

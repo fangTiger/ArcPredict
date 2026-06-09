@@ -4,12 +4,13 @@ pragma solidity 0.8.24;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IPyth, PythStructs} from "./interfaces/IPyth.sol";
 
 /// @title ArcPredict 预测市场合约
 /// @notice 当前 task 仅提供状态骨架、事件、错误和构造函数
 contract PredictionMarket is Ownable2Step {
     using SafeERC20 for IERC20;
+
+    address private constant OWNABLE_INIT_SENTINEL = address(1);
 
     // ============ 常量 ============
     uint256 public constant MAX_MARKETS = 1000;
@@ -111,8 +112,9 @@ contract PredictionMarket is Ownable2Step {
     error InvalidMarketId();
     error RefundFailed();
 
+    // 用非零占位值绕过 Ownable 构造前置校验，统一在本构造函数体内抛 ZeroAddress。
     constructor(address usdc, address pyth, address initialOwner, address initialFeeRecipient)
-        Ownable(initialOwner)
+        Ownable(initialOwner == address(0) ? OWNABLE_INIT_SENTINEL : initialOwner)
     {
         if (
             usdc == address(0) || pyth == address(0) || initialOwner == address(0)
