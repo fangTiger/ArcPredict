@@ -465,6 +465,7 @@ contract ResolveTest is PredictionMarketTestBase {
         assertEq(m.settleTime, 0);
         assertEq(m.protocolFee, 0);
         assertEq(m.winnerPool, 0);
+        assertEq(usdc.balanceOf(feeRecipient), 0);
     }
 
     function test_Resolve_Invalid_OnExpoMismatch() public {
@@ -485,6 +486,7 @@ contract ResolveTest is PredictionMarketTestBase {
         assertEq(m.settleTime, 0);
         assertEq(m.protocolFee, 0);
         assertEq(m.winnerPool, 0);
+        assertEq(usdc.balanceOf(feeRecipient), 0);
     }
 
     function test_Resolve_Invalid_OnOneSidedLosingPool() public {
@@ -502,6 +504,7 @@ contract ResolveTest is PredictionMarketTestBase {
         assertEq(m.settleTime, 0);
         assertEq(m.protocolFee, 0);
         assertEq(m.winnerPool, 0);
+        assertEq(usdc.balanceOf(feeRecipient), 0);
     }
 
     function test_Resolve_EmitsResolvedEvenOnInvalid() public {
