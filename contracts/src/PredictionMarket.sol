@@ -221,4 +221,32 @@ contract PredictionMarket is Ownable2Step {
         if (id >= marketCount) revert InvalidMarketId();
         return _markets[id];
     }
+
+    function bet(uint256 id, bool yes, uint128 amount) external {
+        if (id >= marketCount) revert InvalidMarketId();
+
+        Market storage m = _markets[id];
+        if (m.outcome != Outcome.Unresolved) revert AlreadyResolved();
+        if (block.timestamp >= m.betDeadline) revert BettingClosed();
+        if (amount < MIN_BET) revert BelowMinBet();
+
+        IERC20(USDC).safeTransferFrom(msg.sender, address(this), amount);
+
+        if (yes) {
+            m.yesPool += amount;
+            yesStake[id][msg.sender] += amount;
+        } else {
+            m.noPool += amount;
+            noStake[id][msg.sender] += amount;
+        }
+
+        emit Bet(id, msg.sender, yes, amount, m.yesPool, m.noPool);
+    }
+
+    function userStake(uint256 id, address u) external view returns (uint128 yes_, uint128 no_) {
+        if (id >= marketCount) revert InvalidMarketId();
+
+        yes_ = yesStake[id][u];
+        no_ = noStake[id][u];
+    }
 }

@@ -272,3 +272,103 @@ contract CreateMarketTest is PredictionMarketTestBase {
         return string(questionBytes);
     }
 }
+
+contract BetTest is PredictionMarketTestBase {
+    event Bet(
+        uint256 indexed id,
+        address indexed user,
+        bool yes,
+        uint128 amount,
+        uint128 yesPoolAfter,
+        uint128 noPoolAfter
+    );
+
+    function test_Bet_HappyPath_Yes() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+
+        vm.expectEmit(true, true, false, true);
+        emit Bet(id, alice, true, 10_000_000, 10_000_000, 0);
+
+        vm.prank(alice);
+        market.bet(id, true, 10_000_000);
+
+        (uint128 yes, uint128 no) = market.userStake(id, alice);
+        assertEq(yes, 10_000_000);
+        assertEq(no, 0);
+
+        PredictionMarket.Market memory m = market.getMarket(id);
+        assertEq(m.yesPool, 10_000_000);
+        assertEq(m.noPool, 0);
+
+        assertEq(usdc.balanceOf(alice), INITIAL_USDC_BALANCE - 10_000_000);
+        assertEq(usdc.balanceOf(address(market)), 10_000_000);
+    }
+
+    function test_Bet_HappyPath_No() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+
+        vm.expectEmit(true, true, false, true);
+        emit Bet(id, bob, false, 8_000_000, 0, 8_000_000);
+
+        vm.prank(bob);
+        market.bet(id, false, 8_000_000);
+
+        (uint128 yes, uint128 no) = market.userStake(id, bob);
+        assertEq(yes, 0);
+        assertEq(no, 8_000_000);
+
+        PredictionMarket.Market memory m = market.getMarket(id);
+        assertEq(m.yesPool, 0);
+        assertEq(m.noPool, 8_000_000);
+
+        assertEq(usdc.balanceOf(bob), INITIAL_USDC_BALANCE - 8_000_000);
+        assertEq(usdc.balanceOf(address(market)), 8_000_000);
+    }
+
+    function test_Bet_AccumulatesSameUser() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+
+        vm.prank(alice);
+        market.bet(id, true, 3_000_000);
+
+        vm.prank(alice);
+        market.bet(id, true, 7_000_000);
+
+        (uint128 yes, uint128 no) = market.userStake(id, alice);
+        assertEq(yes, 10_000_000);
+        assertEq(no, 0);
+
+        PredictionMarket.Market memory m = market.getMarket(id);
+        assertEq(m.yesPool, 10_000_000);
+        assertEq(m.noPool, 0);
+    }
+
+    function test_Bet_RevertsIfInvalidMarketId() public {
+        vm.prank(alice);
+        vm.expectRevert(PredictionMarket.InvalidMarketId.selector);
+        market.bet(99, true, 10_000_000);
+    }
+
+    function test_Bet_RevertsIfBelowMinBet() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+
+        vm.prank(alice);
+        vm.expectRevert(PredictionMarket.BelowMinBet.selector);
+        market.bet(id, true, 1);
+    }
+
+    function test_Bet_RevertsAfterDeadline() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+
+        vm.warp(block.timestamp + 24 hours);
+
+        vm.prank(alice);
+        vm.expectRevert(PredictionMarket.BettingClosed.selector);
+        market.bet(id, true, 1_000_000);
+    }
+
+    function test_UserStake_RevertsIfInvalidMarketId() public {
+        vm.expectRevert(PredictionMarket.InvalidMarketId.selector);
+        market.userStake(99, alice);
+    }
+}
