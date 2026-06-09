@@ -91,10 +91,17 @@ if (!tsbuildIgnorePatterns.some((pattern) => gitignore.includes(pattern))) {
 
 const pageSource = readFileSync(resolve(webRoot, 'app/page.tsx'), 'utf8');
 const forbiddenPhrases = ['验证', '初始化', '后续 Phase', '当前页面仅用于'];
+const forbiddenTypographyTokens = ['tracking-', 'letterSpacing'];
 
 for (const phrase of forbiddenPhrases) {
   if (pageSource.includes(phrase)) {
     throw new Error(`占位页包含解释性文案: ${phrase}`);
+  }
+}
+
+for (const token of forbiddenTypographyTokens) {
+  if (pageSource.includes(token)) {
+    throw new Error(`占位页包含禁止的排版标记: ${token}`);
   }
 }
 
