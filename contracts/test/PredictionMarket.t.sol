@@ -13,6 +13,8 @@ contract PredictionMarketTestBase is Test {
 
     uint256 internal constant INITIAL_USDC_BALANCE = 1_000_000_000;
     uint256 internal constant INITIAL_NATIVE_BALANCE = 10 ether;
+    bytes32 public constant PRICE_ID_BTC = bytes32(uint256(1));
+    int32 public constant EXPO_8 = -8;
 
     address public owner = address(0xA001);
     address public feeRecipient = address(0xA002);
@@ -40,6 +42,11 @@ contract PredictionMarketTestBase is Test {
 }
 
 contract PredictionMarketSmokeTest is PredictionMarketTestBase {
+    function test_TestBase_DefinesMarketConstants() public pure {
+        assertEq(PRICE_ID_BTC, bytes32(uint256(1)));
+        assertEq(EXPO_8, -8);
+    }
+
     function test_Deployment_SetsImmutables() public view {
         assertEq(market.USDC(), address(usdc));
         assertEq(market.PYTH(), address(pyth));
