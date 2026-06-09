@@ -68,14 +68,19 @@ contract MockUSDCTest is Test {
     }
 
     function test_Transfer_MovesBalance() external {
+        uint256 amount = 750_000;
+
         mockUsdc.mint(alice, 2_000_000);
 
+        vm.expectEmit(true, true, false, true, address(mockUsdc));
+        emit Transfer(alice, bob, amount);
+
         vm.prank(alice);
-        bool ok = mockUsdc.transfer(bob, 750_000);
+        bool ok = mockUsdc.transfer(bob, amount);
 
         assertTrue(ok);
         assertEq(mockUsdc.balanceOf(alice), 1_250_000);
-        assertEq(mockUsdc.balanceOf(bob), 750_000);
+        assertEq(mockUsdc.balanceOf(bob), amount);
     }
 
     function test_Transfer_RevertsWhenBalanceIsInsufficient() external {
@@ -93,17 +98,22 @@ contract MockUSDCTest is Test {
     }
 
     function test_TransferFrom_DecreasesFiniteAllowance() external {
+        uint256 amount = 400_000;
+
         mockUsdc.mint(alice, 1_000_000);
 
         vm.prank(alice);
         mockUsdc.approve(spender, 600_000);
 
+        vm.expectEmit(true, true, false, true, address(mockUsdc));
+        emit Transfer(alice, bob, amount);
+
         vm.prank(spender);
-        bool ok = mockUsdc.transferFrom(alice, bob, 400_000);
+        bool ok = mockUsdc.transferFrom(alice, bob, amount);
 
         assertTrue(ok);
         assertEq(mockUsdc.balanceOf(alice), 600_000);
-        assertEq(mockUsdc.balanceOf(bob), 400_000);
+        assertEq(mockUsdc.balanceOf(bob), amount);
         assertEq(mockUsdc.allowance(alice, spender), 200_000);
     }
 
