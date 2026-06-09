@@ -82,4 +82,20 @@ for (const line of expectedEnvLines) {
   }
 }
 
+const gitignore = readFileSync(resolve(process.cwd(), '.gitignore'), 'utf8');
+const tsbuildIgnorePatterns = ['*.tsbuildinfo', 'web/tsconfig.tsbuildinfo'];
+
+if (!tsbuildIgnorePatterns.some((pattern) => gitignore.includes(pattern))) {
+  throw new Error('缺少 tsbuildinfo 忽略规则');
+}
+
+const pageSource = readFileSync(resolve(webRoot, 'app/page.tsx'), 'utf8');
+const forbiddenPhrases = ['验证', '初始化', '后续 Phase', '当前页面仅用于'];
+
+for (const phrase of forbiddenPhrases) {
+  if (pageSource.includes(phrase)) {
+    throw new Error(`占位页包含解释性文案: ${phrase}`);
+  }
+}
+
 console.log('脚手架检查通过');
