@@ -374,6 +374,15 @@ contract BetTest is PredictionMarketTestBase {
 }
 
 contract ResolveTest is PredictionMarketTestBase {
+    event Resolved(
+        uint256 indexed id,
+        PredictionMarket.Outcome outcome,
+        int64 settlePrice,
+        uint64 settleTime,
+        uint128 winnerPool,
+        uint128 protocolFee
+    );
+
     function _setupAndBet() internal returns (uint256 id) {
         id = _makeMarket(70000_00000000, 24);
 
@@ -427,6 +436,87 @@ contract ResolveTest is PredictionMarketTestBase {
         _resolve(id, 70000_00000000, mBefore.resolveAfter);
 
         assertEq(uint8(market.getMarket(id).outcome), uint8(PredictionMarket.Outcome.Yes));
+    }
+
+    function test_Resolve_Invalid_OnZeroTotalPool() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+        PredictionMarket.Market memory mBefore = market.getMarket(id);
+
+        _resolve(id, 75000_00000000, mBefore.resolveAfter);
+
+        PredictionMarket.Market memory m = market.getMarket(id);
+        assertEq(uint8(m.outcome), uint8(PredictionMarket.Outcome.Invalid));
+        assertEq(m.settlePrice, 0);
+        assertEq(m.settleTime, 0);
+        assertEq(m.protocolFee, 0);
+        assertEq(m.winnerPool, 0);
+        assertEq(usdc.balanceOf(feeRecipient), 0);
+    }
+
+    function test_Resolve_Invalid_OnNegativePrice() public {
+        uint256 id = _setupAndBet();
+        PredictionMarket.Market memory mBefore = market.getMarket(id);
+
+        _resolve(id, -1, mBefore.resolveAfter);
+
+        PredictionMarket.Market memory m = market.getMarket(id);
+        assertEq(uint8(m.outcome), uint8(PredictionMarket.Outcome.Invalid));
+        assertEq(m.settlePrice, 0);
+        assertEq(m.settleTime, 0);
+        assertEq(m.protocolFee, 0);
+        assertEq(m.winnerPool, 0);
+    }
+
+    function test_Resolve_Invalid_OnExpoMismatch() public {
+        uint256 id = _setupAndBet();
+        uint64 resolveAfter = market.getMarket(id).resolveAfter;
+
+        pyth.setNextPrice(75000_00000000, -6, resolveAfter, 0);
+
+        bytes[] memory updateData = new bytes[](1);
+
+        vm.warp(resolveAfter + 1);
+        vm.deal(address(this), 1 ether);
+        market.resolve{value: 1 wei}(id, updateData);
+
+        PredictionMarket.Market memory m = market.getMarket(id);
+        assertEq(uint8(m.outcome), uint8(PredictionMarket.Outcome.Invalid));
+        assertEq(m.settlePrice, 0);
+        assertEq(m.settleTime, 0);
+        assertEq(m.protocolFee, 0);
+        assertEq(m.winnerPool, 0);
+    }
+
+    function test_Resolve_Invalid_OnOneSidedLosingPool() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+
+        vm.prank(alice);
+        market.bet(id, false, 10_000_000);
+
+        PredictionMarket.Market memory mBefore = market.getMarket(id);
+        _resolve(id, 75000_00000000, mBefore.resolveAfter);
+
+        PredictionMarket.Market memory m = market.getMarket(id);
+        assertEq(uint8(m.outcome), uint8(PredictionMarket.Outcome.Invalid));
+        assertEq(m.settlePrice, 0);
+        assertEq(m.settleTime, 0);
+        assertEq(m.protocolFee, 0);
+        assertEq(m.winnerPool, 0);
+    }
+
+    function test_Resolve_EmitsResolvedEvenOnInvalid() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+        PredictionMarket.Market memory mBefore = market.getMarket(id);
+
+        pyth.setNextPrice(75000_00000000, EXPO_8, mBefore.resolveAfter, 0);
+
+        bytes[] memory updateData = new bytes[](1);
+
+        vm.warp(mBefore.resolveAfter + 1);
+        vm.deal(address(this), 1 ether);
+        vm.expectEmit(true, false, false, true);
+        emit Resolved(id, PredictionMarket.Outcome.Invalid, 0, 0, 0, 0);
+        market.resolve{value: 1 wei}(id, updateData);
     }
 
     function test_Bet_RevertsIfAlreadyResolved() public {
