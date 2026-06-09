@@ -39,6 +39,18 @@ contract PredictionMarketTestBase is Test {
             vm.deal(users[i], INITIAL_NATIVE_BALANCE);
         }
     }
+
+    function _makeMarket(int64 threshold, uint64 inHours) internal returns (uint256 id) {
+        vm.prank(owner);
+        id = market.createMarket(
+            PRICE_ID_BTC,
+            threshold,
+            EXPO_8,
+            uint64(block.timestamp + inHours * 1 hours),
+            uint64(block.timestamp + inHours * 1 hours + 1 minutes),
+            "Test market"
+        );
+    }
 }
 
 contract PredictionMarketSmokeTest is PredictionMarketTestBase {
@@ -71,5 +83,42 @@ contract PredictionMarketSmokeTest is PredictionMarketTestBase {
         assertEq(usdc.balanceOf(user), INITIAL_USDC_BALANCE);
         assertEq(usdc.allowance(user, address(market)), type(uint256).max);
         assertEq(user.balance, INITIAL_NATIVE_BALANCE);
+    }
+}
+
+contract CreateMarketTest is PredictionMarketTestBase {
+    function test_CreateMarket_HappyPath() public {
+        vm.prank(owner);
+        uint256 id = market.createMarket(
+            PRICE_ID_BTC,
+            70000_00000000,
+            EXPO_8,
+            uint64(block.timestamp + 1 days),
+            uint64(block.timestamp + 1 days + 1 minutes),
+            "BTC >= 70k"
+        );
+        assertEq(id, 0);
+        assertEq(market.marketCount(), 1);
+
+        PredictionMarket.Market memory m = market.getMarket(id);
+        assertEq(m.pythPriceId, PRICE_ID_BTC);
+        assertEq(m.threshold, 70000_00000000);
+        assertEq(m.thresholdExpo, EXPO_8);
+        assertEq(m.feeBpsSnapshot, 100);
+        assertEq(m.feeRecipientSnapshot, feeRecipient);
+        assertEq(uint8(m.outcome), uint8(PredictionMarket.Outcome.Unresolved));
+    }
+
+    function test_CreateMarket_NonOwnerReverts() public {
+        vm.prank(alice);
+        vm.expectRevert();
+        market.createMarket(
+            PRICE_ID_BTC,
+            70000_00000000,
+            EXPO_8,
+            uint64(block.timestamp + 1 days),
+            uint64(block.timestamp + 1 days + 1 minutes),
+            "x"
+        );
     }
 }

@@ -125,4 +125,47 @@ contract PredictionMarket is Ownable2Step {
         PYTH = pyth;
         feeRecipient = initialFeeRecipient;
     }
+
+    function createMarket(
+        bytes32 pythPriceId,
+        int64 threshold,
+        int32 thresholdExpo,
+        uint64 betDeadline,
+        uint64 resolveAfter,
+        string calldata question
+    ) external onlyOwner returns (uint256 id) {
+        if (marketCount >= MAX_MARKETS) revert MarketLimitReached();
+        if (betDeadline <= block.timestamp) revert TimesInPast();
+        if (resolveAfter <= betDeadline) revert InvalidTimeOrder();
+        if (bytes(question).length > MAX_QUESTION_LEN) revert QuestionTooLong();
+        if (pythPriceId == bytes32(0)) revert InvalidPriceId();
+
+        id = marketCount++;
+        Market storage m = markets[id];
+        m.pythPriceId = pythPriceId;
+        m.threshold = threshold;
+        m.thresholdExpo = thresholdExpo;
+        m.betDeadline = betDeadline;
+        m.resolveAfter = resolveAfter;
+        m.feeBpsSnapshot = feeBps;
+        m.feeRecipientSnapshot = feeRecipient;
+        m.question = question;
+
+        emit MarketCreated(
+            id,
+            pythPriceId,
+            threshold,
+            thresholdExpo,
+            betDeadline,
+            resolveAfter,
+            m.feeBpsSnapshot,
+            m.feeRecipientSnapshot,
+            question
+        );
+    }
+
+    function getMarket(uint256 id) external view returns (Market memory) {
+        if (id >= marketCount) revert InvalidMarketId();
+        return markets[id];
+    }
 }
