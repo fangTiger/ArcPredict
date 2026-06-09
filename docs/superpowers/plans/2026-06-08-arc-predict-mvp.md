@@ -1847,7 +1847,7 @@ contract ViewTest is PredictionMarketTestBase {
         assertEq(rows[0].yesStake, 10_000_000);
         assertEq(rows[0].noStake, 0);
         assertEq(rows[0].pendingPayout, 0);                      // Unresolved → 0
-        assertFalse(rows[0].claimed_);
+        assertFalse(rows[0].claimedFlag);
     }
 }
 ```
@@ -1969,6 +1969,10 @@ contract InvariantHandler is Test {
 
     function _actor(uint256 seed) internal view returns (address) { return actors[seed % 3]; }
 
+    // === 关键修订：handler 不再 try/catch 吞错 ===
+    // 原则：先用 pre-condition 过滤掉本就该失败的调用（前面 if return），
+    // 调用本身**必须成功**，否则就是合约真有问题 → invariant 该被 fuzzer 命中。
+
     function fuzz_bet(uint256 amount, uint8 side, uint256 actorSeed, uint256 marketIdSeed) external {
         if (market.marketCount() == 0) return;
         uint256 id = marketIdSeed % market.marketCount();
@@ -1979,23 +1983,27 @@ contract InvariantHandler is Test {
         if (m.outcome != PredictionMarket.Outcome.Unresolved) return;
         if (block.timestamp >= m.betDeadline) return;
         vm.prank(a);
-        try market.bet(id, side % 2 == 0, uint128(amount)) {
-            totalStaked += amount;
-        } catch {}
+        market.bet(id, side % 2 == 0, uint128(amount));          // 必须成功
+        totalStaked += amount;
     }
 
     function fuzz_claim(uint256 actorSeed, uint256 marketIdSeed) external {
         if (market.marketCount() == 0) return;
         uint256 id = marketIdSeed % market.marketCount();
         address a = _actor(actorSeed);
+        PredictionMarket.Market memory m = market.getMarket(id);
+        if (m.outcome == PredictionMarket.Outcome.Unresolved) return;
+        if (market.claimed(id, a)) return;
+        (uint128 ys, uint128 ns) = market.userStake(id, a);
+        if (ys == 0 && ns == 0) return;
+        if (m.outcome == PredictionMarket.Outcome.Yes && ys == 0) return;
+        if (m.outcome == PredictionMarket.Outcome.No  && ns == 0) return;
         uint256 before_ = usdc.balanceOf(a);
         vm.prank(a);
-        try market.claim(id) {
-            totalPaid += usdc.balanceOf(a) - before_;
-        } catch {}
+        market.claim(id);                                        // 必须成功
+        totalPaid += usdc.balanceOf(a) - before_;
     }
 
-    // 时间推进 + 强制 resolve，让 invariant 跑得动
     function timewarp_andResolve(uint8 marketIdSeed, int64 price) external {
         if (market.marketCount() == 0) return;
         uint256 id = marketIdSeed % market.marketCount();
@@ -2005,9 +2013,7 @@ contract InvariantHandler is Test {
         pyth.setNextPrice(price, m.thresholdExpo, m.resolveAfter, 0);
         bytes[] memory data = new bytes[](1);
         vm.deal(address(this), 1 ether);
-        try market.resolve{value: 1 wei}(id, data) {
-            // protocolFee 已立即转出，invariant 用 contract balance 衡量
-        } catch {}
+        market.resolve{value: 1 wei}(id, data);                  // 必须成功
     }
 }
 
