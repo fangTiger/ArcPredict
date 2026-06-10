@@ -176,3 +176,42 @@ launchctl print "gui/$(id -u)/com.arcpredict.ops.resolve"
 ### 4. 单个市场失败会不会卡住后续市场
 
 不会。脚本会对每个市场单独捕获错误，记录中文错误日志后继续扫描后续市场。
+
+## Phase 16+：TopUpSeeds（seed 钱包余额顶配）
+
+### 概述
+
+`TopUpSeeds.ts` 会扫描 `contracts/.env.seeds` 列出的全部 seed 钱包余额，并按 Phase 16+ spec §6.3 的阈值分类：
+
+- `healthy`：USDC `>= 50` 且 native `>= 0.01`
+- `needsTopup`：USDC `>= 5` 且 `< 50`，同时 native `>= 0.01`
+- `skipSeed`：USDC `< 5`，或 native `< 0.01`
+
+扫描结果会写到 `/tmp/arc-predict-topup-needed.json`，stdout 同时打印可直接复制粘贴到 Circle faucet 的地址清单，方便 owner 做日常顶配。
+
+### 手动执行
+
+```bash
+cd /path/to/ArcPredict/contracts/script/ops
+npm run topup
+```
+
+### 自动化（launchd 示例）
+
+本仓库只提供模板文件：`ops/launchd/com.arcpredict.ops.topup.plist`。复制到 `~/Library/LaunchAgents/` 后，先把 `WorkingDirectory` 替换成实际路径，再执行 bootstrap：
+
+```bash
+cp ops/launchd/com.arcpredict.ops.topup.plist ~/Library/LaunchAgents/
+launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.arcpredict.ops.topup.plist
+```
+
+- 频率：每 6 小时一次（`StartInterval=21600`）
+- 退出码：`0` 表示全部钱包无需顶配；`1` 表示存在 `needsTopup` 或 `skipSeed`，需要 owner 介入
+- 日常巡检：每天查看一次 `/tmp/arc-predict-topup-needed.json`；只要文件里还有待处理地址，就去 [Circle faucet](https://faucet.circle.com) 逐个领取 testnet native 和 USDC
+- 日志路径：stdout `/tmp/arc-predict-topup.log`，stderr `/tmp/arc-predict-topup.err.log`
+
+### faucet 自动化（层 2，待探测）
+
+Circle faucet 当前是带 captcha 的网页，没有公开 API。Phase 16+ 只落地层 1 半自动流程：脚本负责扫描余额、落盘 `/tmp/arc-predict-topup-needed.json`、并打印复制粘贴清单。
+
+后续若 owner 用浏览器 devtools 探明 form-post endpoint 且确认不存在 captcha 阻塞，才考虑补充层 2 自动化；在完成探测前，禁止把 faucet 流程描述成“已自动化”或假装脚本会自动领水。
