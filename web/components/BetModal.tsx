@@ -96,6 +96,7 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [currentApproveHash, setCurrentApproveHash] = useState<Hash | undefined>();
   const [currentBetHash, setCurrentBetHash] = useState<Hash | undefined>();
+  const [hasFreshApproval, setHasFreshApproval] = useState(false);
 
   const { address, chainId } = useAccount();
   const { switchChainAsync } = useSwitchChain();
@@ -141,9 +142,10 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
   const previewAmount = parsedAmount !== null && parsedAmount >= 0n ? parsedAmount : 0n;
   const allowanceRaw = typeof allowance === 'bigint' ? allowance : null;
   const balanceRaw = typeof balance === 'bigint' ? balance : null;
-  const readingAllowance = !!address && allowanceRaw === null;
+  const readingAllowance = !!address && allowanceRaw === null && !hasFreshApproval;
   const readingBalance = !!address && balanceRaw === null;
   const needsApprove =
+    !hasFreshApproval &&
     allowanceRaw !== null &&
     parsedAmount !== null &&
     parsedAmount > 0n &&
@@ -196,6 +198,10 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
       : 0n;
 
   useEffect(() => {
+    setHasFreshApproval(false);
+  }, [address]);
+
+  useEffect(() => {
     if (
       step !== 'approving' ||
       !currentApproveHash ||
@@ -207,6 +213,7 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
 
     setFeedback(null);
     setCurrentApproveHash(undefined);
+    setHasFreshApproval(true);
     setStep('betting');
     void refetchAllowance();
 
@@ -309,7 +316,7 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
     }
 
     if (readingAllowance) {
-      setFeedback('正在读取 USDC 授权，请稍候。');
+      setFeedback('正在确认是否需要 Approve，请稍候。');
       return;
     }
 
@@ -457,12 +464,6 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
         {readingBalance ? (
           <div className="mb-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-300">
             正在读取 USDC 余额，请稍候。
-          </div>
-        ) : null}
-
-        {readingAllowance ? (
-          <div className="mb-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-300">
-            正在读取 USDC 授权，请稍候。
           </div>
         ) : null}
 

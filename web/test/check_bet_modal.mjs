@@ -64,12 +64,38 @@ const assertSwitchChainReturns = (label, source) => {
   );
 };
 
+const assertNeedsApproveUsesFreshApproval = (label, source) => {
+  const pattern = new RegExp(
+    String.raw`const needsApprove =[\s\S]*?!hasFreshApproval[\s\S]*?allowanceRaw < parsedAmount;`,
+    'u',
+  );
+
+  assert(
+    pattern.test(source),
+    `${label} 的 needsApprove 必须考虑 !hasFreshApproval`,
+  );
+};
+
+const assertReadingAllowanceUsesFreshApproval = (label, source) => {
+  const pattern = new RegExp(
+    String.raw`const readingAllowance =[\s\S]*?allowanceRaw === null[\s\S]*?!hasFreshApproval;`,
+    'u',
+  );
+
+  assert(
+    pattern.test(source),
+    `${label} 的 readingAllowance 必须考虑 !hasFreshApproval`,
+  );
+};
+
 const betModal = readRequiredText('components/BetModal.tsx');
 
 assertUseClient('BetModal.tsx', betModal);
 assertReadHookHasChainId('BetModal.tsx', betModal, 'allowance');
 assertReadHookHasChainId('BetModal.tsx', betModal, 'balanceOf');
 assertSwitchChainReturns('BetModal.tsx', betModal);
+assertNeedsApproveUsesFreshApproval('BetModal.tsx', betModal);
+assertReadingAllowanceUsesFreshApproval('BetModal.tsx', betModal);
 
 assertIncludesAll('BetModal.tsx hooks', betModal, [
   'useAccount',
@@ -84,6 +110,7 @@ assertIncludesAll('BetModal.tsx allowance', betModal, [
   'args: address ? [address, PREDICTION_MARKET_ADDRESS] : undefined',
   'query: { enabled: !!address',
   'refetchAllowance',
+  '!hasFreshApproval',
 ]);
 
 assertIncludesAll('BetModal.tsx balance', betModal, [
@@ -97,6 +124,9 @@ assertIncludesAll('BetModal.tsx 独立交易状态', betModal, [
   'const betWrite = useWriteContract();',
   'currentApproveHash',
   'currentBetHash',
+  'hasFreshApproval',
+  'setHasFreshApproval(true)',
+  'setHasFreshApproval(false)',
   'hash: currentApproveHash',
   'hash: currentBetHash',
   'setCurrentApproveHash(undefined)',
@@ -136,12 +166,16 @@ assertIncludesAll('BetModal.tsx 最小下注与余额提示', betModal, [
   '0.1 USDC',
   '余额不足',
   '正在读取 USDC 余额',
-  '正在读取 USDC 授权',
   '正在确认是否需要 Approve',
   'https://faucet.circle.com',
   'Place Bet',
   'YES',
   'NO',
+]);
+
+assertIncludesAll('BetModal.tsx 地址切换重置授权', betModal, [
+  'setHasFreshApproval(false);',
+  '[address]',
 ]);
 
 assertIncludesAll('BetModal.tsx 切链后重新确认', betModal, [
@@ -162,6 +196,7 @@ assertExcludesAll('BetModal.tsx 不应把未就绪读数当作 0', betModal, [
   'const safeAmount = parsedAmount ?? 0n;',
   'const approveHash = approveWrite.data;',
   'const betHash = betWrite.data;',
+  '正在读取 USDC 授权，请稍候。',
 ]);
 
 console.log('bet modal 检查通过');
