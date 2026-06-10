@@ -42,6 +42,22 @@ test("README 提供 launchd 可执行配置", () => {
   assert.match(readme, /每 30 秒扫描一次/);
 });
 
+test("README 的 MarketScheduler runbook 覆盖 launchd/cron/systemd 等价配置", () => {
+  const marketSchedulerSection = readme.match(/## Phase 16\+：MarketScheduler[\s\S]*/)?.[0];
+  assert.ok(marketSchedulerSection, "缺少 Phase 16+：MarketScheduler 小节");
+
+  assert.match(marketSchedulerSection, /DRY_RUN=1 npm run schedule/);
+  assert.match(marketSchedulerSection, /com\.arcpredict\.ops\.schedule/);
+  assert.match(marketSchedulerSection, /\* \* \* \* \*[\s\S]*npm run schedule/);
+  assert.match(marketSchedulerSection, /arc-predict-schedule\.service/);
+  assert.match(marketSchedulerSection, /arc-predict-schedule\.timer/);
+  assert.match(
+    marketSchedulerSection,
+    /OnCalendar=\*-\*-\* \*:\*:00|OnUnitActiveSec=60s|每分钟触发一次/,
+  );
+  assert.match(marketSchedulerSection, /THRESHOLD_OFFSETS_PCT[\s\S]*长度覆盖[\s\S]*TARGET_ACTIVE/);
+});
+
 test("README 保留历史 update 与 forceInvalid 排障说明", () => {
   assert.match(readme, /窗口过期仍尝试 Hermes 历史 update/);
   assert.match(readme, /只有在 `resolveAfter \+ 7 天` 之后/);

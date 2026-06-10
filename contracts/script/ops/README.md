@@ -243,7 +243,7 @@ npm run schedule
 
 ### 自动化（launchd 示例）
 
-本仓库只提供模板文件：`ops/launchd/com.arcpredict.ops.schedule.plist`。复制 plist 后，先把 `WorkingDirectory` 替换成实际路径，再执行 bootstrap。
+本仓库只提交模板文件：`ops/launchd/com.arcpredict.ops.schedule.plist`，不在仓库脚本里直接运行 `launchctl`。需要接入 macOS 自动化时，由值班机把 plist 复制到 `~/Library/LaunchAgents/`，把 `WorkingDirectory` 替换成实际路径后，再手动执行 bootstrap。
 
 ```bash
 cp ops/launchd/com.arcpredict.ops.schedule.plist ~/Library/LaunchAgents/
@@ -251,6 +251,67 @@ launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.arcpredict.ops.sch
 ```
 
 - 频率：每 `60` 秒一次（`StartInterval=60`）
+- 标签：`com.arcpredict.ops.schedule`
+- 实际执行命令：`npm run schedule`
+
+### 自动化（cron 等价示例）
+
+传统 `cron` 没有 launchd 的 plist 模板，但可以用每分钟触发一次的方式达到同样节奏。下面示例会每分钟进入 `contracts/script/ops` 目录执行一次 `npm run schedule`。
+
+```cron
+* * * * * cd /path/to/ArcPredict/contracts/script/ops && /usr/bin/env bash -lc 'npm run schedule >> /var/log/arc-predict-schedule.log 2>&1'
+```
+
+说明：
+
+- 触发频率与 launchd 模板等价，都是每分钟一次。
+- 值班机落地时只需要替换仓库路径，不需要修改 `MarketScheduler.ts` 或 `package.json`。
+- 建议先手动执行一次 `DRY_RUN=1 npm run schedule`，确认 owner/seed 私钥、RPC 与配置都正确，再切到定时任务。
+
+### 自动化（systemd timer 等价示例）
+
+Linux 机器可以改用 `systemd timer`。下面的 `oneshot service + timer` 组合与 launchd/cron 的目标频率一致：每分钟执行一次 `npm run schedule`。
+
+`/etc/systemd/system/arc-predict-schedule.service`
+
+```ini
+[Unit]
+Description=ArcPredict market scheduler
+
+[Service]
+Type=oneshot
+WorkingDirectory=/path/to/ArcPredict/contracts/script/ops
+ExecStart=/usr/bin/env bash -lc 'npm run schedule >> /var/log/arc-predict-schedule.log 2>&1'
+```
+
+`/etc/systemd/system/arc-predict-schedule.timer`
+
+```ini
+[Unit]
+Description=Run ArcPredict market scheduler every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+AccuracySec=1s
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+启用方式：
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now arc-predict-schedule.timer
+systemctl list-timers arc-predict-schedule.timer
+```
+
+说明：
+
+- `OnCalendar=*-*-* *:*:00` 表示每分钟整秒触发一次；若你的环境统一用 `OnUnitActiveSec=60s` 也可以，目标仍然是每分钟执行一次 `npm run schedule`。
+- `arc-predict-schedule.service` 与 `arc-predict-schedule.timer` 只是一组等价模板文件名，不要求改仓库内任何脚本实现。
+- 无论使用 launchd、cron 还是 systemd，`scheduler.config.ts` 的校验语义都不变：`THRESHOLD_OFFSETS_PCT` 的长度覆盖 `TARGET_ACTIVE` 即可，不要求两者严格等长。
 
 ### 与现有 `resolve` 的关系
 
