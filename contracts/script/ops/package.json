@@ -5,7 +5,7 @@
   "scripts": {
     "resolve": "tsx ResolveDueMarkets.ts",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && tsx test/check_resolve_due_markets.ts"
+    "check": "npm run typecheck && tsx test/check_resolve_due_markets.ts && tsx test/check_readme.ts"
   },
   "dependencies": {
     "@pythnetwork/hermes-client": "^2.0.0",
