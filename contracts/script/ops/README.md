@@ -215,3 +215,49 @@ launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.arcpredict.ops.top
 Circle faucet 当前是带 captcha 的网页，没有公开 API。Phase 16+ 只落地层 1 半自动流程：脚本负责扫描余额、落盘 `/tmp/arc-predict-topup-needed.json`、并打印复制粘贴清单。
 
 后续若 owner 用浏览器 devtools 探明 form-post endpoint 且确认不存在 captcha 阻塞，才考虑补充层 2 自动化；在完成探测前，禁止把 faucet 流程描述成“已自动化”或假装脚本会自动领水。
+
+## Phase 16+：MarketScheduler（自动造单与 seed）
+
+### 概述
+
+`MarketScheduler.ts` 单次执行包含四步：
+
+1. `scanActiveMarkets`：读链上活跃市场并按 `(asset, cadence)` 归桶
+2. `computeGaps`：对照 `scheduler.config.ts` 的目标矩阵计算缺口
+3. `createMissingMarkets`：owner 钱包为缺口创建新市场
+4. `ensureSeedForMarkets`：seed 钱包池为未 seed 的市场补双边初始流动性
+
+### 配置（`scheduler.config.ts`）
+
+- 改菜单 = 改这个文件 = 重启 launchd
+- 启动时 `validateConfig` 会校验：每个 cadence 的 `betHours < resolveHours`、`THRESHOLD_OFFSETS_PCT` 的长度覆盖 `TARGET_ACTIVE`、总活跃目标数固定为 `26`
+- `PYTH_PRICE_ID` 与 `DEPLOY_BLOCK` 默认是占位值，部署前必须替换为真实值
+
+### 手动执行
+
+```bash
+cd /path/to/ArcPredict/contracts/script/ops
+DRY_RUN=1 npm run schedule
+npm run schedule
+```
+
+### 自动化（launchd 示例）
+
+本仓库只提供模板文件：`ops/launchd/com.arcpredict.ops.schedule.plist`。复制 plist 后，先把 `WorkingDirectory` 替换成实际路径，再执行 bootstrap。
+
+```bash
+cp ops/launchd/com.arcpredict.ops.schedule.plist ~/Library/LaunchAgents/
+launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.arcpredict.ops.schedule.plist
+```
+
+- 频率：每 `60` 秒一次（`StartInterval=60`）
+
+### 与现有 `resolve` 的关系
+
+`schedule` 与 `resolve` 共用 owner 私钥，但时间窗不重叠：`schedule` 只处理尚未到 `betDeadline` 的市场，`resolve` 只处理已到 `resolveAfter` 的市场。偶发 nonce 或 RPC 冲突时不引入文件锁，直接依赖下轮重试即可。
+
+### 故障
+
+- owner gas 不足：先停 `schedule`，补 owner 钱包原生 gas 后再恢复
+- seed 钱包 gas 不足：先停 `schedule`，补 seed 钱包原生 gas 后再恢复
+- Hermes 价格异常：先停 `schedule`，人工介入排查
