@@ -58,6 +58,21 @@ assertIncludesAll('market/[id]/page.tsx hooks', marketPage, [
   'zeroAddress',
 ]);
 
+assert(
+  marketPage.includes('MAX_MARKET_ID') || marketPage.includes('MAX_UINT256'),
+  'market/[id]/page.tsx 必须声明市场编号上界常量。',
+);
+
+assert(
+  marketPage.includes('parsed >= MAX_MARKET_ID') ||
+    marketPage.includes('idBn >= MAX_MARKET_ID') ||
+    marketPage.includes('parsed > MAX_MARKET_ID') ||
+    marketPage.includes('idBn > MAX_MARKET_ID') ||
+    marketPage.includes('parsed + 1n > MAX_MARKET_ID') ||
+    marketPage.includes('idBn + 1n > MAX_MARKET_ID'),
+  'market/[id]/page.tsx 必须对 uint256 上界做保护，避免 idBn + 1n 越界。',
+);
+
 assertExcludesAll('market/[id]/page.tsx 裸 BigInt 解析', marketPage, [
   'const idBn = BigInt(id);',
 ]);
@@ -104,6 +119,12 @@ assertMatches(
   '必须从 getDashboard 返回结果中提取首个 DashboardRow。',
 );
 
+assert(
+  marketPage.includes('isInvalidMarketError') ||
+    (marketPage.includes('invalidmarketid') && marketPage.includes('InvalidMarketId')),
+  'market/[id]/page.tsx 必须显式识别 InvalidMarketId 类错误。',
+);
+
 assertMatches(
   'market/[id]/page.tsx',
   marketPage,
@@ -113,9 +134,33 @@ assertMatches(
 
 assertIncludesAll('market/[id]/page.tsx 中文状态', marketPage, [
   '正在读取市场详情',
-  '市场详情读取失败',
   '未找到该市场',
   '市场编号无效',
+]);
+
+assertMatches(
+  'market/[id]/page.tsx',
+  marketPage,
+  /isError[\s\S]*未找到该市场/u,
+  'market/[id]/page.tsx 的错误分支需要把 InvalidMarketId 显示为“未找到该市场”。',
+);
+
+assertIncludesAll('market/[id]/page.tsx 业务文案', marketPage, [
+  '市场编号',
+  '当前网络',
+  '合约浏览器',
+  '网络与钱包排查',
+]);
+
+assertExcludesAll('market/[id]/page.tsx 禁止暴露实现细节', marketPage, [
+  '单市场深链视图',
+  'DashboardRow',
+  '仪表盘窗口',
+  '读取地址',
+  '刷新频率',
+  '5000 ms',
+  'zeroAddress}',
+  ': zeroAddress',
 ]);
 
 assertIncludesAll('connect/page.tsx Arc 网络', connectPage, [

@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import type { Abi } from 'viem';
-import { zeroAddress } from 'viem';
+import { maxUint256, zeroAddress } from 'viem';
 import { useAccount, useReadContract } from 'wagmi';
 import { BetModal } from '@/components/BetModal';
 import { MarketCard } from '@/components/MarketCard';
@@ -13,13 +13,14 @@ import { WalletPill } from '@/components/WalletPill';
 import PredictionMarketAbi from '@/lib/abis/PredictionMarket.json';
 import { PREDICTION_MARKET_ADDRESS } from '@/lib/addresses';
 import { arcTestnet } from '@/lib/chain';
-import type { DashboardRow } from '@/lib/derivePosition';
 
 const predictionMarketAbi = PredictionMarketAbi as Abi;
+const MAX_MARKET_ID = maxUint256;
 
-type DashboardResult = readonly [DashboardRow[], bigint];
+type MarketRow = ComponentProps<typeof MarketCard>['row'];
+type DashboardResult = readonly [MarketRow[], bigint];
 type BetSelection = {
-  row: DashboardRow;
+  row: MarketRow;
   side: boolean;
 };
 
@@ -31,10 +32,40 @@ function parseMarketId(value: string | undefined): bigint | null {
   }
 
   try {
-    return BigInt(trimmed);
+    const parsed = BigInt(trimmed);
+
+    if (parsed >= MAX_MARKET_ID) {
+      return null;
+    }
+
+    return parsed;
   } catch {
     return null;
   }
+}
+
+function isInvalidMarketError(error: unknown): boolean {
+  const maybeError = error as {
+    name?: string;
+    shortMessage?: string;
+    message?: string;
+    cause?: { message?: string };
+  };
+  const combined = [
+    maybeError.name,
+    maybeError.shortMessage,
+    maybeError.message,
+    maybeError.cause?.message,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return combined.includes('invalidmarketid');
+}
+
+function shortAddress(address: string) {
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
 export default function MarketDetailPage() {
@@ -46,7 +77,7 @@ export default function MarketDetailPage() {
   const [betting, setBetting] = useState<BetSelection | null>(null);
   const readArgs = idBn === null ? undefined : [user, idBn, idBn + 1n];
 
-  const { data, isLoading, isError, refetch } = useReadContract({
+  const { data, error, isLoading, isError, refetch } = useReadContract({
     address: PREDICTION_MARKET_ADDRESS,
     abi: predictionMarketAbi,
     functionName: 'getDashboard',
@@ -57,6 +88,9 @@ export default function MarketDetailPage() {
 
   const dashboardData = data as DashboardResult | undefined;
   const row = dashboardData?.[0]?.[0];
+  const marketMissing = isInvalidMarketError(error);
+  const walletStatus = address ? '已连接' : '未连接';
+  const contractAddressLabel = shortAddress(PREDICTION_MARKET_ADDRESS);
 
   return (
     <>
@@ -88,7 +122,7 @@ export default function MarketDetailPage() {
             </section>
           ) : isError ? (
             <section className="rounded-lg border border-no/35 bg-no/10 p-5 text-sm text-no">
-              市场详情读取失败，请检查网络后重试。
+              {marketMissing ? '未找到该市场，请返回首页查看其他市场。' : '市场详情读取失败，请检查网络后重试。'}
             </section>
           ) : !row ? (
             <section className="rounded-lg border border-white/10 bg-surface p-5 text-sm text-zinc-300">
@@ -100,21 +134,15 @@ export default function MarketDetailPage() {
                 <section className="rounded-lg border border-white/10 bg-surface p-5">
                   <div className="flex flex-col gap-4 border-b border-white/10 pb-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="max-w-2xl">
-                      <div className="font-mono text-xs text-zinc-500">
-                        仪表盘窗口 {dashboardData?.[1].toString() ?? '0'}
-                      </div>
-                      <h2 className="mt-2 text-lg font-semibold text-white">
-                        单市场深链视图
-                      </h2>
+                      <div className="font-mono text-xs text-zinc-500">市场编号 #{idBn.toString()}</div>
+                      <h2 className="mt-2 text-lg font-semibold text-white">市场详情</h2>
                       <p className="mt-2 text-sm leading-6 text-zinc-400">
-                        这里固定读取当前市场的一条 DashboardRow，保留和首页一致的下注入口与刷新节奏，便于分享链接后直接落到可操作的详情页。
+                        这里展示市场题目、池子状态和下注入口，适合从分享链接直接进入查看或继续操作。
                       </p>
                     </div>
                     <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300">
-                      <div>钱包视图：{address ? '已连接' : '访客模式'}</div>
-                      <div className="mt-1 font-mono text-xs text-zinc-500">
-                        Chain ID {arcTestnet.id}
-                      </div>
+                      <div>当前网络：{arcTestnet.name}</div>
+                      <div className="mt-1 text-zinc-400">钱包状态：{walletStatus}</div>
                     </div>
                   </div>
 
@@ -129,21 +157,19 @@ export default function MarketDetailPage() {
 
               <aside className="space-y-6">
                 <section className="rounded-lg border border-white/10 bg-surface p-5">
-                  <h2 className="text-sm font-semibold text-white">当前读取参数</h2>
+                  <h2 className="text-sm font-semibold text-white">市场状态</h2>
                   <div className="mt-4 space-y-3 text-sm text-zinc-300">
                     <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
                       <span className="text-zinc-400">市场编号</span>
                       <span className="font-mono text-white">{idBn.toString()}</span>
                     </div>
                     <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
-                      <span className="text-zinc-400">读取地址</span>
-                      <span className="font-mono text-white">
-                        {address ? '已连接钱包' : zeroAddress}
-                      </span>
+                      <span className="text-zinc-400">当前网络</span>
+                      <span className="font-mono text-white">{arcTestnet.name}</span>
                     </div>
                     <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
-                      <span className="text-zinc-400">刷新频率</span>
-                      <span className="font-mono text-white">5000 ms</span>
+                      <span className="text-zinc-400">钱包状态</span>
+                      <span className="font-mono text-white">{walletStatus}</span>
                     </div>
                   </div>
                 </section>
@@ -165,7 +191,7 @@ export default function MarketDetailPage() {
                       className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 transition hover:border-white/20 hover:bg-white/10"
                     >
                       <span>合约浏览器</span>
-                      <span className="font-mono text-xs text-zinc-500">Arcscan</span>
+                      <span className="font-mono text-xs text-zinc-500">{contractAddressLabel}</span>
                     </a>
                   </div>
                 </section>
