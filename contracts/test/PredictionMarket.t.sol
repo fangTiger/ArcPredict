@@ -684,6 +684,19 @@ contract ForceInvalidTest is PredictionMarketTestBase {
         assertEq(market.pendingPayout(id, bob), 0);
     }
 
+    function test_ForceInvalid_AllowsAtExactDelayBoundary() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+        uint64 resolveAfter = market.getMarket(id).resolveAfter;
+
+        vm.warp(resolveAfter + market.FORCE_INVALID_DELAY());
+
+        vm.prank(carol);
+        market.forceInvalid(id);
+
+        PredictionMarket.Market memory mAfter = market.getMarket(id);
+        assertEq(uint8(mAfter.outcome), uint8(PredictionMarket.Outcome.Invalid));
+    }
+
     function test_ForceInvalid_RevertsBeforeDelay() public {
         uint256 id = _makeMarket(70000_00000000, 24);
         uint64 resolveAfter = market.getMarket(id).resolveAfter;
