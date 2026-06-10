@@ -40,9 +40,36 @@ const assertExcludesAll = (label, source, tokens) => {
   }
 };
 
+const assertReadHookHasChainId = (label, source, functionName) => {
+  const pattern = new RegExp(
+    String.raw`useReadContract\(\{[\s\S]*?functionName: '${functionName}'[\s\S]*?chainId: arcTestnet\.id[\s\S]*?\}\);`,
+    'u',
+  );
+
+  assert(
+    pattern.test(source),
+    `${label} 的 ${functionName} 读取必须显式指定 chainId: arcTestnet.id`,
+  );
+};
+
+const assertSwitchChainReturns = (label, source) => {
+  const pattern = new RegExp(
+    String.raw`await switchChainAsync\(\{ chainId: arcTestnet\.id \}\);\s+setFeedback\('切换到 Arc Testnet 后，请再次确认下注。'\);\s+return;`,
+    'u',
+  );
+
+  assert(
+    pattern.test(source),
+    `${label} 切链成功后必须停止当前提交流程，等待新链状态重算`,
+  );
+};
+
 const betModal = readRequiredText('components/BetModal.tsx');
 
 assertUseClient('BetModal.tsx', betModal);
+assertReadHookHasChainId('BetModal.tsx', betModal, 'allowance');
+assertReadHookHasChainId('BetModal.tsx', betModal, 'balanceOf');
+assertSwitchChainReturns('BetModal.tsx', betModal);
 
 assertIncludesAll('BetModal.tsx hooks', betModal, [
   'useAccount',
@@ -106,10 +133,17 @@ assertIncludesAll('BetModal.tsx 最小下注与余额提示', betModal, [
   'MIN_BET_RAW = 100000n',
   '0.1 USDC',
   '余额不足',
+  '正在读取 USDC 余额',
+  '正在读取 USDC 授权',
   'https://faucet.circle.com',
   'Place Bet',
   'YES',
   'NO',
+]);
+
+assertIncludesAll('BetModal.tsx 切链后重新确认', betModal, [
+  'await switchChainAsync({ chainId: arcTestnet.id });',
+  '切换到 Arc Testnet 后，请再次确认下注。',
 ]);
 
 assertExcludesAll('BetModal.tsx 样式约束', betModal, [
@@ -117,6 +151,12 @@ assertExcludesAll('BetModal.tsx 样式约束', betModal, [
   'rounded-xl',
   'tracking-',
   'letterSpacing',
+]);
+
+assertExcludesAll('BetModal.tsx 不应把未就绪读数当作 0', betModal, [
+  'const allowanceRaw = (allowance as bigint | undefined) ?? 0n;',
+  'const balanceRaw = (balance as bigint | undefined) ?? 0n;',
+  'const safeAmount = parsedAmount ?? 0n;',
 ]);
 
 console.log('bet modal 检查通过');

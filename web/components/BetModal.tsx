@@ -37,7 +37,9 @@ function safeParseUsdc(value: string): bigint | null {
   }
 
   try {
-    return parseUsdc(trimmed);
+    const parsed = parseUsdc(trimmed);
+
+    return parsed >= 0n ? parsed : null;
   } catch {
     return null;
   }
@@ -105,6 +107,7 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
     abi: erc20Abi,
     functionName: 'allowance',
     args: address ? [address, PREDICTION_MARKET_ADDRESS] : undefined,
+    chainId: arcTestnet.id,
     query: { enabled: !!address, refetchInterval: 10_000 },
   });
 
@@ -116,6 +119,7 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
     abi: erc20Abi,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
+    chainId: arcTestnet.id,
     query: { enabled: !!address, refetchInterval: 10_000 },
   });
 
@@ -135,10 +139,16 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
   });
 
   const parsedAmount = safeParseUsdc(amount);
-  const safeAmount = parsedAmount ?? 0n;
-  const allowanceRaw = (allowance as bigint | undefined) ?? 0n;
-  const balanceRaw = (balance as bigint | undefined) ?? 0n;
-  const needsApprove = parsedAmount !== null && parsedAmount > 0n && allowanceRaw < parsedAmount;
+  const previewAmount = parsedAmount !== null && parsedAmount >= 0n ? parsedAmount : 0n;
+  const allowanceRaw = typeof allowance === 'bigint' ? allowance : null;
+  const balanceRaw = typeof balance === 'bigint' ? balance : null;
+  const readingAllowance = !!address && allowanceRaw === null;
+  const readingBalance = !!address && balanceRaw === null;
+  const needsApprove =
+    allowanceRaw !== null &&
+    parsedAmount !== null &&
+    parsedAmount > 0n &&
+    allowanceRaw < parsedAmount;
   const wrongChain = !!address && chainId !== arcTestnet.id;
   const sideLabel = side ? 'YES' : 'NO';
 
@@ -160,7 +170,8 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
     return null;
   }, [amount, parsedAmount]);
 
-  const insufficientBalance = parsedAmount !== null && balanceRaw < parsedAmount;
+  const insufficientBalance =
+    balanceRaw !== null && parsedAmount !== null && balanceRaw < parsedAmount;
   const isPending =
     step !== 'idle' ||
     approveWrite.isPending ||
@@ -169,14 +180,21 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
     betReceipt.isLoading;
 
   const confirmDisabled =
-    !address || isPending || amountError !== null || insufficientBalance;
+    !address ||
+    isPending ||
+    amountError !== null ||
+    insufficientBalance ||
+    readingAllowance ||
+    readingBalance;
 
-  const totalPool = market.yesPool + market.noPool + safeAmount;
-  const winPool = side ? market.yesPool + safeAmount : market.noPool + safeAmount;
+  const totalPool = market.yesPool + market.noPool + previewAmount;
+  const winPool = side ? market.yesPool + previewAmount : market.noPool + previewAmount;
   const protocolFee =
     ((side ? market.noPool : market.yesPool) * BigInt(market.feeBpsSnapshot)) / 10000n;
   const impliedWin =
-    safeAmount > 0n && winPool > 0n ? (safeAmount * (totalPool - protocolFee)) / winPool : 0n;
+    previewAmount > 0n && winPool > 0n
+      ? (previewAmount * (totalPool - protocolFee)) / winPool
+      : 0n;
 
   useEffect(() => {
     if (step !== 'approving' || !approveReceipt.isSuccess || parsedAmount === null) {
@@ -272,6 +290,16 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
       return;
     }
 
+    if (readingBalance) {
+      setFeedback('正在读取 USDC 余额，请稍候。');
+      return;
+    }
+
+    if (readingAllowance) {
+      setFeedback('正在读取 USDC 授权，请稍候。');
+      return;
+    }
+
     if (insufficientBalance) {
       setFeedback('余额不足，无法下注。');
       return;
@@ -280,6 +308,8 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
     if (wrongChain) {
       try {
         await switchChainAsync({ chainId: arcTestnet.id });
+        setFeedback('切换到 Arc Testnet 后，请再次确认下注。');
+        return;
       } catch (error) {
         setStep('idle');
         setFeedback(humanizeError(error));
@@ -345,7 +375,9 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
           </div>
           <div className="text-right">
             <div className="mb-1 text-xs text-zinc-500">钱包余额</div>
-            <div className="font-mono text-sm text-white">{fmtUsdc(balanceRaw)} USDC</div>
+            <div className="font-mono text-sm text-white">
+              {balanceRaw === null ? '读取中...' : `${fmtUsdc(balanceRaw)} USDC`}
+            </div>
           </div>
         </div>
 
@@ -368,7 +400,7 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
         <div className="mb-3 grid grid-cols-2 gap-3 rounded-lg border border-white/10 bg-white/5 p-4">
           <div>
             <div className="mb-1 text-xs text-zinc-500">Your Stake</div>
-            <div className="font-mono text-sm text-white">{fmtUsdc(safeAmount)} USDC</div>
+            <div className="font-mono text-sm text-white">{fmtUsdc(previewAmount)} USDC</div>
           </div>
           <div>
             <div className="mb-1 text-xs text-zinc-500">Implied Win</div>
@@ -394,6 +426,18 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
         {amountError ? (
           <div className="mb-3 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
             {amountError}
+          </div>
+        ) : null}
+
+        {readingBalance ? (
+          <div className="mb-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-300">
+            正在读取 USDC 余额，请稍候。
+          </div>
+        ) : null}
+
+        {readingAllowance ? (
+          <div className="mb-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-300">
+            正在读取 USDC 授权，请稍候。
           </div>
         ) : null}
 
