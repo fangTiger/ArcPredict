@@ -311,6 +311,18 @@ contract PredictionMarket is Ownable2Step {
         }
     }
 
+    function forceInvalid(uint256 id) external {
+        if (id >= marketCount) revert InvalidMarketId();
+
+        Market storage m = _markets[id];
+        if (m.outcome != Outcome.Unresolved) revert AlreadyResolved();
+        if (block.timestamp < m.resolveAfter + FORCE_INVALID_DELAY) revert NotForceInvalidatableYet();
+
+        m.outcome = Outcome.Invalid;
+
+        emit Resolved(id, Outcome.Invalid, 0, 0, 0, 0);
+    }
+
     function _quotePayout(uint256 id, address user) internal view returns (uint256) {
         Market storage m = _markets[id];
         if (m.outcome == Outcome.Unresolved) return 0;

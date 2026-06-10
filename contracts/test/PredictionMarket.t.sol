@@ -623,6 +623,101 @@ contract ResolveTest is PredictionMarketTestBase {
     }
 }
 
+contract ForceInvalidTest is PredictionMarketTestBase {
+    event Resolved(
+        uint256 indexed id,
+        PredictionMarket.Outcome outcome,
+        int64 settlePrice,
+        uint64 settleTime,
+        uint128 winnerPool,
+        uint128 protocolFee
+    );
+
+    function _resolve(uint256 id, int64 price, uint64 ts) internal {
+        pyth.setNextPrice(price, EXPO_8, ts, 0);
+
+        bytes[] memory updateData = new bytes[](1);
+
+        vm.warp(ts + 1);
+        vm.deal(address(this), 1 ether);
+        market.resolve{value: 1 wei}(id, updateData);
+    }
+
+    function test_ForceInvalid_AfterDelay_AllowsAnyoneAndRefundsPrincipal() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+
+        vm.prank(alice);
+        market.bet(id, true, 10_000_000);
+
+        vm.prank(bob);
+        market.bet(id, false, 10_000_000);
+
+        PredictionMarket.Market memory mBefore = market.getMarket(id);
+        vm.warp(mBefore.resolveAfter + market.FORCE_INVALID_DELAY() + 1);
+
+        vm.expectEmit(true, false, false, true);
+        emit Resolved(id, PredictionMarket.Outcome.Invalid, 0, 0, 0, 0);
+
+        vm.prank(carol);
+        market.forceInvalid(id);
+
+        PredictionMarket.Market memory mAfter = market.getMarket(id);
+        assertEq(uint8(mAfter.outcome), uint8(PredictionMarket.Outcome.Invalid));
+        assertEq(mAfter.settlePrice, 0);
+        assertEq(mAfter.settleTime, 0);
+        assertEq(mAfter.winnerPool, 0);
+        assertEq(mAfter.protocolFee, 0);
+
+        assertEq(market.pendingPayout(id, alice), 10_000_000);
+        assertEq(market.pendingPayout(id, bob), 10_000_000);
+
+        uint256 aliceBefore = usdc.balanceOf(alice);
+        vm.prank(alice);
+        market.claim(id);
+        assertEq(usdc.balanceOf(alice) - aliceBefore, 10_000_000);
+        assertEq(market.pendingPayout(id, alice), 0);
+
+        uint256 bobBefore = usdc.balanceOf(bob);
+        vm.prank(bob);
+        market.claim(id);
+        assertEq(usdc.balanceOf(bob) - bobBefore, 10_000_000);
+        assertEq(market.pendingPayout(id, bob), 0);
+    }
+
+    function test_ForceInvalid_RevertsBeforeDelay() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+        uint64 resolveAfter = market.getMarket(id).resolveAfter;
+
+        vm.warp(resolveAfter + market.FORCE_INVALID_DELAY() - 1);
+        vm.prank(carol);
+        vm.expectRevert(PredictionMarket.NotForceInvalidatableYet.selector);
+        market.forceInvalid(id);
+    }
+
+    function test_ForceInvalid_RevertsIfAlreadyResolved() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+
+        vm.prank(alice);
+        market.bet(id, true, 10_000_000);
+
+        vm.prank(bob);
+        market.bet(id, false, 10_000_000);
+
+        uint64 resolveAfter = market.getMarket(id).resolveAfter;
+        _resolve(id, 75000_00000000, resolveAfter);
+
+        vm.warp(resolveAfter + market.FORCE_INVALID_DELAY() + 1);
+        vm.prank(carol);
+        vm.expectRevert(PredictionMarket.AlreadyResolved.selector);
+        market.forceInvalid(id);
+    }
+
+    function test_ForceInvalid_RevertsIfInvalidMarketId() public {
+        vm.expectRevert(PredictionMarket.InvalidMarketId.selector);
+        market.forceInvalid(99);
+    }
+}
+
 contract PendingPayoutTest is PredictionMarketTestBase {
     // 通过 `forge inspect PredictionMarket storage-layout` 确认 claimed 的 base slot 为 5。
     bytes32 internal constant CLAIMED_BASE_SLOT = bytes32(uint256(5));
