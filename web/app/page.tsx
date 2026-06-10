@@ -73,6 +73,7 @@ export default function HomePage() {
   });
 
   const dashboardData = data as DashboardLatestResult | undefined;
+  const dashboardLoaded = dashboardData !== undefined && !isLoading && !isError;
   const rows = dashboardData?.[0] ?? [];
   const totalCount = dashboardData?.[1] ?? 0n;
   const activeMarkets = rows.filter((row) => OUTCOMES[row.market.outcome] === 'Unresolved');
@@ -256,15 +257,27 @@ export default function HomePage() {
           <section className="grid gap-8 xl:grid-cols-2">
             <div>
               {isConnected ? (
-                <>
-                  <PositionList rows={rows} />
-                  {!hasPositionRows ? (
-                    <EmptyPanel
-                      title="我的持仓"
-                      body="你当前没有未结算仓位。连接钱包后，新下注的市场会在这里持续显示直到结算。"
-                    />
-                  ) : null}
-                </>
+                isError ? (
+                  <EmptyPanel
+                    title="我的持仓"
+                    body="个人仓位读取失败，请稍后重试。"
+                  />
+                ) : dashboardLoaded ? (
+                  <>
+                    <PositionList rows={rows} />
+                    {!hasPositionRows ? (
+                      <EmptyPanel
+                        title="我的持仓"
+                        body="你当前没有未结算仓位。新的下注会在这里持续显示直到结算。"
+                      />
+                    ) : null}
+                  </>
+                ) : (
+                  <EmptyPanel
+                    title="我的持仓"
+                    body="正在读取你的未结算仓位。"
+                  />
+                )
               ) : (
                 <EmptyPanel
                   title="我的持仓"
@@ -275,15 +288,27 @@ export default function HomePage() {
 
             <div>
               {isConnected ? (
-                <>
-                  <ResolvedList rows={rows} />
-                  {!hasResolvedRows ? (
-                    <EmptyPanel
-                      title="已结算市场"
-                      body="最近读取到的市场还没有结算结果。等链上完成结算后，这里会出现结果与领取动作。"
-                    />
-                  ) : null}
-                </>
+                isError ? (
+                  <EmptyPanel
+                    title="已结算市场"
+                    body="结算结果读取失败，请稍后重试。"
+                  />
+                ) : dashboardLoaded ? (
+                  <>
+                    <ResolvedList rows={rows} />
+                    {!hasResolvedRows ? (
+                      <EmptyPanel
+                        title="已结算市场"
+                        body="最近读取到的市场还没有结算结果。等链上完成结算后，这里会出现结果与领取动作。"
+                      />
+                    ) : null}
+                  </>
+                ) : (
+                  <EmptyPanel
+                    title="已结算市场"
+                    body="正在读取你的结算结果。"
+                  />
+                )
               ) : (
                 <EmptyPanel
                   title="已结算市场"

@@ -73,6 +73,11 @@ assertIncludesAll('page.tsx', pageSource, [
   '活跃总池',
   '已加载 / 总数',
   '钱包状态',
+  'dashboardLoaded',
+  '正在读取你的未结算仓位',
+  '正在读取你的结算结果',
+  '个人仓位读取失败',
+  '结算结果读取失败',
 ]);
 
 assertMatches(
@@ -113,15 +118,15 @@ assertMatches(
 assertMatches(
   'page.tsx',
   pageSource,
-  /isConnected\s*\?\s*\(\s*<>\s*<PositionList rows=\{rows\} \/>/u,
-  '个人化 PositionList 必须在已连接条件下才渲染。',
+  /dashboardLoaded\s*\?\s*\(\s*<>\s*<PositionList rows=\{rows\} \/>/u,
+  'PositionList 必须在 dashboardLoaded 后才渲染。',
 );
 
 assertMatches(
   'page.tsx',
   pageSource,
-  /isConnected\s*\?\s*\(\s*<>\s*<ResolvedList rows=\{rows\} \/>/u,
-  '个人化 ResolvedList 必须在已连接条件下才渲染。',
+  /dashboardLoaded\s*\?\s*\(\s*<>\s*<ResolvedList rows=\{rows\} \/>/u,
+  'ResolvedList 必须在 dashboardLoaded 后才渲染。',
 );
 
 assertIncludesAll('page.tsx', pageSource, [
@@ -144,6 +149,7 @@ assertExcludesAll('page.tsx', pageSource, [
   '首屏通过',
   '未连接时按空地址',
   '`getDashboardLatest(user, 100)`',
+  '连接钱包后，新下注',
 ]);
 
 const chineseCharCount = (pageSource.match(/[\u4e00-\u9fff]/gu) ?? []).length;
