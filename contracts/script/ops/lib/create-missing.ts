@@ -156,13 +156,13 @@ export async function createMissingMarkets(
   const logger = deps.logger ?? console;
   const created: CreatedMarket[] = [];
   const priceCache = new Map<Asset, Promise<number>>();
+  const nowSec = readNow(deps.now);
 
   for (const gap of gaps) {
     try {
       const currentPrice = await fetchPriceOnce(gap.asset, deps.hermes, priceCache);
       const human = humanThresholdFor(currentPrice, gap.offsetPct);
       const threshold = scaleHumanThreshold(human, deps.feedExpo);
-      const nowSec = readNow(deps.now);
       const duration = CADENCE_DURATION[gap.cadence];
       const betDeadline = BigInt(nowSec + duration.betHours * 3600);
       const resolveAfter = BigInt(nowSec + duration.resolveHours * 3600);
