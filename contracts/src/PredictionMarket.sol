@@ -46,6 +46,15 @@ contract PredictionMarket is Ownable2Step {
         string question;
     }
 
+    struct DashboardRow {
+        uint256 id;
+        Market market;
+        uint128 yesStake;
+        uint128 noStake;
+        bool claimed_;
+        uint256 pendingPayout;
+    }
+
     // ============ 存储 ============
     mapping(uint256 => Market) private _markets;
     mapping(uint256 => mapping(address => uint128)) public yesStake;
@@ -72,12 +81,7 @@ contract PredictionMarket is Ownable2Step {
     );
 
     event Bet(
-        uint256 indexed id,
-        address indexed user,
-        bool yes,
-        uint128 amount,
-        uint128 yesPoolAfter,
-        uint128 noPoolAfter
+        uint256 indexed id, address indexed user, bool yes, uint128 amount, uint128 yesPoolAfter, uint128 noPoolAfter
     );
 
     event Resolved(
@@ -117,10 +121,8 @@ contract PredictionMarket is Ownable2Step {
     constructor(address usdc, address pyth, address initialOwner, address initialFeeRecipient)
         Ownable(initialOwner == address(0) ? OWNABLE_INIT_SENTINEL : initialOwner)
     {
-        if (
-            usdc == address(0) || pyth == address(0) || initialOwner == address(0)
-                || initialFeeRecipient == address(0)
-        ) revert ZeroAddress();
+        if (usdc == address(0) || pyth == address(0) || initialOwner == address(0) || initialFeeRecipient == address(0))
+        revert ZeroAddress();
 
         USDC = usdc;
         PYTH = pyth;
@@ -221,6 +223,15 @@ contract PredictionMarket is Ownable2Step {
     function getMarket(uint256 id) external view returns (Market memory) {
         if (id >= marketCount) revert InvalidMarketId();
         return _markets[id];
+    }
+
+    function getMarketsPaged(uint256 from, uint256 toExclusive) external view returns (Market[] memory out) {
+        if (toExclusive > marketCount || from > toExclusive) revert InvalidMarketId();
+
+        out = new Market[](toExclusive - from);
+        for (uint256 i = 0; i < out.length; i++) {
+            out[i] = _markets[from + i];
+        }
     }
 
     function bet(uint256 id, bool yes, uint128 amount) external {
@@ -377,5 +388,47 @@ contract PredictionMarket is Ownable2Step {
         if (id >= marketCount) revert InvalidMarketId();
         if (claimed[id][u]) return 0;
         return _quotePayout(id, u);
+    }
+
+    function getDashboard(address user, uint256 from, uint256 toExclusive)
+        external
+        view
+        returns (DashboardRow[] memory rows, uint256 totalCount)
+    {
+        if (toExclusive > marketCount || from > toExclusive) revert InvalidMarketId();
+
+        totalCount = marketCount;
+        rows = new DashboardRow[](toExclusive - from);
+        for (uint256 i = 0; i < rows.length; i++) {
+            rows[i] = _dashboardRow(from + i, user);
+        }
+    }
+
+    function getDashboardLatest(address user, uint256 limit)
+        external
+        view
+        returns (DashboardRow[] memory rows, uint256 totalCount)
+    {
+        totalCount = marketCount;
+
+        uint256 count = limit;
+        if (count > totalCount) count = totalCount;
+
+        rows = new DashboardRow[](count);
+        for (uint256 i = 0; i < count; i++) {
+            rows[i] = _dashboardRow(totalCount - 1 - i, user);
+        }
+    }
+
+    function _dashboardRow(uint256 id, address user) internal view returns (DashboardRow memory row) {
+        bool claimed_ = claimed[id][user];
+        row = DashboardRow({
+            id: id,
+            market: _markets[id],
+            yesStake: yesStake[id][user],
+            noStake: noStake[id][user],
+            claimed_: claimed_,
+            pendingPayout: claimed_ ? 0 : _quotePayout(id, user)
+        });
     }
 }

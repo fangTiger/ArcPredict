@@ -275,12 +275,7 @@ contract CreateMarketTest is PredictionMarketTestBase {
 
 contract BetTest is PredictionMarketTestBase {
     event Bet(
-        uint256 indexed id,
-        address indexed user,
-        bool yes,
-        uint128 amount,
-        uint128 yesPoolAfter,
-        uint128 noPoolAfter
+        uint256 indexed id, address indexed user, bool yes, uint128 amount, uint128 yesPoolAfter, uint128 noPoolAfter
     );
 
     function test_Bet_HappyPath_Yes() public {
@@ -1006,6 +1001,155 @@ contract ClaimTest is PredictionMarketTestBase {
     function test_Claim_RevertsIfInvalidMarketId() public {
         vm.expectRevert(PredictionMarket.InvalidMarketId.selector);
         market.claim(99);
+    }
+}
+
+contract ViewTest is PredictionMarketTestBase {
+    function _setupAndBet() internal returns (uint256 id) {
+        id = _makeMarket(70000_00000000, 24);
+
+        vm.prank(alice);
+        market.bet(id, true, 100_000_000);
+
+        vm.prank(bob);
+        market.bet(id, false, 50_000_000);
+    }
+
+    function _resolve(uint256 id, int64 price, uint64 ts) internal {
+        pyth.setNextPrice(price, EXPO_8, ts, 0);
+
+        bytes[] memory updateData = new bytes[](1);
+
+        vm.warp(ts + 1);
+        vm.deal(address(this), 1 ether);
+        market.resolve{value: 1 wei}(id, updateData);
+    }
+
+    function _resolveYes(uint256 id) internal {
+        _resolve(id, 75_000_00000000, market.getMarket(id).resolveAfter);
+    }
+
+    function _makeFiveMarkets() internal {
+        for (uint256 i = 0; i < 5; i++) {
+            _makeMarket(int64(uint64(i + 1)), uint64(i + 1));
+        }
+    }
+
+    function test_GetMarketsPaged_HalfOpenRangeReturnsExpectedMarkets() public {
+        _makeFiveMarkets();
+
+        PredictionMarket.Market[] memory ms = market.getMarketsPaged(1, 4);
+
+        assertEq(ms.length, 3);
+        assertEq(ms[0].threshold, 2);
+        assertEq(ms[1].threshold, 3);
+        assertEq(ms[2].threshold, 4);
+    }
+
+    function test_GetMarketsPaged_AllowsEmptyRange() public {
+        _makeFiveMarkets();
+
+        PredictionMarket.Market[] memory ms = market.getMarketsPaged(2, 2);
+
+        assertEq(ms.length, 0);
+    }
+
+    function test_GetMarketsPaged_RevertsOnInvalidRange() public {
+        _makeFiveMarkets();
+
+        vm.expectRevert(PredictionMarket.InvalidMarketId.selector);
+        market.getMarketsPaged(3, 2);
+
+        vm.expectRevert(PredictionMarket.InvalidMarketId.selector);
+        market.getMarketsPaged(0, 6);
+    }
+
+    function test_GetDashboardLatest_ReturnsNewestFirst() public {
+        _makeFiveMarkets();
+
+        (PredictionMarket.DashboardRow[] memory rows, uint256 total) = market.getDashboardLatest(alice, 3);
+
+        assertEq(total, 5);
+        assertEq(rows.length, 3);
+        assertEq(rows[0].id, 4);
+        assertEq(rows[1].id, 3);
+        assertEq(rows[2].id, 2);
+    }
+
+    function test_GetDashboardLatest_ClampsLimitAndHandlesZeroLimit() public {
+        _makeFiveMarkets();
+
+        (PredictionMarket.DashboardRow[] memory allRows, uint256 total) = market.getDashboardLatest(alice, 10);
+        assertEq(total, 5);
+        assertEq(allRows.length, 5);
+        assertEq(allRows[0].id, 4);
+        assertEq(allRows[4].id, 0);
+
+        (PredictionMarket.DashboardRow[] memory zeroRows, uint256 zeroTotal) = market.getDashboardLatest(alice, 0);
+        assertEq(zeroTotal, 5);
+        assertEq(zeroRows.length, 0);
+    }
+
+    function test_GetDashboardLatest_ReturnsEmptyWhenNoMarkets() public view {
+        (PredictionMarket.DashboardRow[] memory rows, uint256 total) = market.getDashboardLatest(alice, 3);
+
+        assertEq(total, 0);
+        assertEq(rows.length, 0);
+    }
+
+    function test_GetDashboard_IncludesStakeClaimedAndPendingPayoutWhenUnresolved() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+
+        vm.prank(alice);
+        market.bet(id, true, 10_000_000);
+
+        (PredictionMarket.DashboardRow[] memory rows, uint256 total) = market.getDashboard(alice, 0, 1);
+
+        assertEq(total, 1);
+        assertEq(rows.length, 1);
+        assertEq(rows[0].id, id);
+        assertEq(rows[0].market.threshold, 70000_00000000);
+        assertEq(rows[0].yesStake, 10_000_000);
+        assertEq(rows[0].noStake, 0);
+        assertFalse(rows[0].claimed_);
+        assertEq(rows[0].pendingPayout, 0);
+    }
+
+    function test_GetDashboard_ReturnsResolvedPendingPayoutAndClaimState() public {
+        uint256 id = _setupAndBet();
+        _resolveYes(id);
+
+        (PredictionMarket.DashboardRow[] memory beforeClaimRows, uint256 total) = market.getDashboard(alice, 0, 1);
+
+        assertEq(total, 1);
+        assertEq(beforeClaimRows.length, 1);
+        assertEq(beforeClaimRows[0].id, id);
+        assertEq(uint8(beforeClaimRows[0].market.outcome), uint8(PredictionMarket.Outcome.Yes));
+        assertEq(beforeClaimRows[0].yesStake, 100_000_000);
+        assertEq(beforeClaimRows[0].noStake, 0);
+        assertFalse(beforeClaimRows[0].claimed_);
+        assertEq(beforeClaimRows[0].pendingPayout, 149_500_000);
+
+        vm.prank(alice);
+        market.claim(id);
+
+        (PredictionMarket.DashboardRow[] memory afterClaimRows, uint256 afterClaimTotal) =
+            market.getDashboard(alice, 0, 1);
+
+        assertEq(afterClaimTotal, 1);
+        assertEq(afterClaimRows.length, 1);
+        assertTrue(afterClaimRows[0].claimed_);
+        assertEq(afterClaimRows[0].pendingPayout, 0);
+    }
+
+    function test_GetDashboard_RevertsOnInvalidRange() public {
+        _makeFiveMarkets();
+
+        vm.expectRevert(PredictionMarket.InvalidMarketId.selector);
+        market.getDashboard(alice, 4, 3);
+
+        vm.expectRevert(PredictionMarket.InvalidMarketId.selector);
+        market.getDashboard(alice, 0, 6);
     }
 }
 
