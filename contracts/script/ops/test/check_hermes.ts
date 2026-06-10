@@ -31,6 +31,16 @@ class StubHermes implements HermesLike {
   }
 }
 
+function stubWithResponse(response: unknown): HermesLike {
+  return {
+    async getLatestPriceUpdates(ids: string[], opts: { encoding: "hex"; parsed: true }) {
+      assert.equal(ids.length, 1);
+      assert.deepEqual(opts, { encoding: "hex", parsed: true });
+      return response as never;
+    },
+  };
+}
+
 test("fetchCurrentPrice 返回人类价 = price * 10^expo", async () => {
   const stub = new StubHermes([
     { id: "abc", price: { price: "7123456789012", expo: -8, publish_time: 1 } },
@@ -64,6 +74,32 @@ test("fetchCurrentPrice 遇到零价或负价抛错", async () => {
 
   await assert.rejects(() => fetchCurrentPrice(zeroStub, "0xabc"), /价格无效/);
   await assert.rejects(() => fetchCurrentPrice(negativeStub, "0xabc"), /价格无效/);
+});
+
+test("fetchCurrentPrice 遇到非数字 price 字符串抛错", async () => {
+  const stub = stubWithResponse({
+    parsed: [{ id: "abc", price: { price: "NaN", expo: 0, publish_time: 1 } }],
+    binary: { data: [] },
+  });
+
+  await assert.rejects(() => fetchCurrentPrice(stub, "0xabc"), /价格无效/);
+});
+
+test("fetchCurrentPrice 遇到 parsed 为 null 按未返回处理", async () => {
+  const stub = stubWithResponse({
+    parsed: null,
+    binary: { data: [] },
+  });
+
+  await assert.rejects(() => fetchCurrentPrice(stub, "0xabc"), /价格未返回/);
+});
+
+test("fetchCurrentPrice 遇到缺失 parsed 按未返回处理", async () => {
+  const stub = stubWithResponse({
+    binary: { data: [] },
+  });
+
+  await assert.rejects(() => fetchCurrentPrice(stub, "0xabc"), /价格未返回/);
 });
 
 let failures = 0;
