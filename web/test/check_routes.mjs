@@ -1,0 +1,167 @@
+import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const webRoot = resolve(process.cwd(), 'web');
+
+const readRequiredText = (relativePath) => {
+  const filePath = resolve(webRoot, relativePath);
+
+  if (!existsSync(filePath)) {
+    throw new Error(`缺少文件: web/${relativePath}`);
+  }
+
+  return readFileSync(filePath, 'utf8');
+};
+
+const firstEffectiveLine = (source) =>
+  source
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .find((line) => line && !line.startsWith('//') && !line.startsWith('/*'));
+
+const assertUseClient = (label, source) => {
+  assert.equal(
+    firstEffectiveLine(source),
+    "'use client';",
+    `${label} 第一条有效语句必须是 'use client';`,
+  );
+};
+
+const assertIncludesAll = (label, source, tokens) => {
+  for (const token of tokens) {
+    assert(source.includes(token), `${label} 缺少关键内容: ${token}`);
+  }
+};
+
+const assertExcludesAll = (label, source, tokens) => {
+  for (const token of tokens) {
+    assert(!source.includes(token), `${label} 不应包含: ${token}`);
+  }
+};
+
+const assertMatches = (label, source, pattern, message) => {
+  assert(pattern.test(source), `${label} ${message}`);
+};
+
+const marketPage = readRequiredText('app/market/[id]/page.tsx');
+const connectPage = readRequiredText('app/connect/page.tsx');
+
+assertUseClient('market/[id]/page.tsx', marketPage);
+assertUseClient('connect/page.tsx', connectPage);
+
+assertIncludesAll('market/[id]/page.tsx hooks', marketPage, [
+  'useParams',
+  'useAccount',
+  'useReadContract',
+  'useState',
+  'zeroAddress',
+]);
+
+assertExcludesAll('market/[id]/page.tsx 裸 BigInt 解析', marketPage, [
+  'const idBn = BigInt(id);',
+]);
+
+assert(
+  marketPage.includes('parseMarketId') ||
+    marketPage.includes('try {') ||
+    marketPage.includes('catch') ||
+    marketPage.includes('idBn === null') ||
+    marketPage.includes('idBn !== null'),
+  'market/[id]/page.tsx 必须对路由 id 做安全解析与判空保护。',
+);
+
+assertIncludesAll('market/[id]/page.tsx 合约读取', marketPage, [
+  "functionName: 'getDashboard'",
+  'chainId: arcTestnet.id',
+  'user = address ?? zeroAddress',
+  'NetworkBanner',
+  'WalletPill',
+  'MarketCard',
+  'BetModal',
+  'refetch',
+  'setBetting',
+]);
+
+assert(
+  marketPage.includes('args: [user, idBn, idBn + 1n]') ||
+    (marketPage.includes('const readArgs = idBn === null ? undefined : [user, idBn, idBn + 1n];') &&
+      marketPage.includes('args: readArgs')),
+  'market/[id]/page.tsx 必须以 [user, idBn, idBn + 1n] 作为 getDashboard 参数窗口。',
+);
+
+assertMatches(
+  'market/[id]/page.tsx',
+  marketPage,
+  /query:\s*\{\s*enabled:\s*idBn !== null,\s*refetchInterval:\s*5_000\s*\}/u,
+  '必须在非法 id 时禁用读取，并维持 5 秒刷新。',
+);
+
+assertMatches(
+  'market/[id]/page.tsx',
+  marketPage,
+  /const row = \(\s*data\?\.\[0\] as DashboardRow\[\]\s*\)\?\.\[0\];|const row = dashboardData\?\.\[0\]\?\.\[0\];/u,
+  '必须从 getDashboard 返回结果中提取首个 DashboardRow。',
+);
+
+assertMatches(
+  'market/[id]/page.tsx',
+  marketPage,
+  /onClose=\{\(\)\s*=>\s*\{\s*setBetting\(null\);\s*void refetch\(\);\s*\}\}/u,
+  'BetModal.onClose 必须关闭 modal 并触发 refetch()。',
+);
+
+assertIncludesAll('market/[id]/page.tsx 中文状态', marketPage, [
+  '正在读取市场详情',
+  '市场详情读取失败',
+  '未找到该市场',
+  '市场编号无效',
+]);
+
+assertIncludesAll('connect/page.tsx Arc 网络', connectPage, [
+  'arcTestnet',
+  "chainId: `0x${arcTestnet.id.toString(16)}`",
+  'chainName: arcTestnet.name',
+  'nativeCurrency: arcTestnet.nativeCurrency',
+  'rpcUrls: arcTestnet.rpcUrls.default.http',
+  'blockExplorerUrls: [arcTestnet.blockExplorers!.default.url]',
+  'wallet_addEthereumChain',
+  'params: [params]',
+]);
+
+assert(
+  connectPage.includes('window.ethereum.request') || connectPage.includes('ethereum.request'),
+  'connect/page.tsx 必须调用钱包 provider.request 添加 Arc 网络。',
+);
+
+assert(
+  connectPage.includes('onClick={addArcNetwork}') ||
+    connectPage.includes('onClick={() => void addArcNetwork()}'),
+  'connect/page.tsx 需要提供可点击按钮触发 addArcNetwork。',
+);
+
+assertIncludesAll('connect/page.tsx 手动参数与链接', connectPage, [
+  'Chain ID',
+  'RPC',
+  'Symbol',
+  'Decimals',
+  'Explorer',
+  'https://faucet.circle.com',
+  'https://testnet.arcscan.app',
+]);
+
+assertIncludesAll('connect/page.tsx 中文状态', connectPage, [
+  '未检测到钱包',
+  '已请求钱包添加 Arc Testnet',
+  '你已取消添加网络',
+  '添加网络失败',
+]);
+
+assertExcludesAll('Phase 13.2 样式约束', `${marketPage}\n${connectPage}`, [
+  'rounded-2xl',
+  'rounded-xl',
+  'tracking-',
+  'letterSpacing',
+]);
+
+console.log('routes 检查通过');
