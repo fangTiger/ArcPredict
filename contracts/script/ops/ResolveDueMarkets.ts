@@ -1,19 +1,14 @@
 import { HermesClient } from "@pythnetwork/hermes-client";
-import dotenv from "dotenv";
-import { readFileSync } from "node:fs";
-import { dirname, resolve as pathResolve } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
+import { parseAbi, type Abi, type Address, type Hex } from "viem";
 import {
-  createPublicClient,
-  createWalletClient,
-  defineChain,
-  http,
-  parseAbi,
-  type Abi,
-  type Address,
-  type Hex,
-} from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+  makePublicClient,
+  makeWalletClientForKey,
+  normalizePrivateKey,
+  withHexPrefix,
+} from "./lib/clients.ts";
+import { loadPredictionMarketAbi } from "./lib/abi.ts";
+import { loadOwnerEnv } from "./lib/env.ts";
 
 type Logger = Pick<Console, "log" | "error">;
 
@@ -70,24 +65,8 @@ export type ResolveDueMarketsDependencies = {
   now?: () => number;
 };
 
-export type RuntimeConfig = {
-  rpcUrl: string;
-  marketAddress: Address;
-  ownerPrivateKey: Hex;
-  pythAddress: Address;
-  hermesEndpoint: string;
-};
-
 const PYTH_FEE_ABI = parseAbi(["function getUpdateFee(bytes[]) view returns (uint256)"]);
-
-export function withHexPrefix(value: string): Hex {
-  const normalized = value.trim().replace(/^0x/i, "");
-  return `0x${normalized}` as Hex;
-}
-
-export function normalizePrivateKey(value: string): Hex {
-  return withHexPrefix(value);
-}
+export { withHexPrefix, normalizePrivateKey };
 
 export function decodeMarketSnapshot(rawMarket: unknown): MarketSnapshot {
   const pythPriceId = withHexPrefix(String(readMarketField(rawMarket, "pythPriceId", 0)));
@@ -173,77 +152,14 @@ export async function resolveDueMarkets(
   }
 }
 
-export function loadRuntimeConfig(scriptDirectory = resolveScriptDirectory()): RuntimeConfig {
-  dotenv.config({ path: pathResolve(scriptDirectory, "../../.env") });
-
-  const rpcUrl = process.env.RPC_URL;
-  const marketAddress = process.env.PREDICTION_MARKET as Address | undefined;
-  const ownerPrivateKeyRaw = process.env.OWNER_PRIVATE_KEY;
-  const pythAddress = process.env.PYTH_ADDRESS as Address | undefined;
-  const hermesEndpoint = process.env.PYTH_HERMES_ENDPOINT ?? "https://hermes.pyth.network";
-
-  if (!rpcUrl || !marketAddress || !ownerPrivateKeyRaw || !pythAddress) {
-    throw new Error(
-      "缺少必需环境变量：RPC_URL、PREDICTION_MARKET、OWNER_PRIVATE_KEY、PYTH_ADDRESS",
-    );
-  }
-
-  return {
-    rpcUrl,
-    marketAddress,
-    ownerPrivateKey: normalizePrivateKey(ownerPrivateKeyRaw),
-    pythAddress,
-    hermesEndpoint,
-  };
-}
-
-export function loadPredictionMarketAbi(scriptDirectory = resolveScriptDirectory()): Abi {
-  const artifact = JSON.parse(
-    readFileSync(
-      pathResolve(scriptDirectory, "../../out/PredictionMarket.sol/PredictionMarket.json"),
-      "utf8",
-    ),
-  ) as { abi?: Abi };
-
-  if (!artifact.abi) {
-    throw new Error("PredictionMarket ABI 不存在");
-  }
-
-  return artifact.abi;
-}
-
-export function createArcTestnetChain(rpcUrl: string) {
-  return defineChain({
-    id: 5_042_002,
-    name: "Arc Testnet",
-    nativeCurrency: {
-      name: "USDC",
-      symbol: "USDC",
-      decimals: 6,
-    },
-    rpcUrls: {
-      default: {
-        http: [rpcUrl],
-      },
-    },
-    testnet: true,
-  });
-}
-
 export async function main(): Promise<void> {
-  const runtimeConfig = loadRuntimeConfig();
+  const runtimeConfig = loadOwnerEnv();
   const predictionMarketAbi = loadPredictionMarketAbi();
-  const chain = createArcTestnetChain(runtimeConfig.rpcUrl);
-  const account = privateKeyToAccount(runtimeConfig.ownerPrivateKey);
-  const walletClient = createWalletClient({
-    account,
-    chain,
-    transport: http(runtimeConfig.rpcUrl),
-  });
-  const publicClient = createPublicClient({
-    chain,
-    transport: http(runtimeConfig.rpcUrl),
-  });
+  const walletClient = makeWalletClientForKey(
+    runtimeConfig.rpcUrl,
+    runtimeConfig.ownerPrivateKey,
+  );
+  const publicClient = makePublicClient(runtimeConfig.rpcUrl);
   const hermesClient = new HermesClient(runtimeConfig.hermesEndpoint);
 
   await resolveDueMarkets({
@@ -301,10 +217,6 @@ function toNumberValue(value: unknown, fieldName: string): number {
   }
 
   throw new Error(`字段 ${fieldName} 不是有效数字`);
-}
-
-function resolveScriptDirectory(): string {
-  return dirname(fileURLToPath(import.meta.url));
 }
 
 function isDirectExecution(): boolean {
