@@ -64,6 +64,25 @@ test("fetchCurrentPrice 支持 priceId 大小写与 0x 前缀混用匹配", asyn
   assert.equal(value, 12345);
 });
 
+test("fetchCurrentPrice 请求 Hermes 时保留调用方传入的原始 priceId", async () => {
+  let requestedIds: string[] = [];
+  const stub: HermesLike = {
+    async getLatestPriceUpdates(ids: string[], opts: { encoding: "hex"; parsed: true }) {
+      requestedIds = [...ids];
+      assert.deepEqual(opts, { encoding: "hex", parsed: true });
+      return {
+        parsed: [{ id: "abc", price: { price: "1234500", expo: -2, publish_time: 1 } }],
+        binary: { data: [] },
+      };
+    },
+  };
+
+  const value = await fetchCurrentPrice(stub, "0xAbC");
+
+  assert.equal(value, 12345);
+  assert.deepEqual(requestedIds, ["0xAbC"]);
+});
+
 test("fetchCurrentPrice 遇到零价或负价抛错", async () => {
   const zeroStub = new StubHermes([
     { id: "abc", price: { price: "0", expo: 0, publish_time: 1 } },
@@ -83,6 +102,47 @@ test("fetchCurrentPrice 遇到非数字 price 字符串抛错", async () => {
   });
 
   await assert.rejects(() => fetchCurrentPrice(stub, "0xabc"), /价格无效/);
+});
+
+test("fetchCurrentPrice 遇到 matched.price 缺失或格式错误时抛价格无效", async () => {
+  const invalidResponses = [
+    {
+      name: "matched.price 缺失",
+      response: {
+        parsed: [{ id: "abc" }],
+        binary: { data: [] },
+      },
+    },
+    {
+      name: "matched.price 为 null",
+      response: {
+        parsed: [{ id: "abc", price: null }],
+        binary: { data: [] },
+      },
+    },
+    {
+      name: "matched.price.price 不是字符串",
+      response: {
+        parsed: [{ id: "abc", price: { price: 123, expo: 0, publish_time: 1 } }],
+        binary: { data: [] },
+      },
+    },
+    {
+      name: "matched.price.expo 不是有限数字",
+      response: {
+        parsed: [{ id: "abc", price: { price: "123", expo: Number.NaN, publish_time: 1 } }],
+        binary: { data: [] },
+      },
+    },
+  ];
+
+  for (const { name, response } of invalidResponses) {
+    await assert.rejects(
+      () => fetchCurrentPrice(stubWithResponse(response as unknown), "0xabc"),
+      /价格无效/,
+      name,
+    );
+  }
 });
 
 test("fetchCurrentPrice 遇到 parsed 为 null 按未返回处理", async () => {

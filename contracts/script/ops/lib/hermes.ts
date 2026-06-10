@@ -45,9 +45,19 @@ function parseRawPrice(raw: string, priceId: string): bigint {
   return BigInt(normalizedRaw);
 }
 
+function readPrice(entry: HermesParsedEntry, priceId: string): HermesPrice {
+  const price = entry.price as HermesPrice | null | undefined;
+
+  if (!price || typeof price.price !== "string" || !Number.isFinite(price.expo)) {
+    throw new Error(`价格无效：${priceId}`);
+  }
+
+  return price;
+}
+
 export async function fetchCurrentPrice(client: HermesLike, priceId: string): Promise<number> {
   const normalizedPriceId = stripPrefix(priceId);
-  const response = await client.getLatestPriceUpdates([normalizedPriceId], {
+  const response = await client.getLatestPriceUpdates([priceId], {
     encoding: "hex",
     parsed: true,
   });
@@ -58,8 +68,9 @@ export async function fetchCurrentPrice(client: HermesLike, priceId: string): Pr
     throw new Error(`价格未返回：${priceId}`);
   }
 
-  const rawPrice = parseRawPrice(matched.price.price, priceId);
-  const value = Number(rawPrice) * Math.pow(10, matched.price.expo);
+  const price = readPrice(matched, priceId);
+  const rawPrice = parseRawPrice(price.price, priceId);
+  const value = Number(rawPrice) * Math.pow(10, price.expo);
 
   if (!Number.isFinite(value) || value <= 0) {
     throw new Error(`价格无效：${priceId}`);
