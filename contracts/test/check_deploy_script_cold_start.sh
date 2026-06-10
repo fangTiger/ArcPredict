@@ -1,6 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+command -v jq >/dev/null || {
+  echo "缺少 jq"
+  exit 1
+}
+
+FORGE_BIN="${FORGE_BIN:-}"
+if [[ -z "$FORGE_BIN" ]]; then
+  FORGE_BIN="$(command -v forge || true)"
+fi
+[[ -n "$FORGE_BIN" ]] || {
+  echo "缺少 forge，可通过 FORGE_BIN 指定"
+  exit 1
+}
+[[ -x "$FORGE_BIN" ]] || {
+  echo "FORGE_BIN 不可执行: $FORGE_BIN"
+  exit 1
+}
+
 repo_root="$(git rev-parse --show-toplevel)"
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
@@ -15,7 +33,7 @@ env \
   USDC_ADDRESS=0x1111111111111111111111111111111111111111 \
   PYTH_ADDRESS=0x2222222222222222222222222222222222222222 \
   FEE_RECIPIENT=0x3333333333333333333333333333333333333333 \
-  /Users/captain/.foundry/bin/forge script --offline script/Deploy.s.sol
+  "$FORGE_BIN" script --offline script/Deploy.s.sol
 
 addresses_path="../web/lib/addresses.ts"
 prediction_market_abi_path="../web/lib/abis/PredictionMarket.json"
