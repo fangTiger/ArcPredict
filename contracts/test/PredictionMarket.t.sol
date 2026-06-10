@@ -718,3 +718,149 @@ contract PendingPayoutTest is PredictionMarketTestBase {
         market.pendingPayout(99, alice);
     }
 }
+
+contract ClaimTest is PredictionMarketTestBase {
+    event Claimed(uint256 indexed id, address indexed user, uint256 payout);
+
+    function _setupAndBet() internal returns (uint256 id) {
+        id = _makeMarket(70000_00000000, 24);
+
+        vm.prank(alice);
+        market.bet(id, true, 100_000_000);
+
+        vm.prank(bob);
+        market.bet(id, false, 50_000_000);
+    }
+
+    function _resolve(uint256 id, int64 price, uint64 ts) internal {
+        pyth.setNextPrice(price, EXPO_8, ts, 0);
+
+        bytes[] memory updateData = new bytes[](1);
+
+        vm.warp(ts + 1);
+        vm.deal(address(this), 1 ether);
+        market.resolve{value: 1 wei}(id, updateData);
+    }
+
+    function _resolveYes(uint256 id) internal {
+        _resolve(id, 75_000_00000000, market.getMarket(id).resolveAfter);
+    }
+
+    function _resolveNo(uint256 id) internal {
+        _resolve(id, 60_000_00000000, market.getMarket(id).resolveAfter);
+    }
+
+    function _resolveInvalid(uint256 id) internal {
+        _resolve(id, -1, market.getMarket(id).resolveAfter);
+    }
+
+    function test_Claim_YesWinnerGetsExactPayoutAndMarksClaimed() public {
+        uint256 id = _setupAndBet();
+        _resolveYes(id);
+
+        uint256 beforeBalance = usdc.balanceOf(alice);
+
+        vm.expectEmit(true, true, false, true);
+        emit Claimed(id, alice, 149_500_000);
+
+        vm.prank(alice);
+        market.claim(id);
+
+        assertEq(usdc.balanceOf(alice) - beforeBalance, 149_500_000);
+        assertTrue(market.claimed(id, alice));
+        assertEq(market.pendingPayout(id, alice), 0);
+    }
+
+    function test_Claim_NoWinnerGetsExactPayout() public {
+        uint256 id = _setupAndBet();
+        _resolveNo(id);
+
+        uint256 beforeBalance = usdc.balanceOf(bob);
+
+        vm.prank(bob);
+        market.claim(id);
+
+        assertEq(usdc.balanceOf(bob) - beforeBalance, 149_000_000);
+        assertEq(market.pendingPayout(id, bob), 0);
+    }
+
+    function test_Claim_InvalidRefundsCombinedYesAndNoStake() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+
+        vm.startPrank(alice);
+        market.bet(id, true, 12_000_000);
+        market.bet(id, false, 7_000_000);
+        vm.stopPrank();
+
+        _resolveInvalid(id);
+
+        uint256 beforeBalance = usdc.balanceOf(alice);
+
+        vm.prank(alice);
+        market.claim(id);
+
+        assertEq(usdc.balanceOf(alice) - beforeBalance, 19_000_000);
+    }
+
+    function test_Claim_InvalidRefundsSingleSidedStake() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+
+        vm.prank(alice);
+        market.bet(id, false, 10_000_000);
+
+        _resolveYes(id);
+
+        uint256 beforeBalance = usdc.balanceOf(alice);
+
+        vm.prank(alice);
+        market.claim(id);
+
+        assertEq(usdc.balanceOf(alice) - beforeBalance, 10_000_000);
+    }
+
+    function test_Claim_RevertsForLoserWithStake() public {
+        uint256 id = _setupAndBet();
+        _resolveYes(id);
+
+        vm.prank(bob);
+        vm.expectRevert(PredictionMarket.NotAWinner.selector);
+        market.claim(id);
+    }
+
+    function test_Claim_RevertsForNoStakeUserAfterResolve() public {
+        uint256 id = _setupAndBet();
+        _resolveYes(id);
+
+        vm.prank(carol);
+        vm.expectRevert(PredictionMarket.NoPayoutAvailable.selector);
+        market.claim(id);
+    }
+
+    function test_Claim_RevertsIfNotResolved() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+
+        vm.prank(alice);
+        market.bet(id, true, 10_000_000);
+
+        vm.prank(alice);
+        vm.expectRevert(PredictionMarket.NotResolved.selector);
+        market.claim(id);
+    }
+
+    function test_Claim_RevertsIfAlreadyClaimed() public {
+        uint256 id = _setupAndBet();
+        _resolveYes(id);
+
+        vm.prank(alice);
+        market.claim(id);
+
+        vm.prank(alice);
+        vm.expectRevert(PredictionMarket.AlreadyClaimed.selector);
+        market.claim(id);
+    }
+
+    function test_Claim_RevertsIfInvalidMarketId() public {
+        vm.expectRevert(PredictionMarket.InvalidMarketId.selector);
+        market.claim(99);
+    }
+}

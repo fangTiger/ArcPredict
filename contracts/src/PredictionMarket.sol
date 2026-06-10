@@ -331,6 +331,29 @@ contract PredictionMarket is Ownable2Step {
         return uint256(noAmount) * m.winnerPool / m.noPool;
     }
 
+    function claim(uint256 id) external {
+        if (id >= marketCount) revert InvalidMarketId();
+
+        Market storage m = _markets[id];
+        if (m.outcome == Outcome.Unresolved) revert NotResolved();
+        if (claimed[id][msg.sender]) revert AlreadyClaimed();
+
+        uint128 yesAmount = yesStake[id][msg.sender];
+        uint128 noAmount = noStake[id][msg.sender];
+        uint256 totalStake = uint256(yesAmount) + uint256(noAmount);
+
+        if (totalStake == 0) revert NoPayoutAvailable();
+        if (m.outcome == Outcome.Yes && yesAmount == 0) revert NotAWinner();
+        if (m.outcome == Outcome.No && noAmount == 0) revert NotAWinner();
+
+        uint256 payout = _quotePayout(id, msg.sender);
+
+        claimed[id][msg.sender] = true;
+        IERC20(USDC).safeTransfer(msg.sender, payout);
+
+        emit Claimed(id, msg.sender, payout);
+    }
+
     function userStake(uint256 id, address u) external view returns (uint128 yes_, uint128 no_) {
         if (id >= marketCount) revert InvalidMarketId();
 
