@@ -82,6 +82,15 @@ export default function HomePage() {
     0n,
   );
   const resolvedCount = rows.length - activeMarkets.length;
+  const loadingValue = isError ? '读取失败' : '读取中';
+  const activeMarketValue = dashboardLoaded ? activeMarkets.length.toString() : loadingValue;
+  const totalPoolValue = dashboardLoaded ? `${fmtUsdc(totalActivePool)} USDC` : loadingValue;
+  const loadedCountValue = dashboardLoaded
+    ? `${rows.length} / ${totalCount.toString()}`
+    : loadingValue;
+  const resolvedCountValue = dashboardLoaded
+    ? `${activeMarkets.length} / ${resolvedCount}`
+    : loadingValue;
   const contractAddressLabel = shortAddress(PREDICTION_MARKET_ADDRESS);
   const hasPositionRows = rows.some(
     (row) =>
@@ -127,17 +136,17 @@ export default function HomePage() {
                 <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                   <SummaryCard
                     label="活跃市场"
-                    value={activeMarkets.length.toString()}
+                    value={activeMarketValue}
                     hint="仍在交易或等待结算的市场数量。"
                   />
                   <SummaryCard
                     label="活跃总池"
-                    value={`${fmtUsdc(totalActivePool)} USDC`}
+                    value={totalPoolValue}
                     hint="未结算市场当前沉淀的总资金。"
                   />
                   <SummaryCard
                     label="已加载 / 总数"
-                    value={`${rows.length} / ${totalCount.toString()}`}
+                    value={loadedCountValue}
                     hint="最近市场覆盖范围与市场总量。"
                   />
                   <SummaryCard
@@ -233,15 +242,11 @@ export default function HomePage() {
                   </div>
                   <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
                     <span className="text-zinc-400">活跃 / 已结算</span>
-                    <span className="font-mono text-white">
-                      {activeMarkets.length} / {resolvedCount}
-                    </span>
+                    <span className="font-mono text-white">{resolvedCountValue}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
                     <span className="text-zinc-400">已加载 / 总数</span>
-                    <span className="font-mono text-white">
-                      {rows.length} / {totalCount.toString()}
-                    </span>
+                    <span className="font-mono text-white">{loadedCountValue}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
                     <span className="text-zinc-400">钱包状态</span>

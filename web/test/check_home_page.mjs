@@ -74,6 +74,7 @@ assertIncludesAll('page.tsx', pageSource, [
   '已加载 / 总数',
   '钱包状态',
   'dashboardLoaded',
+  'loadingValue',
   '正在读取你的未结算仓位',
   '正在读取你的结算结果',
   '个人仓位读取失败',
@@ -107,6 +108,31 @@ assertMatches(
   /fmtUsdc\(totalActivePool\)/u,
   '总池展示必须通过 fmtUsdc 格式化。',
 );
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /dashboardLoaded\s*\?\s*activeMarkets\.length\.toString\(\)\s*:\s*loadingValue/u,
+  '活跃市场摘要必须在 dashboardLoaded 后才显示真实数量。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /dashboardLoaded\s*\?\s*`?\$\{fmtUsdc\(totalActivePool\)\}\s+USDC`?\s*:\s*loadingValue/u,
+  '活跃总池摘要必须在 dashboardLoaded 后才显示真实金额。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /dashboardLoaded\s*\?\s*`?\$\{rows\.length\}\s*\/\s*\$\{totalCount\.toString\(\)\}`?\s*:\s*loadingValue/u,
+  '已加载 / 总数 摘要必须在 dashboardLoaded 后才显示真实数量。',
+);
+
+assertExcludesAll('page.tsx', pageSource, [
+  '{activeMarkets.length} / {resolvedCount}',
+]);
 
 assertMatches(
   'page.tsx',
