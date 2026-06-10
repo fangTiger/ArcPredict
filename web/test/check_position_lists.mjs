@@ -92,11 +92,6 @@ assertIncludesAll('ResolvedList.tsx', resolvedList, [
   'new Set(ids).add(id.toString())',
   '等待链上确认',
   'statusById',
-  'useWaitForTransactionReceipt',
-  'currentClaimHash',
-  'currentClaimId',
-  'hash: currentClaimHash',
-  'next.delete(currentClaimId)',
   '领取已确认',
   '领取交易失败',
   'r.claimed_ || r.pendingPayout === 0n',
@@ -106,8 +101,12 @@ assertIncludesAll('ResolvedList.tsx', resolvedList, [
   'setSubmittedIds(() => new Set())',
   'setStatusById({})',
   'setPendingId(null)',
-  'setCurrentClaimId(null)',
-  'setCurrentClaimHash(undefined)',
+  'usePublicClient',
+  'waitForTransactionReceipt',
+  'claimScopeRef',
+  'claimScopeRef.current += 1',
+  'if (claimScopeRef.current !== scope)',
+  'next.delete(idKey)',
 ]);
 
 assertExcludesAll('ResolvedList.tsx', resolvedList, [
@@ -116,6 +115,9 @@ assertExcludesAll('ResolvedList.tsx', resolvedList, [
   'rounded-xl',
   'tracking-',
   'letterSpacing',
+  'isReceiptTrackingActive',
+  '!isReceiptTrackingActive',
+  'useWaitForTransactionReceipt',
 ]);
 
 console.log('position lists 检查通过');

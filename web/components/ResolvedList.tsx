@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Abi, Hash } from 'viem';
-import { useAccount, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { useAccount, usePublicClient, useWriteContract } from 'wagmi';
 import PredictionMarketAbi from '@/lib/abis/PredictionMarket.json';
 import { PREDICTION_MARKET_ADDRESS } from '@/lib/addresses';
 import { arcTestnet } from '@/lib/chain';
@@ -52,24 +52,18 @@ function humanizeError(error: unknown): string {
 export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
   const resolved = rows.filter((r) => OUTCOMES[r.market.outcome] !== 'Unresolved');
   const { address } = useAccount();
+  const publicClient = usePublicClient({ chainId: arcTestnet.id });
   const { writeContractAsync, isPending } = useWriteContract();
   const [pendingId, setPendingId] = useState<bigint | null>(null);
   const [submittedIds, setSubmittedIds] = useState<Set<string>>(() => new Set());
   const [statusById, setStatusById] = useState<Record<string, string>>({});
-  const [currentClaimId, setCurrentClaimId] = useState<string | null>(null);
-  const [currentClaimHash, setCurrentClaimHash] = useState<Hash | undefined>();
-  const claimReceipt = useWaitForTransactionReceipt({
-    chainId: arcTestnet.id,
-    hash: currentClaimHash,
-    query: { enabled: !!currentClaimHash },
-  });
+  const claimScopeRef = useRef(0);
 
   useEffect(() => {
+    claimScopeRef.current += 1;
     setSubmittedIds(() => new Set());
     setStatusById({});
     setPendingId(null);
-    setCurrentClaimId(null);
-    setCurrentClaimHash(undefined);
   }, [address]);
 
   useEffect(() => {
@@ -107,61 +101,72 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
 
       return changed ? next : current;
     });
+  }, [rows]);
 
-    if (currentClaimId && settledIds.has(currentClaimId)) {
-      setCurrentClaimId(null);
-      setCurrentClaimHash(undefined);
-    }
-  }, [currentClaimId, rows]);
+  if (resolved.length === 0) return null;
 
-  useEffect(() => {
-    if (!currentClaimId || !claimReceipt.isSuccess) {
-      return;
-    }
+  const waitForClaimReceipt = async (idKey: string, hash: Hash, scope: number) => {
+    if (!publicClient) {
+      if (claimScopeRef.current !== scope) {
+        return;
+      }
 
-    if (claimReceipt.data?.status === 'reverted') {
       setSubmittedIds((ids) => {
         const next = new Set(ids);
-        next.delete(currentClaimId);
+        next.delete(idKey);
         return next;
       });
       setStatusById((current) => ({
         ...current,
-        [currentClaimId]: '领取交易失败，请重试。',
+        [idKey]: '网络异常，请稍后重试。',
       }));
-    } else {
-      setStatusById((current) => ({
-        ...current,
-        [currentClaimId]: '领取已确认，等待页面刷新。',
-      }));
-    }
-
-    setCurrentClaimHash(undefined);
-    setCurrentClaimId(null);
-  }, [claimReceipt.data, claimReceipt.isSuccess, currentClaimId]);
-
-  useEffect(() => {
-    if (!currentClaimId || !claimReceipt.isError) {
       return;
     }
 
-    setSubmittedIds((ids) => {
-      const next = new Set(ids);
-      next.delete(currentClaimId);
-      return next;
-    });
-    setStatusById((current) => ({
-      ...current,
-      [currentClaimId]: humanizeError(claimReceipt.error),
-    }));
-    setCurrentClaimHash(undefined);
-    setCurrentClaimId(null);
-  }, [claimReceipt.error, claimReceipt.isError, currentClaimId]);
+    try {
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
-  if (resolved.length === 0) return null;
+      if (claimScopeRef.current !== scope) {
+        return;
+      }
+
+      if (receipt.status === 'success') {
+        setStatusById((current) => ({
+          ...current,
+          [idKey]: '领取已确认，等待页面刷新。',
+        }));
+        return;
+      }
+
+      setSubmittedIds((ids) => {
+        const next = new Set(ids);
+        next.delete(idKey);
+        return next;
+      });
+      setStatusById((current) => ({
+        ...current,
+        [idKey]: '领取交易失败，请重试。',
+      }));
+    } catch (error) {
+      if (claimScopeRef.current !== scope) {
+        return;
+      }
+
+      setSubmittedIds((ids) => {
+        const next = new Set(ids);
+        next.delete(idKey);
+        return next;
+      });
+      setStatusById((current) => ({
+        ...current,
+        [idKey]: humanizeError(error),
+      }));
+    }
+  };
 
   const claim = async (id: bigint) => {
     const idKey = id.toString();
+    const scope = claimScopeRef.current;
 
     try {
       setStatusById((current) => {
@@ -178,20 +183,27 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
         chainId: arcTestnet.id,
       });
 
-      setCurrentClaimId(idKey);
-      setCurrentClaimHash(hash);
+      if (claimScopeRef.current !== scope) {
+        return;
+      }
+
       setSubmittedIds((ids) => new Set(ids).add(id.toString()));
       setStatusById((current) => ({
         ...current,
         [idKey]: `领取交易已提交：${hash.slice(0, 10)}...，等待链上确认`,
       }));
+      void waitForClaimReceipt(idKey, hash, scope);
     } catch (error) {
+      if (claimScopeRef.current !== scope) {
+        return;
+      }
+
       setStatusById((current) => ({
         ...current,
         [idKey]: humanizeError(error),
       }));
     } finally {
-      setPendingId(null);
+      setPendingId((current) => (current === id ? null : current));
     }
   };
 
@@ -213,11 +225,7 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
           const rowStatus = statusById[r.id.toString()];
           const isSubmitted = submittedIds.has(r.id.toString());
           const isClaimableByOutcome = !r.claimed_ && userIsWinner(r) && r.pendingPayout > 0n;
-          const isReceiptTrackingActive = !!currentClaimHash;
-          const canClaim =
-            isClaimableByOutcome &&
-            !submittedIds.has(r.id.toString()) &&
-            !isReceiptTrackingActive;
+          const canClaim = isClaimableByOutcome && !submittedIds.has(r.id.toString());
           const isClaiming = pendingId === r.id && isPending;
           const outcomeTone =
             outcome === 'Yes'
@@ -262,7 +270,7 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
                 <button
                   type="button"
                   onClick={() => claim(r.id)}
-                  disabled={isClaiming || isSubmitted || isReceiptTrackingActive}
+                  disabled={isClaiming || isSubmitted}
                   className="w-full rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-sm font-medium text-accent transition hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isClaiming
