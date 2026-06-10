@@ -3,11 +3,12 @@
 - 当前状态：Pending external manual QA（外部手动 QA 待完成）
 - 记录范围：依据 `docs/superpowers/specs/2026-06-07-arc-predict-design.md` §7.4 整理 Phase 15 手动 QA 清单。
 - 记录目的：先补齐可审计记录与静态检查，避免后续生产环境手动验证遗漏。
+- 说明：已增加生产构建前的公开环境变量校验；但真实 `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` 仍需在 Reown Dashboard 创建并授权后填入。
 
 ## 当前阻塞与前置条件
 
 - 缺少 Vercel 生产 URL 或项目链接，当前无法对线上部署结果做真实手动验证。
-- 缺少 `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` 的生产环境确认，WalletConnect 生产连接前置条件未闭合。
+- 虽然已增加 `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` 的生产构建校验，但 WalletConnect 生产连接仍依赖 Reown Dashboard 创建并授权的真实 Project ID，当前前置条件未闭合。
 - 需要准备可实际操作的 MetaMask 浏览器扩展、WalletConnect 手机扫码环境、Coinbase Wallet、Safari iOS、Chrome Android。
 - 需要可用 faucet、测试资金与 USDC 余额，才能完成下注、approve、claim、Invalid 退款等真实链路验证。
 
@@ -16,6 +17,7 @@
 以下内容只能作为辅助证据，不能替代手动 QA：
 
 - `node docs/qa/check_phase15_manual_qa.mjs`：校验本记录文件存在、15 项 QA 清单齐全、阻塞关键字齐全，且未出现误导性通过宣称。
+- `node web/test/check_production_env.mjs`：复核生产构建前公开环境变量校验已覆盖缺失值、占位值与合法配置。
 - `node web/test/check_vercel_config.mjs`：复核 Phase 15.1 本地 Vercel 配置约束。
 - `cd web && pnpm typecheck`：复核前端 TypeScript 类型检查。
 

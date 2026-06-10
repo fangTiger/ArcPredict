@@ -1,4 +1,4 @@
 {
-  "buildCommand": "pnpm build",
+  "buildCommand": "node scripts/ensure-production-env.mjs && pnpm build",
   "framework": "nextjs"
 }

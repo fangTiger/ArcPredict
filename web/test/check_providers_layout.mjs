@@ -25,6 +25,7 @@ async function main() {
 
   const providerTokens = [
     'getDefaultConfig',
+    'getWalletConnectProjectId',
     'WagmiProvider',
     'QueryClientProvider',
     'RainbowKitProvider',
@@ -32,7 +33,7 @@ async function main() {
     'arcTestnet',
     "@rainbow-me/rainbowkit/styles.css",
     'ssr: true',
-    "'placeholder'",
+    "'local-development-only'",
   ];
 
   for (const token of providerTokens) {
