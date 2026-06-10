@@ -21,10 +21,12 @@ export function ResolveCountdown({ row }: { row: DashboardRow }) {
   const status = deriveStatus(row, now);
 
   if (status === 'active') {
-    const countdown = fmtCountdown(row.market.betDeadline, now);
-    const countdownText = countdown === 'Closed' ? '已关闭' : countdown;
+    const countdown = fmtCountdown(row.market.resolveAfter, now);
+    const countdownText = countdown === 'Closed' ? '已到达' : countdown;
 
-    return <span className="font-mono text-xs text-warning">距关闭 {countdownText}</span>;
+    return (
+      <span className="font-mono text-xs text-warning">距结算窗口 {countdownText}</span>
+    );
   }
 
   if (status === 'resolving') {

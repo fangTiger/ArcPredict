@@ -51,13 +51,18 @@ assertIncludesAll('ResolveCountdown.tsx', resolveCountdown, [
   'setInterval',
   'deriveStatus',
   'fmtCountdown',
-  'row.market.betDeadline',
-  '距关闭',
+  'row.market.resolveAfter',
+  '距结算窗口',
   '结算窗口开启',
   '等待结算',
   '可强制作废',
   '已结算',
 ]);
+
+assert(
+  !resolveCountdown.includes('row.market.betDeadline'),
+  'ResolveCountdown.tsx active 分支不应再使用 betDeadline。',
+);
 
 assertIncludesAll('MarketCard.tsx', marketCard, [
   'DashboardRow',
