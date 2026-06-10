@@ -624,6 +624,9 @@ contract ResolveTest is PredictionMarketTestBase {
 }
 
 contract PendingPayoutTest is PredictionMarketTestBase {
+    // 通过 `forge inspect PredictionMarket storage-layout` 确认 claimed 的 base slot 为 5。
+    bytes32 internal constant CLAIMED_BASE_SLOT = bytes32(uint256(5));
+
     function _setupAndBet() internal returns (uint256 id) {
         id = _makeMarket(70000_00000000, 24);
 
@@ -644,20 +647,35 @@ contract PendingPayoutTest is PredictionMarketTestBase {
         market.resolve{value: 1 wei}(id, updateData);
     }
 
+    function _claimedSlot(uint256 id, address user) internal pure returns (bytes32) {
+        bytes32 marketSlot = keccak256(abi.encode(id, CLAIMED_BASE_SLOT));
+        return keccak256(abi.encode(user, marketSlot));
+    }
+
     function test_PendingPayout_ReturnsZeroWhenUnresolved() public {
         uint256 id = _setupAndBet();
 
         assertEq(market.pendingPayout(id, alice), 0);
     }
 
-    function test_PendingPayout_ReturnsZeroForLoserAndPositiveForWinner() public {
+    function test_PendingPayout_ReturnsExactNoWinnerPayout() public {
         uint256 id = _setupAndBet();
         uint64 resolveAfter = market.getMarket(id).resolveAfter;
 
         _resolve(id, 60_000_00000000, resolveAfter);
 
         assertEq(market.pendingPayout(id, alice), 0);
-        assertGt(market.pendingPayout(id, bob), 0);
+        assertEq(market.pendingPayout(id, bob), 149_000_000);
+    }
+
+    function test_PendingPayout_ReturnsExactYesWinnerPayout() public {
+        uint256 id = _setupAndBet();
+        uint64 resolveAfter = market.getMarket(id).resolveAfter;
+
+        _resolve(id, 75_000_00000000, resolveAfter);
+
+        assertEq(market.pendingPayout(id, alice), 149_500_000);
+        assertEq(market.pendingPayout(id, bob), 0);
     }
 
     function test_PendingPayout_ReturnsZeroForUserWithoutStake() public {
@@ -681,6 +699,18 @@ contract PendingPayoutTest is PredictionMarketTestBase {
         _resolve(id, -1, resolveAfter);
 
         assertEq(market.pendingPayout(id, alice), 19_000_000);
+    }
+
+    function test_PendingPayout_ReturnsZeroWhenAlreadyClaimed() public {
+        uint256 id = _setupAndBet();
+        uint64 resolveAfter = market.getMarket(id).resolveAfter;
+
+        _resolve(id, 75_000_00000000, resolveAfter);
+        assertEq(market.pendingPayout(id, alice), 149_500_000);
+
+        vm.store(address(market), _claimedSlot(id, alice), bytes32(uint256(1)));
+
+        assertEq(market.pendingPayout(id, alice), 0);
     }
 
     function test_PendingPayout_RevertsIfInvalidMarketId() public {
