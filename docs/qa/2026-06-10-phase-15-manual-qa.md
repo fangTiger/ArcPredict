@@ -9,9 +9,8 @@
 ## 当前阻塞与前置条件
 
 - Vercel Production 已部署，部署地址：`https://web-jtwxdk2xh-arcpredict.vercel.app`，生产别名：`https://web-arcpredict.vercel.app`。
-- 当前 Vercel 项目仍开启 SSO Deployment Protection，匿名访问生产别名返回 401；已用 `vercel curl` 通过保护层验证首页内容。
+- Vercel SSO Deployment Protection 已关闭，匿名访问生产别名返回 HTTP 200。
 - 用户已反馈 MetaMask / WalletConnect / 核心功能测试正常，但仓库内尚未补齐 Coinbase Wallet、Safari iOS、Chrome Android、交易哈希、截图/录屏等逐项证据。
-- 若要让外部用户匿名访问，需要在 Vercel Dashboard 或 CLI 中明确关闭 SSO Deployment Protection，或绑定不受该策略影响的 custom domain。
 
 ## 当前自动化证据
 
@@ -26,6 +25,9 @@
 - `pnpm exec vercel deploy --prod`：已生成 READY 状态部署 `dpl_DGYDDC8CcUwhRbxPGCJugvk9qfk6`。
 - `pnpm exec vercel inspect web-jtwxdk2xh-arcpredict.vercel.app`：部署状态为 Ready。
 - `pnpm exec vercel curl / --deployment https://web-jtwxdk2xh-arcpredict.vercel.app`：保护层后页面包含 `ArcPredict` 首页内容。
+- `pnpm exec vercel project protection`：`ssoProtection` 为 `null`，SSO Deployment Protection 已关闭。
+- `curl -fsSI https://web-arcpredict.vercel.app`：匿名访问返回 HTTP 200。
+- `curl -fsS https://web-arcpredict.vercel.app | rg "ArcPredict|市场总览|Arc Testnet|0xCFDC"`：匿名访问页面包含 ArcPredict 首页内容。
 
 ## spec §7.4 手动 QA 清单记录
 

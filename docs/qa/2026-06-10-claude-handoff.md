@@ -5,7 +5,7 @@
 - MVP Phase 0 到 Phase 15 的实现任务已完成，`docs/superpowers/plans/2026-06-08-arc-predict-mvp.md` 的 checkbox 已同步为完成。
 - spec 真相源仍是 `docs/superpowers/specs/2026-06-07-arc-predict-design.md`。
 - 用户已在部署环境测试并反馈“功能正常”。
-- 生产部署已完成，但 Vercel 项目仍开启 SSO Deployment Protection；匿名访问生产别名会返回 401。
+- 生产部署已完成，Vercel SSO Deployment Protection 已关闭，生产别名可匿名访问。
 
 ## 关键地址
 
@@ -31,6 +31,9 @@
 - `pnpm exec vercel deploy --prod`：部署完成，readyState 为 `READY`。
 - `pnpm exec vercel inspect web-jtwxdk2xh-arcpredict.vercel.app`：部署状态 Ready。
 - `pnpm exec vercel curl / --deployment https://web-jtwxdk2xh-arcpredict.vercel.app`：通过 Vercel 保护层后能读取 ArcPredict 首页内容。
+- `pnpm exec vercel project protection`：`ssoProtection` 为 `null`，SSO Deployment Protection 已关闭。
+- `curl -fsSI https://web-arcpredict.vercel.app`：匿名访问返回 HTTP 200。
+- `curl -fsS https://web-arcpredict.vercel.app | rg "ArcPredict|市场总览|Arc Testnet|0xCFDC"`：匿名访问页面包含 ArcPredict 首页内容。
 - `forge test`：130 tests passed，0 failed。
 - `cd web && pnpm typecheck`：通过。
 - `cd web && pnpm build`：通过，有既有依赖/字体 warning，不阻断。
@@ -42,14 +45,9 @@
 - `web/.env.local` 和 `web/.vercel/` 是本地/凭据状态，已被 git ignore，不应提交。
 - Vercel Production env 已包含 `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` 和 `NEXT_PUBLIC_PYTH_HERMES_ENDPOINT`。
 - `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` 是公开变量，已从 `web/.env.local` 读取并写入 Vercel Production；不要在日志或文档里暴露具体值。
-- Vercel SSO Deployment Protection 当前仍开启：`ssoProtection.deploymentType = all_except_custom_domains`。
-- 直接 `curl https://web-arcpredict.vercel.app` 返回 401 是 Vercel 保护层，不是 Next.js 应用错误。
+- Vercel SSO Deployment Protection 已关闭，生产别名当前可匿名访问。
 
 ## 建议下一步
 
-1. 决定是否关闭 Vercel SSO Deployment Protection，让生产别名匿名可访问。
-2. 若关闭保护，立即复测：
-   - `curl -fsSI https://web-arcpredict.vercel.app`
-   - `curl -fsS https://web-arcpredict.vercel.app | rg "ArcPredict"`
-3. 固化手动 QA 证据：MetaMask、WalletConnect、Coinbase Wallet、faucet/USDC、approve/bet、claim、Invalid refund、Safari iOS、Chrome Android、Dark/Light、深链、`/connect`。
-4. 若要整理为正式发布，可在 QA 证据齐全后做 allow-empty summary commit，或创建 PR/发布说明。
+1. 固化手动 QA 证据：MetaMask、WalletConnect、Coinbase Wallet、faucet/USDC、approve/bet、claim、Invalid refund、Safari iOS、Chrome Android、Dark/Light、深链、`/connect`。
+2. 若要整理为正式发布，可在 QA 证据齐全后做 allow-empty summary commit，或创建 PR/发布说明。
