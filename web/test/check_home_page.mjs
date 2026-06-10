@@ -68,6 +68,11 @@ assertIncludesAll('page.tsx', pageSource, [
   'fmtUsdc',
   'refetch',
   'setBetting',
+  'Arc Testnet',
+  '活跃市场',
+  '活跃总池',
+  '已加载 / 总数',
+  '钱包状态',
 ]);
 
 assertMatches(
@@ -113,6 +118,13 @@ assertExcludesAll('page.tsx', pageSource, [
   'tracking-',
   'letterSpacing',
   '准备中',
+  '使用提示',
+  '读取说明',
+  '单次链上读取',
+  '刷新频率',
+  '首屏通过',
+  '未连接时按空地址',
+  '`getDashboardLatest(user, 100)`',
 ]);
 
 const chineseCharCount = (pageSource.match(/[\u4e00-\u9fff]/gu) ?? []).length;

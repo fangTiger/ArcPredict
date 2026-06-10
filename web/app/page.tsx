@@ -27,6 +27,10 @@ type BetSelection = {
   side: boolean;
 };
 
+function shortAddress(address: string) {
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
 function SummaryCard({
   label,
   value,
@@ -76,6 +80,8 @@ export default function HomePage() {
     (sum, row) => sum + row.market.yesPool + row.market.noPool,
     0n,
   );
+  const resolvedCount = rows.length - activeMarkets.length;
+  const contractAddressLabel = shortAddress(PREDICTION_MARKET_ADDRESS);
   const hasPositionRows = rows.some(
     (row) =>
       OUTCOMES[row.market.outcome] === 'Unresolved' && (row.yesStake > 0n || row.noStake > 0n),
@@ -108,12 +114,12 @@ export default function HomePage() {
                   <div className="max-w-2xl">
                     <h1 className="text-2xl font-semibold text-white">市场总览</h1>
                     <p className="mt-2 text-sm leading-6 text-zinc-400">
-                      首屏通过单次链上读取拉取最近 100 个市场；未连接钱包时仍可浏览市场，连接后会自动带出你的仓位与待领取金额。
+                      最近市场、当前流动性、个人仓位和已结算结果会在这里并排展开，方便连续盯盘和快速下单。
                     </p>
                   </div>
                   <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300">
-                    <div>读取网络：Arc Testnet</div>
-                    <div className="mt-1 text-zinc-400">刷新频率：每 5 秒</div>
+                    <div>当前网络：Arc Testnet</div>
+                    <div className="mt-1 text-zinc-400">合约：{contractAddressLabel}</div>
                   </div>
                 </div>
 
@@ -121,22 +127,22 @@ export default function HomePage() {
                   <SummaryCard
                     label="活跃市场"
                     value={activeMarkets.length.toString()}
-                    hint="仅统计仍未结算的市场。"
+                    hint="仍在交易或等待结算的市场数量。"
                   />
                   <SummaryCard
                     label="活跃总池"
                     value={`${fmtUsdc(totalActivePool)} USDC`}
-                    hint="汇总活跃市场的 YES 与 NO 池子。"
+                    hint="未结算市场当前沉淀的总资金。"
                   />
                   <SummaryCard
                     label="已加载 / 总数"
                     value={`${rows.length} / ${totalCount.toString()}`}
-                    hint="当前读取最近 100 个市场，便于后续继续翻旧数据。"
+                    hint="最近市场覆盖范围与市场总量。"
                   />
                   <SummaryCard
                     label="钱包状态"
                     value={isConnected ? '已连接' : '未连接'}
-                    hint={isConnected ? '个人数据已按当前地址计算。' : '未连接时按空地址读取公共视图。'}
+                    hint={isConnected ? '当前地址已接入。' : '当前没有接入地址。'}
                   />
                 </div>
               </section>
@@ -182,19 +188,66 @@ export default function HomePage() {
               <FaucetCard />
 
               <section className="rounded-lg border border-white/10 bg-surface p-5">
-                <h2 className="text-sm font-semibold text-white">使用提示</h2>
-                <div className="mt-4 space-y-3 text-sm leading-6 text-zinc-400">
-                  <p>下注会先检查 USDC 授权，再进入真实下注交易。</p>
-                  <p>活跃总池只统计未结算市场，避免把历史结果混在当前流动性里。</p>
-                  <p>已结算区会显示待领取金额；关闭下注弹窗后首页会主动刷新。</p>
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-sm font-semibold text-white">链上入口</h2>
+                  <span className="font-mono text-xs text-zinc-500">{contractAddressLabel}</span>
+                </div>
+                <div className="mt-4 space-y-3">
+                  <a
+                    href="https://testnet.arcscan.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 transition hover:border-white/20 hover:bg-white/10"
+                  >
+                    <span>Arcscan 浏览器</span>
+                    <span className="font-mono text-xs text-zinc-500">testnet.arcscan.app</span>
+                  </a>
+                  <a
+                    href={`https://testnet.arcscan.app/address/${PREDICTION_MARKET_ADDRESS}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 transition hover:border-white/20 hover:bg-white/10"
+                  >
+                    <span>预测合约</span>
+                    <span className="font-mono text-xs text-zinc-500">{contractAddressLabel}</span>
+                  </a>
+                  <a
+                    href="https://faucet.circle.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 transition hover:border-white/20 hover:bg-white/10"
+                  >
+                    <span>Circle Faucet</span>
+                    <span className="font-mono text-xs text-zinc-500">USDC</span>
+                  </a>
                 </div>
               </section>
 
               <section className="rounded-lg border border-white/10 bg-surface p-5">
-                <h2 className="text-sm font-semibold text-white">读取说明</h2>
-                <div className="mt-4 space-y-3 text-sm leading-6 text-zinc-400">
-                  <p>本页使用 `getDashboardLatest(user, 100)` 单次读取最近市场，不走旧的范围分页视图。</p>
-                  <p>未连接钱包时，会对空地址读取公共市场数据，因此你仍然可以先浏览盘口。</p>
+                <h2 className="text-sm font-semibold text-white">市场状态</h2>
+                <div className="mt-4 space-y-3 text-sm leading-6 text-zinc-300">
+                  <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
+                    <span className="text-zinc-400">Arc Testnet</span>
+                    <span className="font-mono text-white">{contractAddressLabel}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
+                    <span className="text-zinc-400">活跃 / 已结算</span>
+                    <span className="font-mono text-white">
+                      {activeMarkets.length} / {resolvedCount}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
+                    <span className="text-zinc-400">已加载 / 总数</span>
+                    <span className="font-mono text-white">
+                      {rows.length} / {totalCount.toString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
+                    <span className="text-zinc-400">钱包状态</span>
+                    <span className="font-mono text-white">
+                      {isConnected ? '已连接' : '未连接'}
+                    </span>
+                  </div>
                 </div>
               </section>
             </aside>
