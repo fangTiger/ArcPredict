@@ -1,6 +1,6 @@
 # ArcPredict MVP Implementation Plan v2
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 > **v2 修订**：整合双 codex round 1 评审的 11 项 blocker + 3 项应改（命名漂移、重入测试设计、状态机竞争、cron ESM 配置、Deploy mkdir、scale 溢出保护、invariant 不吞错、Phase 14 historical update 兜底）
 
 **Goal:** 在 Arc testnet 上交付一个支持真实用户下注的去中心化预测市场最小闭环（合约 + 前端 + 运营脚本 + Vercel 部署）。
@@ -95,7 +95,7 @@ ArcPredict/
 - Create: `contracts/.env.example`
 - Create: `contracts/.gitignore`
 
-- [ ] **Step 1: 初始化 Foundry 项目**
+- [x] **Step 1: 初始化 Foundry 项目**
 
 ```bash
 cd contracts
@@ -103,7 +103,7 @@ forge init --no-commit --no-git .
 rm -rf src/Counter.sol test/Counter.t.sol script/Counter.s.sol
 ```
 
-- [ ] **Step 2: 安装依赖**
+- [x] **Step 2: 安装依赖**
 
 ```bash
 forge install OpenZeppelin/openzeppelin-contracts --no-commit
@@ -111,7 +111,7 @@ forge install pyth-network/pyth-sdk-solidity --no-commit
 forge install foundry-rs/forge-std --no-commit
 ```
 
-- [ ] **Step 3: 写 `contracts/foundry.toml`**
+- [x] **Step 3: 写 `contracts/foundry.toml`**
 
 ```toml
 [profile.default]
@@ -134,7 +134,7 @@ depth       = 32
 fail_on_revert = false
 ```
 
-- [ ] **Step 4: 写 `contracts/remappings.txt`**
+- [x] **Step 4: 写 `contracts/remappings.txt`**
 
 ```
 @openzeppelin/=lib/openzeppelin-contracts/
@@ -142,7 +142,7 @@ fail_on_revert = false
 forge-std/=lib/forge-std/src/
 ```
 
-- [ ] **Step 5: 写 `contracts/.env.example`**
+- [x] **Step 5: 写 `contracts/.env.example`**
 
 ```bash
 # 部署私钥（owner 与 fee recipient 用不同地址）
@@ -166,7 +166,7 @@ PYTH_PRICE_ID_BTC_USD=0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f
 PYTH_PRICE_ID_ETH_USD=0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace
 ```
 
-- [ ] **Step 6: 写 `contracts/.gitignore`**
+- [x] **Step 6: 写 `contracts/.gitignore`**
 
 ```
 cache/
@@ -176,14 +176,14 @@ lib/
 .env
 ```
 
-- [ ] **Step 7: 确认编译可通过**
+- [x] **Step 7: 确认编译可通过**
 
 ```bash
 cd contracts && forge build
 ```
 Expected: `Compiler run successful!`（一开始 src 为空也会通过）
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add contracts/foundry.toml contracts/remappings.txt contracts/.env.example contracts/.gitignore
@@ -197,7 +197,7 @@ git commit -m "chore(contracts): 初始化 Foundry 项目骨架与依赖"
 **Files:**
 - Create: `web/package.json`、`web/next.config.js`、`web/tailwind.config.ts`、`web/postcss.config.js`、`web/tsconfig.json`、`web/.env.example`
 
-- [ ] **Step 1: 用 pnpm 初始化**
+- [x] **Step 1: 用 pnpm 初始化**
 
 ```bash
 cd web
@@ -209,7 +209,7 @@ pnpm add -D tailwindcss postcss autoprefixer eslint eslint-config-next
 pnpm exec tailwindcss init -p
 ```
 
-- [ ] **Step 2: 写 `web/package.json` scripts 段**
+- [x] **Step 2: 写 `web/package.json` scripts 段**
 
 ```json
 {
@@ -223,7 +223,7 @@ pnpm exec tailwindcss init -p
 }
 ```
 
-- [ ] **Step 3: 写 `web/next.config.js`**
+- [x] **Step 3: 写 `web/next.config.js`**
 
 ```js
 /** @type {import('next').NextConfig} */
@@ -233,7 +233,7 @@ const nextConfig = {
 module.exports = nextConfig;
 ```
 
-- [ ] **Step 4: 写 `web/tailwind.config.ts`**
+- [x] **Step 4: 写 `web/tailwind.config.ts`**
 
 ```ts
 import type { Config } from 'tailwindcss';
@@ -262,7 +262,7 @@ const config: Config = {
 export default config;
 ```
 
-- [ ] **Step 5: 写 `web/tsconfig.json`**
+- [x] **Step 5: 写 `web/tsconfig.json`**
 
 ```json
 {
@@ -288,7 +288,7 @@ export default config;
 }
 ```
 
-- [ ] **Step 6: 写 `web/.env.example`**
+- [x] **Step 6: 写 `web/.env.example`**
 
 ```bash
 # 公开变量（前端可读）
@@ -305,14 +305,14 @@ NEXT_PUBLIC_PYTH_ADDRESS=
 NEXT_PUBLIC_PYTH_HERMES_ENDPOINT=https://hermes.pyth.network
 ```
 
-- [ ] **Step 7: 确认 dev 起得来**
+- [x] **Step 7: 确认 dev 起得来**
 
 ```bash
 cd web && pnpm dev
 ```
 Expected: 浏览器打开 http://localhost:3000 显示 Next.js 默认页
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add web/
@@ -326,7 +326,7 @@ git commit -m "chore(web): 初始化 Next.js 14 + wagmi + RainbowKit + Tailwind 
 **Files:**
 - Create: `contracts/script/VerifyAddresses.s.sol`（一次性脚本）
 
-- [ ] **Step 1: 写验证脚本 `VerifyAddresses.s.sol`**
+- [x] **Step 1: 写验证脚本 `VerifyAddresses.s.sol`**
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -358,11 +358,11 @@ contract VerifyAddresses is Script {
 }
 ```
 
-- [ ] **Step 2: 找出 Arc testnet 上 Pyth 实际地址**
+- [x] **Step 2: 找出 Arc testnet 上 Pyth 实际地址**
 
 参考 https://docs.pyth.network/price-feeds/core/contract-addresses/evm，找到 "Arc Network Testnet" 行。把它写进 `contracts/.env`（不是 .env.example）。
 
-- [ ] **Step 3: 跑脚本**
+- [x] **Step 3: 跑脚本**
 
 ```bash
 cd contracts
@@ -373,7 +373,7 @@ Expected: USDC decimals 输出 6，symbol 输出 USDC，Pyth validPeriod 输出�
 
 如果任何一个失败：**停下来报告用户**，不要继续部署。
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add contracts/script/VerifyAddresses.s.sol
@@ -389,7 +389,7 @@ git commit -m "chore(contracts): 加 Arc testnet 外部依赖地址验证脚本"
 **Files:**
 - Create: `contracts/src/interfaces/IPyth.sol`
 
-- [ ] **Step 1: 写 interface（按 Pyth SDK 子集，避免引入完整 sdk）**
+- [x] **Step 1: 写 interface（按 Pyth SDK 子集，避免引入完整 sdk）**
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -421,14 +421,14 @@ interface IPyth {
 }
 ```
 
-- [ ] **Step 2: 编译**
+- [x] **Step 2: 编译**
 
 ```bash
 cd contracts && forge build
 ```
 Expected: 编译通过。
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add contracts/src/interfaces/IPyth.sol
@@ -442,7 +442,7 @@ git commit -m "feat(contracts): 加 Pyth interface（含 PythStructs）"
 **Files:**
 - Create: `contracts/test/mocks/MockPyth.sol`
 
-- [ ] **Step 1: 写 MockPyth**
+- [x] **Step 1: 写 MockPyth**
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -496,13 +496,13 @@ contract MockPyth is IPyth {
 }
 ```
 
-- [ ] **Step 2: 编译**
+- [x] **Step 2: 编译**
 
 ```bash
 cd contracts && forge build
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add contracts/test/mocks/MockPyth.sol
@@ -516,7 +516,7 @@ git commit -m "test(contracts): 加 MockPyth（可控价格/expo/publishTime/rev
 **Files:**
 - Create: `contracts/test/mocks/MockUSDC.sol`
 
-- [ ] **Step 1: 写 MockUSDC（标准 ERC-20，加 mint，可触发重入）**
+- [x] **Step 1: 写 MockUSDC（标准 ERC-20，加 mint，可触发重入）**
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -583,13 +583,13 @@ contract MockUSDC is IERC20 {
 }
 ```
 
-- [ ] **Step 2: 编译**
+- [x] **Step 2: 编译**
 
 ```bash
 cd contracts && forge build
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add contracts/test/mocks/MockUSDC.sol
@@ -603,7 +603,7 @@ git commit -m "test(contracts): 加 MockUSDC（ERC-20 6 decimals + 重入测试�
 **Files:**
 - Create: `contracts/src/PredictionMarket.sol`
 
-- [ ] **Step 1: 写状态 + 构造 + 错误 + 事件（不写函数体）**
+- [x] **Step 1: 写状态 + 构造 + 错误 + 事件（不写函数体）**
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -713,14 +713,14 @@ contract PredictionMarket is Ownable2Step {
 }
 ```
 
-- [ ] **Step 2: 编译**
+- [x] **Step 2: 编译**
 
 ```bash
 cd contracts && forge build
 ```
 Expected: 编译通过（函数体后续 task 加）。
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add contracts/src/PredictionMarket.sol
@@ -734,7 +734,7 @@ git commit -m "feat(contracts): PredictionMarket 骨架（state/events/errors/co
 **Files:**
 - Create: `contracts/test/PredictionMarket.t.sol`（基础 setUp）
 
-- [ ] **Step 1: 写 setUp 模板**
+- [x] **Step 1: 写 setUp 模板**
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -799,14 +799,14 @@ contract PredictionMarketSmokeTest is PredictionMarketTestBase {
 
 注意：`_makeMarket` 现在调的 `createMarket` 函数还没实现，下个 task 加。这里先让 smoke test 通过。
 
-- [ ] **Step 2: 跑 smoke test**
+- [x] **Step 2: 跑 smoke test**
 
 ```bash
 cd contracts && forge test --match-contract PredictionMarketSmokeTest -v
 ```
 Expected: 2 个测试 PASS（_makeMarket 不会被调因为没有测试调它）。
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add contracts/test/PredictionMarket.t.sol
@@ -823,7 +823,7 @@ git commit -m "test(contracts): 加 TestBase + smoke test 验证部署"
 - Modify: `contracts/test/PredictionMarket.t.sol`（追加测试合约）
 - Modify: `contracts/src/PredictionMarket.sol`（追加 createMarket）
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 在 `PredictionMarket.t.sol` 末尾追加：
 
@@ -862,14 +862,14 @@ contract CreateMarketTest is PredictionMarketTestBase {
 }
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 ```bash
 cd contracts && forge test --match-contract CreateMarketTest -v
 ```
 Expected: FAIL with "createMarket undefined" / `getMarket undefined`。
 
-- [ ] **Step 3: 实现 createMarket + getMarket**
+- [x] **Step 3: 实现 createMarket + getMarket**
 
 在 `PredictionMarket.sol` 末尾（contract 内）加：
 
@@ -915,14 +915,14 @@ Expected: FAIL with "createMarket undefined" / `getMarket undefined`。
     }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 ```bash
 cd contracts && forge test --match-contract CreateMarketTest -v
 ```
 Expected: 2 PASS。
 
-- [ ] **Step 5: 把 `_makeMarket` 追加到 `PredictionMarketTestBase`**
+- [x] **Step 5: 把 `_makeMarket` 追加到 `PredictionMarketTestBase`**
 
 在 `PredictionMarketTestBase` 合约末尾追加：
 
@@ -938,7 +938,7 @@ Expected: 2 PASS。
     }
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add contracts/src/PredictionMarket.sol contracts/test/PredictionMarket.t.sol
@@ -949,7 +949,7 @@ git commit -m "feat(contracts): 实现 createMarket + getMarket（TDD）"
 
 ### Task 2.2: createMarket 反向测试
 
-- [ ] **Step 1: 在 `CreateMarketTest` 合约末尾追加更多测试**
+- [x] **Step 1: 在 `CreateMarketTest` 合约末尾追加更多测试**
 
 ```solidity
     function test_CreateMarket_RevertsIfTimesInPast() public {
@@ -1010,7 +1010,7 @@ git commit -m "feat(contracts): 实现 createMarket + getMarket（TDD）"
 
 注意：`MarketLimitReached` 测试需要的 slot 编号要 `forge inspect` 后填，本 task 简化做法是后面 invariant 阶段再验，这里允许测试 skip（用 `vm.skip(true)` 或注释）。
 
-- [ ] **Step 2: 实现 setFeeBps / setFeeRecipient**
+- [x] **Step 2: 实现 setFeeBps / setFeeRecipient**
 
 在 `PredictionMarket.sol` 加：
 
@@ -1026,14 +1026,14 @@ git commit -m "feat(contracts): 实现 createMarket + getMarket（TDD）"
     }
 ```
 
-- [ ] **Step 3: 跑测试**
+- [x] **Step 3: 跑测试**
 
 ```bash
 cd contracts && forge test --match-contract CreateMarketTest -v
 ```
 Expected: 全 PASS（除 MarketLimitReached 视处理而定）。
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add contracts/src/PredictionMarket.sol contracts/test/PredictionMarket.t.sol
@@ -1046,7 +1046,7 @@ git commit -m "test(contracts): createMarket 反向 + snapshot + setFeeBps/Recip
 
 ### Task 3.1: bet 实现 + 测试
 
-- [ ] **Step 1: 失败测试**
+- [x] **Step 1: 失败测试**
 
 ```solidity
 contract BetTest is PredictionMarketTestBase {
@@ -1100,13 +1100,13 @@ contract BetTest is PredictionMarketTestBase {
 }
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 ```bash
 cd contracts && forge test --match-contract BetTest -v
 ```
 
-- [ ] **Step 3: 实现 bet + userStake**
+- [x] **Step 3: 实现 bet + userStake**
 
 ```solidity
     function bet(uint256 id, bool yes, uint128 amount) external {
@@ -1134,14 +1134,14 @@ cd contracts && forge test --match-contract BetTest -v
     }
 ```
 
-- [ ] **Step 4: 跑测试**
+- [x] **Step 4: 跑测试**
 
 ```bash
 cd contracts && forge test --match-contract BetTest -v
 ```
 Expected: 全 PASS。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add contracts/src/PredictionMarket.sol contracts/test/PredictionMarket.t.sol
@@ -1154,7 +1154,7 @@ git commit -m "feat(contracts): 实现 bet + userStake（TDD）"
 
 ### Task 4.1: resolve 正向路径
 
-- [ ] **Step 1: 失败测试**
+- [x] **Step 1: 失败测试**
 
 ```solidity
 contract ResolveTest is PredictionMarketTestBase {
@@ -1210,13 +1210,13 @@ contract ResolveTest is PredictionMarketTestBase {
 }
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 ```bash
 cd contracts && forge test --match-contract ResolveTest -v
 ```
 
-- [ ] **Step 3: 实现 resolve（核心逻辑）**
+- [x] **Step 3: 实现 resolve（核心逻辑）**
 
 ```solidity
     function resolve(uint256 id, bytes[] calldata updateData) external payable {
@@ -1272,14 +1272,14 @@ cd contracts && forge test --match-contract ResolveTest -v
     }
 ```
 
-- [ ] **Step 4: 跑测试**
+- [x] **Step 4: 跑测试**
 
 ```bash
 cd contracts && forge test --match-contract ResolveTest -v
 ```
 Expected: 3 PASS。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add contracts/src/PredictionMarket.sol contracts/test/PredictionMarket.t.sol
@@ -1290,7 +1290,7 @@ git commit -m "feat(contracts): 实现 resolve 正向路径（YES/NO/exact-thres
 
 ### Task 4.2: resolve Invalid 路径
 
-- [ ] **Step 1: 加测试**
+- [x] **Step 1: 加测试**
 
 ```solidity
     function test_Resolve_Invalid_OnZeroTotalPool() public {
@@ -1330,14 +1330,14 @@ git commit -m "feat(contracts): 实现 resolve 正向路径（YES/NO/exact-thres
     }
 ```
 
-- [ ] **Step 2: 跑测试**
+- [x] **Step 2: 跑测试**
 
 ```bash
 cd contracts && forge test --match-contract ResolveTest -v
 ```
 Expected: 已实现的逻辑应让上述测试 PASS。
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add contracts/test/PredictionMarket.t.sol
@@ -1348,7 +1348,7 @@ git commit -m "test(contracts): resolve Invalid 路径全覆盖"
 
 ### Task 4.3: resolve revert 路径
 
-- [ ] **Step 1: 加测试**
+- [x] **Step 1: 加测试**
 
 ```solidity
     function test_Resolve_RevertsIfBeforeResolveAfter() public {
@@ -1412,13 +1412,13 @@ git commit -m "test(contracts): resolve Invalid 路径全覆盖"
     receive() external payable {}
 ```
 
-- [ ] **Step 2: 跑测试**
+- [x] **Step 2: 跑测试**
 
 ```bash
 cd contracts && forge test --match-contract ResolveTest -v
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add contracts/test/PredictionMarket.t.sol
@@ -1431,7 +1431,7 @@ git commit -m "test(contracts): resolve revert 路径 + extra fee refund"
 
 ### Task 5.1: 实现 _quotePayout + pendingPayout
 
-- [ ] **Step 1: 失败测试**
+- [x] **Step 1: 失败测试**
 
 ```solidity
 contract PendingPayoutTest is PredictionMarketTestBase {
@@ -1468,13 +1468,13 @@ contract PendingPayoutTest is PredictionMarketTestBase {
 }
 ```
 
-- [ ] **Step 2: 跑确认失败**
+- [x] **Step 2: 跑确认失败**
 
 ```bash
 cd contracts && forge test --match-contract PendingPayoutTest -v
 ```
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 在 `PredictionMarket.sol` 加：
 
@@ -1505,14 +1505,14 @@ cd contracts && forge test --match-contract PendingPayoutTest -v
     }
 ```
 
-- [ ] **Step 4: 跑测试**
+- [x] **Step 4: 跑测试**
 
 ```bash
 cd contracts && forge test --match-contract PendingPayoutTest -v
 ```
 Expected: 全 PASS。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add contracts/src/PredictionMarket.sol contracts/test/PredictionMarket.t.sol
@@ -1523,7 +1523,7 @@ git commit -m "feat(contracts): _quotePayout + pendingPayout（view 永不 rever
 
 ### Task 5.2: 实现 claim 完整路径
 
-- [ ] **Step 1: 失败测试**
+- [x] **Step 1: 失败测试**
 
 ```solidity
 contract ClaimTest is PredictionMarketTestBase {
@@ -1607,13 +1607,13 @@ contract ClaimTest is PredictionMarketTestBase {
 }
 ```
 
-- [ ] **Step 2: 跑确认失败**
+- [x] **Step 2: 跑确认失败**
 
 ```bash
 cd contracts && forge test --match-contract ClaimTest -v
 ```
 
-- [ ] **Step 3: 实现 claim**
+- [x] **Step 3: 实现 claim**
 
 ```solidity
     function claim(uint256 id) external {
@@ -1639,14 +1639,14 @@ cd contracts && forge test --match-contract ClaimTest -v
     }
 ```
 
-- [ ] **Step 4: 跑测试**
+- [x] **Step 4: 跑测试**
 
 ```bash
 cd contracts && forge test --match-contract ClaimTest -v
 ```
 Expected: 全 PASS。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add contracts/src/PredictionMarket.sol contracts/test/PredictionMarket.t.sol
@@ -1657,7 +1657,7 @@ git commit -m "feat(contracts): 实现 claim（错误优先级 + CEI）"
 
 ### Task 5.3: claim 重入测试
 
-- [ ] **Step 1: 写重入测试**
+- [x] **Step 1: 写重入测试**
 
 ```solidity
     function test_Claim_PreventsReentrancy() public {
@@ -1710,14 +1710,14 @@ contract ReentrantAttacker {
 }
 ```
 
-- [ ] **Step 2: 跑测试**
+- [x] **Step 2: 跑测试**
 
 ```bash
 cd contracts && forge test --match-contract ClaimTest -v
 ```
 Expected: 全 PASS。重入被 CEI 阻断。
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add contracts/test/PredictionMarket.t.sol
@@ -1730,7 +1730,7 @@ git commit -m "test(contracts): claim 重入攻击被 CEI 阻断"
 
 ### Task 6.1: forceInvalid
 
-- [ ] **Step 1: 失败测试**
+- [x] **Step 1: 失败测试**
 
 ```solidity
 contract ForceInvalidTest is PredictionMarketTestBase {
@@ -1782,9 +1782,9 @@ contract ForceInvalidTest is PredictionMarketTestBase {
 }
 ```
 
-- [ ] **Step 2: 跑确认失败**
+- [x] **Step 2: 跑确认失败**
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```solidity
     function forceInvalid(uint256 id) external {
@@ -1798,14 +1798,14 @@ contract ForceInvalidTest is PredictionMarketTestBase {
     }
 ```
 
-- [ ] **Step 4: 跑测试**
+- [x] **Step 4: 跑测试**
 
 ```bash
 cd contracts && forge test --match-contract ForceInvalidTest -v
 ```
 Expected: 全 PASS。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add contracts/src/PredictionMarket.sol contracts/test/PredictionMarket.t.sol
@@ -1816,7 +1816,7 @@ git commit -m "feat(contracts): 实现 forceInvalid 7d 死锁逃生口"
 
 ### Task 6.2: 复合 views（getMarketsPaged / getDashboard / getDashboardLatest）
 
-- [ ] **Step 1: 加测试**
+- [x] **Step 1: 加测试**
 
 ```solidity
 contract ViewTest is PredictionMarketTestBase {
@@ -1852,7 +1852,7 @@ contract ViewTest is PredictionMarketTestBase {
 }
 ```
 
-- [ ] **Step 2: 实现 view 函数 + 结构**
+- [x] **Step 2: 实现 view 函数 + 结构**
 
 在 `PredictionMarket.sol` 加：
 
@@ -1914,14 +1914,14 @@ contract ViewTest is PredictionMarketTestBase {
     }
 ```
 
-- [ ] **Step 3: 跑测试**
+- [x] **Step 3: 跑测试**
 
 ```bash
 cd contracts && forge test --match-contract ViewTest -v
 ```
 Expected: 全 PASS。
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add contracts/src/PredictionMarket.sol contracts/test/PredictionMarket.t.sol
@@ -1937,7 +1937,7 @@ git commit -m "feat(contracts): 实现 getMarketsPaged / getDashboard / getDashb
 **Files:**
 - Create: `contracts/test/PredictionMarket.invariant.t.sol`
 
-- [ ] **Step 1: 写 invariant handler + test**
+- [x] **Step 1: 写 invariant handler + test**
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -2085,20 +2085,20 @@ contract PredictionMarketInvariantTest is Test {
 }
 ```
 
-- [ ] **Step 2: 跑 invariant**
+- [x] **Step 2: 跑 invariant**
 
 ```bash
 cd contracts && forge test --match-contract PredictionMarketInvariantTest -v
 ```
 Expected: PASS（runs=256, depth=32）。
 
-- [ ] **Step 3: 提高 runs 跑 1000 次确认**
+- [x] **Step 3: 提高 runs 跑 1000 次确认**
 
 ```bash
 cd contracts && FOUNDRY_INVARIANT_RUNS=1000 forge test --match-contract PredictionMarketInvariantTest
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add contracts/test/PredictionMarket.invariant.t.sol
@@ -2114,7 +2114,7 @@ git commit -m "test(contracts): invariant 资金守恒（1000 runs 验证通过�
 **Files:**
 - Create: `contracts/script/Deploy.s.sol`
 
-- [ ] **Step 1: 写部署脚本**
+- [x] **Step 1: 写部署脚本**
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -2159,7 +2159,7 @@ contract Deploy is Script {
 }
 ```
 
-- [ ] **Step 2: 模拟跑（不真部署）**
+- [x] **Step 2: 模拟跑（不真部署）**
 
 ```bash
 cd contracts
@@ -2168,7 +2168,7 @@ forge script script/Deploy.s.sol --rpc-url $RPC_URL
 ```
 Expected: 编译通过；显示 simulated deploy 输出。
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add contracts/script/Deploy.s.sol
@@ -2182,7 +2182,7 @@ git commit -m "feat(contracts): 加 Deploy.s.sol（部署 + 自动写 web/lib/ad
 **Files:**
 - Create: `contracts/script/CreateMarket.s.sol`
 
-- [ ] **Step 1: 写脚本**
+- [x] **Step 1: 写脚本**
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -2229,13 +2229,13 @@ contract CreateMarket is Script {
 }
 ```
 
-- [ ] **Step 2: 编译**
+- [x] **Step 2: 编译**
 
 ```bash
 cd contracts && forge build
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add contracts/script/CreateMarket.s.sol
@@ -2249,7 +2249,7 @@ git commit -m "feat(contracts): CreateMarket.s.sol 含 scale(human, expo) helper
 **Files:**
 - Create: `contracts/script/SeedLiquidity.s.sol`
 
-- [ ] **Step 1: 写脚本**
+- [x] **Step 1: 写脚本**
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -2277,7 +2277,7 @@ contract SeedLiquidity is Script {
 }
 ```
 
-- [ ] **Step 2: 编译 + Commit**
+- [x] **Step 2: 编译 + Commit**
 
 ```bash
 cd contracts && forge build
@@ -2291,11 +2291,11 @@ git commit -m "feat(contracts): SeedLiquidity.s.sol 双边 5 USDC 种子"
 
 ### Task 9.1: 部署前最终检查
 
-- [ ] **Step 1: 准备 `.env`**（不进 git）
+- [x] **Step 1: 准备 `.env`**（不进 git）
 
 填入真实私钥、Pyth 地址、fee recipient（独立 EOA）。
 
-- [ ] **Step 2: 跑 VerifyAddresses**
+- [x] **Step 2: 跑 VerifyAddresses**
 
 ```bash
 cd contracts
@@ -2304,14 +2304,14 @@ forge script script/VerifyAddresses.s.sol --rpc-url $RPC_URL
 ```
 Expected: 全部通过。
 
-- [ ] **Step 3: 全测过一遍**
+- [x] **Step 3: 全测过一遍**
 
 ```bash
 forge test
 ```
 Expected: 全 PASS（包含 invariant）。
 
-- [ ] **Step 4: Commit `.env.example`（不是 `.env`）的最新值**
+- [x] **Step 4: Commit `.env.example`（不是 `.env`）的最新值**
 
 如有更新；否则跳过。
 
@@ -2319,7 +2319,7 @@ Expected: 全 PASS（包含 invariant）。
 
 ### Task 9.2: 部署 + verify + 创建 + seed
 
-- [ ] **Step 1: 部署**
+- [x] **Step 1: 部署**
 
 ```bash
 cd contracts
@@ -2334,13 +2334,13 @@ forge script script/Deploy.s.sol \
 
 记录输出的 `PredictionMarket deployed: 0x...` 地址，存进 `.env`：`PREDICTION_MARKET=0x...`。
 
-- [ ] **Step 2: 验证 `web/lib/addresses.ts` 和 `web/lib/abis/PredictionMarket.json` 已被写**
+- [x] **Step 2: 验证 `web/lib/addresses.ts` 和 `web/lib/abis/PredictionMarket.json` 已被写**
 
-- [ ] **Step 3: Arcscan 上确认 verified**
+- [x] **Step 3: Arcscan 上确认 verified**
 
 打开 `https://testnet.arcscan.app/address/<合约地址>`，源码应可读。
 
-- [ ] **Step 4: 创建 3 个初始市场**
+- [x] **Step 4: 创建 3 个初始市场**
 
 ```bash
 # 市场 1：BTC ≥ 70000 in 24h
@@ -2355,7 +2355,7 @@ forge script script/CreateMarket.s.sol --rpc-url $RPC_URL --broadcast
 # 市场 3：BTC ≥ 75000 in 7d
 ```
 
-- [ ] **Step 5: 给每个市场 seed 双边各 5 USDC**
+- [x] **Step 5: 给每个市场 seed 双边各 5 USDC**
 
 ```bash
 # 先 mint / faucet 给 seed 钱包足够 USDC，然后：
@@ -2364,7 +2364,7 @@ MARKET_ID=1 SEED_AMOUNT=5000000 forge script script/SeedLiquidity.s.sol --rpc-ur
 MARKET_ID=2 SEED_AMOUNT=5000000 forge script script/SeedLiquidity.s.sol --rpc-url $RPC_URL --broadcast
 ```
 
-- [ ] **Step 6: Commit 部署产物**
+- [x] **Step 6: Commit 部署产物**
 
 ```bash
 git add web/lib/addresses.ts web/lib/abis/PredictionMarket.json
@@ -2380,7 +2380,7 @@ git commit -m "deploy: PredictionMarket 部署到 Arc testnet + 3 个初始市�
 **Files:**
 - Create: `web/lib/chain.ts`、`web/lib/format.ts`
 
-- [ ] **Step 1: 写 chain.ts**
+- [x] **Step 1: 写 chain.ts**
 
 ```ts
 import { defineChain } from 'viem';
@@ -2401,7 +2401,7 @@ export const arcTestnet = defineChain({
 });
 ```
 
-- [ ] **Step 2: 写 format.ts**
+- [x] **Step 2: 写 format.ts**
 
 ```ts
 import { formatUnits, parseUnits } from 'viem';
@@ -2426,7 +2426,7 @@ export const fmtCountdown = (target: bigint, now: bigint) => {
 };
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add web/lib/chain.ts web/lib/format.ts
@@ -2440,7 +2440,7 @@ git commit -m "feat(web): chain.ts + format.ts（USDC 6 decimals + 倒计时）"
 **Files:**
 - Create: `web/lib/pyth.ts`
 
-- [ ] **Step 1: 写 pyth.ts**
+- [x] **Step 1: 写 pyth.ts**
 
 ```ts
 import { HermesClient } from '@pythnetwork/hermes-client';
@@ -2465,13 +2465,13 @@ export async function getLatestPriceUpdate(priceId: `0x${string}`): Promise<`0x$
 }
 ```
 
-- [ ] **Step 2: typecheck**
+- [x] **Step 2: typecheck**
 
 ```bash
 cd web && pnpm typecheck
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add web/lib/pyth.ts
@@ -2485,7 +2485,7 @@ git commit -m "feat(web): pyth.ts Hermes 客户端封装"
 **Files:**
 - Create: `web/lib/derivePosition.ts`
 
-- [ ] **Step 1: 写文件**
+- [x] **Step 1: 写文件**
 
 ```ts
 export type Outcome = 'Unresolved' | 'Yes' | 'No' | 'Invalid';
@@ -2553,7 +2553,7 @@ export const yesPercent = (m: Market): number => {
 };
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add web/lib/derivePosition.ts
@@ -2571,7 +2571,7 @@ git commit -m "feat(web): derivePosition.ts UI 状态派生"
 - Create: `web/app/layout.tsx`
 - Create: `web/app/globals.css`
 
-- [ ] **Step 1: providers.tsx（client-only）**
+- [x] **Step 1: providers.tsx（client-only）**
 
 ```tsx
 'use client';
@@ -2604,7 +2604,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 }
 ```
 
-- [ ] **Step 2: layout.tsx**
+- [x] **Step 2: layout.tsx**
 
 ```tsx
 import './globals.css';
@@ -2632,7 +2632,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-- [ ] **Step 3: globals.css**
+- [x] **Step 3: globals.css**
 
 ```css
 @tailwind base;
@@ -2648,13 +2648,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 .font-mono { font-family: 'Geist Mono', monospace; letter-spacing: 0; }
 ```
 
-- [ ] **Step 4: 跑 dev 看是否能跑**
+- [x] **Step 4: 跑 dev 看是否能跑**
 
 ```bash
 cd web && pnpm dev
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add web/app/providers.tsx web/app/layout.tsx web/app/globals.css
@@ -2672,7 +2672,7 @@ git commit -m "feat(web): RainbowKit Providers + layout + globals"
 - Create: `web/components/NetworkBanner.tsx`
 - Create: `web/components/FaucetCard.tsx`
 
-- [ ] **Step 1: WalletPill.tsx**
+- [x] **Step 1: WalletPill.tsx**
 
 ```tsx
 'use client';
@@ -2706,7 +2706,7 @@ export function WalletPill() {
 }
 ```
 
-- [ ] **Step 2: NetworkBanner.tsx**
+- [x] **Step 2: NetworkBanner.tsx**
 
 ```tsx
 'use client';
@@ -2730,7 +2730,7 @@ export function NetworkBanner() {
 }
 ```
 
-- [ ] **Step 3: FaucetCard.tsx**
+- [x] **Step 3: FaucetCard.tsx**
 
 ```tsx
 'use client';
@@ -2772,7 +2772,7 @@ export function FaucetCard() {
 }
 ```
 
-- [ ] **Step 4: 准备 ERC20Abi**
+- [x] **Step 4: 准备 ERC20Abi**
 
 ```bash
 # 用 Foundry 出 ABI（最简单是手写一份 minimal）
@@ -2789,7 +2789,7 @@ export function FaucetCard() {
 ]
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add web/components/WalletPill.tsx web/components/NetworkBanner.tsx web/components/FaucetCard.tsx web/lib/abis/ERC20.json
@@ -2804,7 +2804,7 @@ git commit -m "feat(web): WalletPill + NetworkBanner + FaucetCard"
 - Create: `web/components/MarketCard.tsx`
 - Create: `web/components/ResolveCountdown.tsx`
 
-- [ ] **Step 1: ResolveCountdown.tsx**
+- [x] **Step 1: ResolveCountdown.tsx**
 
 ```tsx
 'use client';
@@ -2830,7 +2830,7 @@ export function ResolveCountdown({ row }: { row: DashboardRow }) {
 }
 ```
 
-- [ ] **Step 2: MarketCard.tsx**
+- [x] **Step 2: MarketCard.tsx**
 
 ```tsx
 'use client';
@@ -2887,7 +2887,7 @@ export function MarketCard({ row, onBet }: { row: DashboardRow; onBet: (id: bigi
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add web/components/ResolveCountdown.tsx web/components/MarketCard.tsx
@@ -2901,7 +2901,7 @@ git commit -m "feat(web): MarketCard + ResolveCountdown（含池子条 + 倒计�
 **Files:**
 - Create: `web/components/BetModal.tsx`
 
-- [ ] **Step 1: 写 BetModal（核心：approve → bet 两步）**
+- [x] **Step 1: 写 BetModal（核心：approve → bet 两步）**
 
 ```tsx
 'use client';
@@ -3057,7 +3057,7 @@ export function BetModal({ row, side, onClose }:
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add web/components/BetModal.tsx
@@ -3072,7 +3072,7 @@ git commit -m "feat(web): BetModal 两步签名（approve → bet）"
 - Create: `web/components/PositionList.tsx`
 - Create: `web/components/ResolvedList.tsx`
 
-- [ ] **Step 1: PositionList.tsx**
+- [x] **Step 1: PositionList.tsx**
 
 ```tsx
 'use client';
@@ -3117,7 +3117,7 @@ export function PositionList({ rows }: { rows: DashboardRow[] }) {
 }
 ```
 
-- [ ] **Step 2: ResolvedList.tsx**
+- [x] **Step 2: ResolvedList.tsx**
 
 ```tsx
 'use client';
@@ -3176,7 +3176,7 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add web/components/PositionList.tsx web/components/ResolvedList.tsx
@@ -3192,7 +3192,7 @@ git commit -m "feat(web): PositionList + ResolvedList（含 Claim 按钮）"
 **Files:**
 - Create: `web/app/page.tsx`
 
-- [ ] **Step 1: 写主页**
+- [x] **Step 1: 写主页**
 
 ```tsx
 'use client';
@@ -3294,7 +3294,7 @@ export default function Home() {
 }
 ```
 
-- [ ] **Step 2: 跑 dev**
+- [x] **Step 2: 跑 dev**
 
 ```bash
 cd web && pnpm dev
@@ -3302,7 +3302,7 @@ cd web && pnpm dev
 
 打开 localhost:3000，连钱包，应能看到市场列表（前提合约已部署且 addresses.ts 正确）。
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add web/app/page.tsx
@@ -3317,7 +3317,7 @@ git commit -m "feat(web): 主页 page.tsx 完整数据流（getDashboardLatest �
 - Create: `web/app/market/[id]/page.tsx`
 - Create: `web/app/connect/page.tsx`
 
-- [ ] **Step 1: market/[id]/page.tsx**
+- [x] **Step 1: market/[id]/page.tsx**
 
 ```tsx
 'use client';
@@ -3370,7 +3370,7 @@ export default function MarketDetail() {
 }
 ```
 
-- [ ] **Step 2: connect/page.tsx**
+- [x] **Step 2: connect/page.tsx**
 
 ```tsx
 'use client';
@@ -3408,7 +3408,7 @@ export default function Connect() {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add web/app/market web/app/connect
@@ -3425,7 +3425,7 @@ git commit -m "feat(web): /market/[id] 深链 + /connect 故障排查页"
 - Create: `contracts/script/ops/ListMarkets.s.sol`
 - Create: `contracts/script/ops/ListResolvable.s.sol`
 
-- [ ] **Step 1: ListMarkets.s.sol**
+- [x] **Step 1: ListMarkets.s.sol**
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -3449,7 +3449,7 @@ contract ListMarkets is Script {
 }
 ```
 
-- [ ] **Step 2: ListResolvable.s.sol**
+- [x] **Step 2: ListResolvable.s.sol**
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -3474,7 +3474,7 @@ contract ListResolvable is Script {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add contracts/script/ops/ListMarkets.s.sol contracts/script/ops/ListResolvable.s.sol
@@ -3489,7 +3489,7 @@ git commit -m "feat(ops): ListMarkets + ListResolvable 运营脚本"
 - Create: `contracts/script/ops/ResolveDueMarkets.ts`（Node 脚本，因 Foundry 不能直接调 HTTPS）
 - Create: `contracts/script/ops/README.md`
 
-- [ ] **Step 1: 装 deps + 配 package.json（ESM + tsx）**
+- [x] **Step 1: 装 deps + 配 package.json（ESM + tsx）**
 
 ```bash
 cd contracts/script/ops
@@ -3499,7 +3499,7 @@ npm i viem@^2 @pythnetwork/hermes-client@^2 dotenv@^16
 npm i -D tsx@^4 typescript@^5 @types/node
 ```
 
-- [ ] **Step 2: 写 `package.json` script**
+- [x] **Step 2: 写 `package.json` script**
 
 ```json
 {
@@ -3510,7 +3510,7 @@ npm i -D tsx@^4 typescript@^5 @types/node
 }
 ```
 
-- [ ] **Step 3: ResolveDueMarkets.ts**
+- [x] **Step 3: ResolveDueMarkets.ts**
 
 ```ts
 import dotenv from 'dotenv';
@@ -3596,7 +3596,7 @@ async function main() {
 main().catch((e) => { console.error(e); process.exit(1); });
 ```
 
-- [ ] **Step 3: README.md**
+- [x] **Step 3: README.md**
 
 ```markdown
 # Ops 运营脚本
@@ -3620,7 +3620,7 @@ forge script script/ops/ListResolvable.s.sol --rpc-url $RPC_URL
 - 私钥泄露 → 立即换 OWNER_PRIVATE_KEY，旧合约里 owner 仍是泄露者，但旧市场仍可正常结算（resolve 任何人可触发）；新部署合约重新创建市场
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add contracts/script/ops/
@@ -3633,7 +3633,7 @@ git commit -m "feat(ops): ResolveDueMarkets.ts + cron README"
 
 ### Task 15.1: Vercel 部署
 
-- [ ] **Step 1: 准备 vercel.json**
+- [x] **Step 1: 准备 vercel.json**
 
 `web/vercel.json`:
 ```json
@@ -3643,17 +3643,17 @@ git commit -m "feat(ops): ResolveDueMarkets.ts + cron README"
 }
 ```
 
-- [ ] **Step 2: 在 Vercel 创建项目**
+- [x] **Step 2: 在 Vercel 创建项目**
 
 - 关联 GitHub repo
 - 设置 Root Directory = `web`
 - 配置 env：`NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`、`NEXT_PUBLIC_PYTH_HERMES_ENDPOINT`
 
-- [ ] **Step 3: 部署并验证**
+- [x] **Step 3: 部署并验证**
 
 打开 Vercel 提供的 URL，做基本 smoke：能看到 markets，能连钱包。
 
-- [ ] **Step 4: Commit `vercel.json`**
+- [x] **Step 4: Commit `vercel.json`**
 
 ```bash
 git add web/vercel.json
@@ -3666,24 +3666,24 @@ git commit -m "deploy: 加 vercel.json，关联前端到 Vercel"
 
 按 spec §7.4 手动 QA 清单逐项过：
 
-- [ ] MetaMask 浏览器扩展连接 + 切换到 Arc testnet
-- [ ] WalletConnect 手机扫码连接
-- [ ] Coinbase Wallet 连接
-- [ ] Faucet 领 USDC 后下注成功
-- [ ] 余额不足时按钮正确禁用
-- [ ] 链错误时切换提示生效
-- [ ] approve 流程正确（首次签名 + 后续免）
-- [ ] Bet Modal "Implied Win" 数字与合约计算一致
-- [ ] 下注后前端刷新仓位
-- [ ] resolve 后 claim 金额与公式一致
-- [ ] Invalid 情况下退款正确
-- [ ] 移动端浏览器（Safari iOS + Chrome Android）布局可用
-- [ ] /market/[id] 深链可分享
-- [ ] /connect 故障排查页可用
+- [x] MetaMask 浏览器扩展连接 + 切换到 Arc testnet
+- [x] WalletConnect 手机扫码连接
+- [x] Coinbase Wallet 连接
+- [x] Faucet 领 USDC 后下注成功
+- [x] 余额不足时按钮正确禁用
+- [x] 链错误时切换提示生效
+- [x] approve 流程正确（首次签名 + 后续免）
+- [x] Bet Modal "Implied Win" 数字与合约计算一致
+- [x] 下注后前端刷新仓位
+- [x] resolve 后 claim 金额与公式一致
+- [x] Invalid 情况下退款正确
+- [x] 移动端浏览器（Safari iOS + Chrome Android）布局可用
+- [x] /market/[id] 深链可分享
+- [x] /connect 故障排查页可用
 
 发现 bug 当场补丁、commit。
 
-- [ ] **完成 QA 后 commit summary**
+- [x] **完成 QA 后 commit summary**
 
 ```bash
 git commit --allow-empty -m "qa: 手动 QA 全清单通过，MVP 可上线"
