@@ -47,6 +47,49 @@ assert.match(
   'placeholder Project ID 时应提示占位值非法',
 );
 
+const localDevelopmentProjectId = runEnsureProductionEnv({
+  NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: 'local-development-only',
+  NEXT_PUBLIC_PYTH_HERMES_ENDPOINT: 'https://hermes.pyth.network',
+});
+assertFailed(localDevelopmentProjectId, 'local-development-only Project ID 必须失败');
+assert.match(
+  `${localDevelopmentProjectId.stdout}\n${localDevelopmentProjectId.stderr}`,
+  /local-development-only/u,
+  'local-development-only Project ID 时应提示占位值非法',
+);
+
+const missingHermesEndpoint = runEnsureProductionEnv({
+  NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: 'reown-project-id-123',
+});
+assertFailed(missingHermesEndpoint, '缺少 Hermes endpoint 时必须失败');
+assert.match(
+  `${missingHermesEndpoint.stdout}\n${missingHermesEndpoint.stderr}`,
+  /NEXT_PUBLIC_PYTH_HERMES_ENDPOINT/u,
+  '缺少 Hermes endpoint 时应提示对应变量名',
+);
+
+const ftpHermesEndpoint = runEnsureProductionEnv({
+  NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: 'reown-project-id-123',
+  NEXT_PUBLIC_PYTH_HERMES_ENDPOINT: 'ftp://hermes.pyth.network',
+});
+assertFailed(ftpHermesEndpoint, 'ftp Hermes endpoint 必须失败');
+assert.match(
+  `${ftpHermesEndpoint.stdout}\n${ftpHermesEndpoint.stderr}`,
+  /ftp:\/\/hermes\.pyth\.network/u,
+  '非法 Hermes endpoint 时应提示非法值',
+);
+
+const malformedHermesEndpoint = runEnsureProductionEnv({
+  NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: 'reown-project-id-123',
+  NEXT_PUBLIC_PYTH_HERMES_ENDPOINT: 'not-a-url',
+});
+assertFailed(malformedHermesEndpoint, '非 URL 的 Hermes endpoint 必须失败');
+assert.match(
+  `${malformedHermesEndpoint.stdout}\n${malformedHermesEndpoint.stderr}`,
+  /not-a-url/u,
+  '非 URL 的 Hermes endpoint 时应提示非法值',
+);
+
 const validProductionEnv = runEnsureProductionEnv({
   NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: 'reown-project-id-123',
   NEXT_PUBLIC_PYTH_HERMES_ENDPOINT: 'https://hermes.pyth.network',

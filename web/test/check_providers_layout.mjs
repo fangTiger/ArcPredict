@@ -40,6 +40,9 @@ async function main() {
     assert(providers.includes(token), `providers.tsx 缺少关键内容: ${token}`);
   }
 
+  assert(!providers.includes("'placeholder'"), "providers.tsx 不应包含裸字符串 'placeholder'");
+  assert(!providers.includes('"placeholder"'), 'providers.tsx 不应包含裸字符串 "placeholder"');
+
   const layoutTokens = [
     'Providers',
     '<Providers>{children}</Providers>',

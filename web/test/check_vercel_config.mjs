@@ -19,14 +19,10 @@ try {
   );
 }
 
-assert.equal(typeof vercelConfig.buildCommand, 'string', 'buildCommand 必须是字符串');
-assert(
-  vercelConfig.buildCommand.includes('node scripts/ensure-production-env.mjs'),
-  'buildCommand 必须先执行生产环境变量校验脚本',
-);
-assert(
-  vercelConfig.buildCommand.includes('pnpm build'),
-  'buildCommand 必须包含 pnpm build',
+assert.equal(
+  vercelConfig.buildCommand,
+  'node scripts/ensure-production-env.mjs && pnpm build',
+  'buildCommand 必须严格先执行生产环境变量校验，再执行 pnpm build',
 );
 assert.equal(vercelConfig.framework, 'nextjs', 'framework 必须等于 nextjs');
 

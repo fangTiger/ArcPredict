@@ -28,7 +28,9 @@ if (!walletConnectProjectId) {
 if (!hermesEndpoint) {
   errors.push('NEXT_PUBLIC_PYTH_HERMES_ENDPOINT 缺失，生产部署前必须配置可用的 Hermes HTTP(S) 端点。');
 } else if (!isValidHttpUrl(hermesEndpoint)) {
-  errors.push('NEXT_PUBLIC_PYTH_HERMES_ENDPOINT 必须是 http:// 或 https:// 开头的有效 URL。');
+  errors.push(
+    `NEXT_PUBLIC_PYTH_HERMES_ENDPOINT 的值 "${hermesEndpoint}" 非法，必须是 http:// 或 https:// 开头的有效 URL。`,
+  );
 }
 
 if (errors.length > 0) {
