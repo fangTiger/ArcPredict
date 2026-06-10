@@ -868,8 +868,68 @@ contract ClaimTest is PredictionMarketTestBase {
         market.claim(id);
     }
 
+    function test_Claim_PreventsReentrancy() public {
+        ReentrantAttacker attacker = new ReentrantAttacker(market, usdc);
+        uint256 id = _makeMarket(70000_00000000, 24);
+
+        usdc.mint(address(attacker), 100_000_000);
+        attacker.approveMax();
+        attacker.placeBet(id, true, 100_000_000);
+
+        vm.prank(bob);
+        market.bet(id, false, 50_000_000);
+
+        _resolveYes(id);
+
+        assertEq(usdc.balanceOf(address(attacker)), 0);
+        assertFalse(market.claimed(id, address(attacker)));
+        assertEq(market.pendingPayout(id, address(attacker)), 149_500_000);
+
+        vm.expectRevert(bytes("MockUSDC: reentrancy call failed"));
+        attacker.attackClaim(id);
+
+        // 整笔交易回滚时，攻击合约的 reentered 标记也会一并回滚，
+        // 因此这里用精确 revert 原因和最终状态不变来证明二次进入路径被 CEI 阻断。
+        assertEq(usdc.balanceOf(address(attacker)), 0);
+        assertFalse(market.claimed(id, address(attacker)));
+        assertEq(market.pendingPayout(id, address(attacker)), 149_500_000);
+    }
+
     function test_Claim_RevertsIfInvalidMarketId() public {
         vm.expectRevert(PredictionMarket.InvalidMarketId.selector);
         market.claim(99);
+    }
+}
+
+contract ReentrantAttacker {
+    PredictionMarket public immutable market;
+    MockUSDC public immutable usdc;
+    uint256 public attackId;
+    bool public reentered;
+
+    constructor(PredictionMarket m, MockUSDC u) {
+        market = m;
+        usdc = u;
+    }
+
+    function approveMax() external {
+        usdc.approve(address(market), type(uint256).max);
+    }
+
+    function placeBet(uint256 id, bool yes, uint128 amount) external {
+        market.bet(id, yes, amount);
+    }
+
+    function attackClaim(uint256 id) external {
+        attackId = id;
+        reentered = false;
+        usdc.setReentrancyCallback(address(this), abi.encodeCall(this.reenter, ()));
+        market.claim(id);
+    }
+
+    function reenter() external {
+        require(msg.sender == address(usdc), "ReentrantAttacker: only usdc");
+        reentered = true;
+        market.claim(attackId);
     }
 }
