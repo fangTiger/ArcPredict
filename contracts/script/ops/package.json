@@ -1,0 +1,20 @@
+{
+  "name": "arc-predict-ops",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "resolve": "tsx ResolveDueMarkets.ts",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && tsx test/check_resolve_due_markets.ts"
+  },
+  "dependencies": {
+    "@pythnetwork/hermes-client": "^2.0.0",
+    "dotenv": "^16.0.0",
+    "viem": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

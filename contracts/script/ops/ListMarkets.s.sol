@@ -9,6 +9,10 @@ import {PredictionMarket} from "../../src/PredictionMarket.sol";
 contract ListMarkets is Script {
     function run() external view {
         PredictionMarket predictionMarket = PredictionMarket(vm.envAddress("PREDICTION_MARKET"));
+        _run(predictionMarket);
+    }
+
+    function _run(PredictionMarket predictionMarket) internal view {
         PredictionMarket.Market[] memory listed = _loadMarkets(predictionMarket);
 
         console2.log(unicode"市场数量", listed.length);

@@ -12,11 +12,19 @@ contract ListMarketsHarness is ListMarkets {
     function loadMarkets(address marketAddress) external view returns (PredictionMarket.Market[] memory) {
         return _loadMarkets(PredictionMarket(marketAddress));
     }
+
+    function runWithMarket(address marketAddress) external view {
+        _run(PredictionMarket(marketAddress));
+    }
 }
 
 contract ListResolvableHarness is ListResolvable {
     function collectResolvableIds(address marketAddress) external view returns (uint256[] memory) {
         return _collectResolvableIds(PredictionMarket(marketAddress));
+    }
+
+    function runWithMarket(address marketAddress) external view {
+        _run(PredictionMarket(marketAddress));
     }
 }
 
@@ -62,9 +70,7 @@ contract OpsScriptsTest is Test {
         );
     }
 
-    function test_ListMarkets_RunDoesNotRevertAndLoadsAllMarkets() external {
-        vm.setEnv("PREDICTION_MARKET", vm.toString(address(market)));
-
+    function test_ListMarkets_RunDoesNotRevertAndLoadsAllMarkets() external view {
         PredictionMarket.Market[] memory listed = listMarkets.loadMarkets(address(market));
 
         assertEq(listed.length, 2);
@@ -73,35 +79,32 @@ contract OpsScriptsTest is Test {
         assertEq(listed[0].resolveAfter, uint64(1_700_000_000 + 2 hours));
         assertEq(listed[1].resolveAfter, uint64(1_700_000_000 + 4 hours));
 
-        listMarkets.run();
+        listMarkets.runWithMarket(address(market));
     }
 
     function test_ListResolvable_RunDoesNotRevertWhenDueMarketExists() external {
         vm.warp(1_700_000_000 + 2 hours);
-        vm.setEnv("PREDICTION_MARKET", vm.toString(address(market)));
 
         uint256[] memory resolvableIds = listResolvable.collectResolvableIds(address(market));
 
         assertEq(resolvableIds.length, 1);
         assertEq(resolvableIds[0], 0);
 
-        listResolvable.run();
+        listResolvable.runWithMarket(address(market));
     }
 
     function test_ListResolvable_RunDoesNotRevertWhenNoDueMarketExists() external {
         vm.warp(1_700_000_000 + 90 minutes);
-        vm.setEnv("PREDICTION_MARKET", vm.toString(address(market)));
 
         uint256[] memory resolvableIds = listResolvable.collectResolvableIds(address(market));
 
         assertEq(resolvableIds.length, 0);
 
-        listResolvable.run();
+        listResolvable.runWithMarket(address(market));
     }
 
     function test_ListResolvable_ExcludesAlreadyResolvedDueMarket() external {
         vm.warp(1_700_000_000 + 2 hours);
-        vm.setEnv("PREDICTION_MARKET", vm.toString(address(market)));
 
         pyth.setNextPrice(THRESHOLD_BTC, EXPO_8, uint64(block.timestamp), 0);
         market.resolve{value: pyth.fee()}(0, new bytes[](0));
@@ -113,6 +116,6 @@ contract OpsScriptsTest is Test {
 
         assertEq(resolvableIds.length, 0);
 
-        listResolvable.run();
+        listResolvable.runWithMarket(address(market));
     }
 }

@@ -9,6 +9,10 @@ import {PredictionMarket} from "../../src/PredictionMarket.sol";
 contract ListResolvable is Script {
     function run() external view {
         PredictionMarket predictionMarket = PredictionMarket(vm.envAddress("PREDICTION_MARKET"));
+        _run(predictionMarket);
+    }
+
+    function _run(PredictionMarket predictionMarket) internal view {
         uint256[] memory resolvableIds = _collectResolvableIds(predictionMarket);
 
         console2.log(unicode"可结算市场数量", resolvableIds.length);
