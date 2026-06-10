@@ -11,7 +11,7 @@ contract SeedLiquidity is Script {
     error SeedAmountTooLarge();
 
     function run() external {
-        uint256 seedPrivateKey = vm.envUint("OWNER_PRIVATE_KEY");
+        uint256 seedPrivateKey = vm.envUint("SEED_PRIVATE_KEY");
         address marketAddress = vm.envAddress("PREDICTION_MARKET");
         address usdcAddress = vm.envAddress("USDC_ADDRESS");
         uint256 marketId = vm.envUint("MARKET_ID");

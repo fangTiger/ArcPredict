@@ -62,13 +62,14 @@ contract SeedLiquidityScriptTest is Test {
         harness.toUint128AmountPublic(uint256(type(uint128).max) + 1);
     }
 
-    function test_Run_SeedsBothSidesFromEnv() external {
+    function test_Run_UsesSeedSignerInsteadOfOwnerSigner() external {
         uint128 amount = 5_000_000;
         uint256 mintedAmount = uint256(amount) * 3;
 
         usdc.mint(seedSigner, mintedAmount);
 
-        vm.setEnv("OWNER_PRIVATE_KEY", vm.toString(SEED_PRIVATE_KEY));
+        vm.setEnv("OWNER_PRIVATE_KEY", vm.toString(OWNER_PRIVATE_KEY));
+        vm.setEnv("SEED_PRIVATE_KEY", vm.toString(SEED_PRIVATE_KEY));
         vm.setEnv("PREDICTION_MARKET", vm.toString(address(market)));
         vm.setEnv("USDC_ADDRESS", vm.toString(address(usdc)));
         vm.setEnv("MARKET_ID", "0");
