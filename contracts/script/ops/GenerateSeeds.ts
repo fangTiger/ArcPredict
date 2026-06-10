@@ -1,6 +1,6 @@
 // 一次性脚本：生成 N 个 seed 钱包，写出 .env.seeds 与 web/lib/seed-wallets.ts。
 // 只在 owner 人工门禁 E1 后执行；测试只覆盖纯函数，避免误生成真实钱包池。
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve as pathResolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
@@ -56,22 +56,66 @@ function generateSeeds(count: number): Seed[] {
   return out;
 }
 
-function parseCountFromArgs(): number {
-  const countArg = process.argv.slice(2).find((value) => value.startsWith("--count="));
-  if (!countArg) {
-    return DEFAULT_COUNT;
-  }
-
-  const count = Number(countArg.split("=")[1]);
+function parsePositiveInteger(value: string | undefined, label: string): number {
+  const count = Number(value);
   if (!Number.isInteger(count) || count <= 0) {
-    throw new Error("--count 必须为正整数");
+    throw new Error(`${label} 必须为正整数`);
   }
 
   return count;
 }
 
-function isAppendMode(): boolean {
-  return process.argv.slice(2).some((value) => value === "--append");
+export function parseGenerationArgs(
+  args: readonly string[] = process.argv.slice(2),
+): { append: boolean; count: number } {
+  const appendCountArg = args.find((value) => value.startsWith("--append="));
+  const countArg = args.find((value) => value.startsWith("--count="));
+  const append = appendCountArg !== undefined || args.some((value) => value === "--append");
+
+  let count = DEFAULT_COUNT;
+  if (appendCountArg !== undefined) {
+    count = parsePositiveInteger(appendCountArg.slice("--append=".length), "--append=数字");
+  }
+  if (countArg !== undefined) {
+    count = parsePositiveInteger(countArg.slice("--count=".length), "--count");
+  }
+
+  return { append, count };
+}
+
+export function parseSeedFileContent(content: string): Seed[] {
+  const map: Record<string, string> = {};
+
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (trimmed === "" || trimmed.startsWith("#")) {
+      continue;
+    }
+
+    const equalsIndex = trimmed.indexOf("=");
+    if (equalsIndex === -1) {
+      continue;
+    }
+
+    const key = trimmed.slice(0, equalsIndex);
+    const value = trimmed.slice(equalsIndex + 1);
+    map[key] = value;
+  }
+
+  const count = parsePositiveInteger(map.SEED_WALLET_COUNT, "SEED_WALLET_COUNT");
+  const out: Seed[] = [];
+
+  for (let i = 0; i < count; i += 1) {
+    const privateKey = map[`SEED_PRIVATE_KEY_${i}`];
+    const address = map[`SEED_ADDRESS_${i}`];
+    if (!privateKey || !address) {
+      throw new Error(`SEED_PRIVATE_KEY_${i} / SEED_ADDRESS_${i} 缺失`);
+    }
+
+    out.push({ privateKey: privateKey as Hex, address: address as Address });
+  }
+
+  return out;
 }
 
 function existingSeedsFromFile(): Seed[] {
@@ -79,28 +123,7 @@ function existingSeedsFromFile(): Seed[] {
     return [];
   }
 
-  const lines = readFileSync(ENV_SEEDS_PATH, "utf8").split(/\r?\n/);
-  const map: Record<string, string> = {};
-
-  for (const line of lines) {
-    const match = line.match(/^([A-Z_]+\d*)=(.+)$/);
-    if (match) {
-      map[match[1]] = match[2];
-    }
-  }
-
-  const count = Number(map.SEED_WALLET_COUNT ?? 0);
-  const out: Seed[] = [];
-
-  for (let i = 0; i < count; i += 1) {
-    const privateKey = map[`SEED_PRIVATE_KEY_${i}`];
-    const address = map[`SEED_ADDRESS_${i}`];
-    if (privateKey && address) {
-      out.push({ privateKey: privateKey as Hex, address: address as Address });
-    }
-  }
-
-  return out;
+  return parseSeedFileContent(readFileSync(ENV_SEEDS_PATH, "utf8"));
 }
 
 function isDirect(): boolean {
@@ -108,14 +131,14 @@ function isDirect(): boolean {
 }
 
 if (isDirect()) {
-  const append = isAppendMode();
-  const count = parseCountFromArgs();
+  const { append, count } = parseGenerationArgs();
   const existing = append ? existingSeedsFromFile() : [];
   const newOnes = generateSeeds(count);
   const all = [...existing, ...newOnes];
 
   mkdirSync(dirname(WEB_SEEDS_TS_PATH), { recursive: true });
   writeFileSync(ENV_SEEDS_PATH, buildSeedFileContent(all), { mode: 0o600 });
+  chmodSync(ENV_SEEDS_PATH, 0o600);
   writeFileSync(WEB_SEEDS_TS_PATH, buildWebSeedListContent(all));
 
   console.log(`已生成 ${newOnes.length} 个钱包；钱包池总数 ${all.length}`);

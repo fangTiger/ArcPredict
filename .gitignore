@@ -25,6 +25,9 @@ contracts/lib/
 .env.local
 .env.*.local
 
+# Phase 16+ seed 钱包池本地文件
+contracts/.env.seeds
+
 # 日志
 log/
 *.log
