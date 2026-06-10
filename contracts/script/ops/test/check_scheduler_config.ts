@@ -19,6 +19,15 @@ test("每个 cadence 的 betHours < resolveHours", () => {
   }
 });
 
+test("CADENCE_DURATION 精确锁定 Phase 16+ 时间窗口", () => {
+  assert.deepEqual(CADENCE_DURATION, {
+    daily: { betHours: 20, resolveHours: 24 },
+    weekly: { betHours: 7 * 24 - 4, resolveHours: 7 * 24 },
+    monthly: { betHours: 30 * 24 - 8, resolveHours: 30 * 24 },
+    quarterly: { betHours: 90 * 24 - 12, resolveHours: 90 * 24 },
+  });
+});
+
 test("THRESHOLD_OFFSETS_PCT 覆盖 TARGET_ACTIVE 所需长度", () => {
   for (const asset of Object.keys(TARGET_ACTIVE) as Array<keyof typeof TARGET_ACTIVE>) {
     for (const cadence of Object.keys(TARGET_ACTIVE[asset]) as Array<keyof typeof CADENCE_DURATION>) {
@@ -28,6 +37,15 @@ test("THRESHOLD_OFFSETS_PCT 覆盖 TARGET_ACTIVE 所需长度", () => {
       );
     }
   }
+});
+
+test("THRESHOLD_OFFSETS_PCT 精确锁定 Phase 16+ 偏移阶梯", () => {
+  assert.deepEqual(THRESHOLD_OFFSETS_PCT, {
+    daily: [0],
+    weekly: [-3, 0, +3],
+    monthly: [-8, 0, +8],
+    quarterly: [-15, 0, +15],
+  });
 });
 
 test("TARGET_ACTIVE 精确锁定 Phase 16+ 目标矩阵", () => {
