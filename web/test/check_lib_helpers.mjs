@@ -106,6 +106,11 @@ assert.equal(chain.arcTestnet.testnet, true);
 
 assert.equal(format.fmtUsdc(1234567n), '1.23');
 assert.equal(format.fmtUsdc(1000000n), '1');
+assert.equal(format.fmtUsdc(1005000n), '1.01');
+assert.equal(
+  format.fmtUsdc(1234567890123456789012345n),
+  '1,234,567,890,123,456,789.01',
+);
 assert.equal(format.parseUsdc('1.5'), 1500000n);
 assert.equal(
   format.truncateAddr('0x1234567890abcdef1234567890abcdef12345678'),
