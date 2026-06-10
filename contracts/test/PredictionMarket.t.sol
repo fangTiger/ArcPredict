@@ -383,6 +383,8 @@ contract ResolveTest is PredictionMarketTestBase {
         uint128 protocolFee
     );
 
+    receive() external payable {}
+
     function _setupAndBet() internal returns (uint256 id) {
         id = _makeMarket(70000_00000000, 24);
 
@@ -401,6 +403,75 @@ contract ResolveTest is PredictionMarketTestBase {
         vm.warp(ts + 1);
         vm.deal(address(this), 1 ether);
         market.resolve{value: 1 wei}(id, updateData);
+    }
+
+    function test_Resolve_RevertsBeforeResolveAfter() public {
+        uint256 id = _setupAndBet();
+
+        bytes[] memory updateData = new bytes[](1);
+
+        vm.deal(address(this), 1 ether);
+        vm.expectRevert(PredictionMarket.NotResolvableYet.selector);
+        market.resolve{value: 1 wei}(id, updateData);
+    }
+
+    function test_Resolve_RevertsIfAlreadyResolved() public {
+        uint256 id = _setupAndBet();
+        PredictionMarket.Market memory mBefore = market.getMarket(id);
+
+        _resolve(id, 75000_00000000, mBefore.resolveAfter);
+
+        bytes[] memory updateData = new bytes[](1);
+
+        vm.expectRevert(PredictionMarket.AlreadyResolved.selector);
+        market.resolve(id, updateData);
+    }
+
+    function test_Resolve_RevertsIfInsufficientPythFee() public {
+        uint256 id = _setupAndBet();
+        PredictionMarket.Market memory mBefore = market.getMarket(id);
+
+        pyth.setFee(2 wei);
+
+        bytes[] memory updateData = new bytes[](1);
+
+        vm.warp(mBefore.resolveAfter + 1);
+        vm.deal(address(this), 1 ether);
+        vm.expectRevert(PredictionMarket.InsufficientPythFee.selector);
+        market.resolve{value: 1 wei}(id, updateData);
+    }
+
+    function test_Resolve_BubblesGenericRevertWhenPythParseReverts() public {
+        uint256 id = _setupAndBet();
+        PredictionMarket.Market memory mBefore = market.getMarket(id);
+
+        pyth.setShouldRevert(true);
+
+        bytes[] memory updateData = new bytes[](1);
+
+        vm.warp(mBefore.resolveAfter + 1);
+        vm.deal(address(this), 1 ether);
+        vm.expectRevert();
+        market.resolve{value: 1 wei}(id, updateData);
+    }
+
+    function test_Resolve_RefundsExtraPythFee() public {
+        uint256 id = _setupAndBet();
+        PredictionMarket.Market memory mBefore = market.getMarket(id);
+
+        pyth.setFee(1 wei);
+        pyth.setNextPrice(75000_00000000, EXPO_8, mBefore.resolveAfter, 0);
+
+        bytes[] memory updateData = new bytes[](1);
+
+        vm.warp(mBefore.resolveAfter + 1);
+        vm.deal(address(this), 1 ether);
+
+        uint256 balanceBefore = address(this).balance;
+        market.resolve{value: 101 wei}(id, updateData);
+
+        assertEq(address(this).balance, balanceBefore - 1 wei);
+        assertEq(address(pyth).balance, 1 wei);
     }
 
     function test_Resolve_Yes_WhenPriceAboveThreshold() public {
