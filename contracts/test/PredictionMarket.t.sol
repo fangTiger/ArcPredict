@@ -275,7 +275,12 @@ contract CreateMarketTest is PredictionMarketTestBase {
 
 contract BetTest is PredictionMarketTestBase {
     event Bet(
-        uint256 indexed id, address indexed user, bool yes, uint128 amount, uint128 yesPoolAfter, uint128 noPoolAfter
+        uint256 indexed id,
+        address indexed user,
+        bool yes,
+        uint128 amount,
+        uint128 yesPoolAfter,
+        uint128 noPoolAfter
     );
 
     function test_Bet_HappyPath_Yes() public {
@@ -1052,6 +1057,21 @@ contract ViewTest is PredictionMarketTestBase {
         PredictionMarket.Market[] memory ms = market.getMarketsPaged(2, 2);
 
         assertEq(ms.length, 0);
+    }
+
+    function test_GetDashboard_HalfOpenRangeReturnsAscendingRows() public {
+        _makeFiveMarkets();
+
+        (PredictionMarket.DashboardRow[] memory rows, uint256 totalCount) = market.getDashboard(alice, 1, 4);
+
+        assertEq(totalCount, 5);
+        assertEq(rows.length, 3);
+        assertEq(rows[0].id, 1);
+        assertEq(rows[1].id, 2);
+        assertEq(rows[2].id, 3);
+        assertEq(rows[0].market.threshold, 2);
+        assertEq(rows[1].market.threshold, 3);
+        assertEq(rows[2].market.threshold, 4);
     }
 
     function test_GetMarketsPaged_RevertsOnInvalidRange() public {

@@ -81,7 +81,12 @@ contract PredictionMarket is Ownable2Step {
     );
 
     event Bet(
-        uint256 indexed id, address indexed user, bool yes, uint128 amount, uint128 yesPoolAfter, uint128 noPoolAfter
+        uint256 indexed id,
+        address indexed user,
+        bool yes,
+        uint128 amount,
+        uint128 yesPoolAfter,
+        uint128 noPoolAfter
     );
 
     event Resolved(
@@ -121,8 +126,10 @@ contract PredictionMarket is Ownable2Step {
     constructor(address usdc, address pyth, address initialOwner, address initialFeeRecipient)
         Ownable(initialOwner == address(0) ? OWNABLE_INIT_SENTINEL : initialOwner)
     {
-        if (usdc == address(0) || pyth == address(0) || initialOwner == address(0) || initialFeeRecipient == address(0))
-        revert ZeroAddress();
+        if (
+            usdc == address(0) || pyth == address(0) || initialOwner == address(0)
+                || initialFeeRecipient == address(0)
+        ) revert ZeroAddress();
 
         USDC = usdc;
         PYTH = pyth;
