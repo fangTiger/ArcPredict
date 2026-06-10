@@ -4,10 +4,16 @@
 
 :root {
   color-scheme: dark;
+  font-family: 'Geist', system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-wrap: pretty;
 }
 
 body {
   margin: 0;
-  font-family: Geist, system-ui, sans-serif;
-  background: #0b0c0e;
+}
+
+.font-mono {
+  font-family: 'Geist Mono', monospace;
+  letter-spacing: 0;
 }
