@@ -86,6 +86,12 @@ assertIncludesAll('ResolvedList.tsx', resolvedList, [
   'fmtUsdc(r.pendingPayout)',
   'Claim',
   'pendingPayout',
+  'submittedIds',
+  '!submittedIds.has(r.id.toString())',
+  'setSubmittedIds',
+  'new Set(ids).add(id.toString())',
+  '等待链上确认',
+  'statusById',
 ]);
 
 assertExcludesAll('ResolvedList.tsx', resolvedList, [

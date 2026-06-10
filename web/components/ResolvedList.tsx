@@ -53,13 +53,20 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
   const resolved = rows.filter((r) => OUTCOMES[r.market.outcome] !== 'Unresolved');
   const { writeContractAsync, isPending } = useWriteContract();
   const [pendingId, setPendingId] = useState<bigint | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
+  const [submittedIds, setSubmittedIds] = useState<Set<string>>(() => new Set());
+  const [statusById, setStatusById] = useState<Record<string, string>>({});
 
   if (resolved.length === 0) return null;
 
   const claim = async (id: bigint) => {
+    const idKey = id.toString();
+
     try {
-      setStatus(null);
+      setStatusById((current) => {
+        const next = { ...current };
+        delete next[idKey];
+        return next;
+      });
       setPendingId(id);
       const hash = await writeContractAsync({
         address: PREDICTION_MARKET_ADDRESS,
@@ -69,9 +76,16 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
         chainId: arcTestnet.id,
       });
 
-      setStatus(`领取交易已提交：${hash.slice(0, 10)}...`);
+      setSubmittedIds((ids) => new Set(ids).add(id.toString()));
+      setStatusById((current) => ({
+        ...current,
+        [idKey]: `领取交易已提交：${hash.slice(0, 10)}...，等待链上确认`,
+      }));
     } catch (error) {
-      setStatus(humanizeError(error));
+      setStatusById((current) => ({
+        ...current,
+        [idKey]: humanizeError(error),
+      }));
     } finally {
       setPendingId(null);
     }
@@ -87,14 +101,15 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
           </div>
           <span className="font-mono text-sm text-zinc-500">{resolved.length}</span>
         </div>
-
-        {status ? <p className="mt-3 text-xs text-zinc-400">{status}</p> : null}
       </div>
 
       <div className="grid gap-4 px-5 py-4 md:grid-cols-2">
         {resolved.map((r) => {
           const outcome = OUTCOMES[r.market.outcome];
-          const canClaim = !r.claimed_ && userIsWinner(r) && r.pendingPayout > 0n;
+          const rowStatus = statusById[r.id.toString()];
+          const isSubmitted = submittedIds.has(r.id.toString());
+          const isClaimableByOutcome = !r.claimed_ && userIsWinner(r) && r.pendingPayout > 0n;
+          const canClaim = isClaimableByOutcome && !submittedIds.has(r.id.toString());
           const isClaiming = pendingId === r.id && isPending;
           const outcomeTone =
             outcome === 'Yes'
@@ -120,10 +135,14 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
                 <div className="flex items-center justify-between gap-3">
                   <span>领取状态</span>
                   <span className="text-zinc-300">
-                    {r.claimed_
+                    {rowStatus
+                      ? rowStatus
+                      : r.claimed_
                       ? '已领取'
                       : canClaim
                         ? '可领取'
+                        : isSubmitted
+                          ? '等待链上确认'
                         : userIsWinner(r)
                           ? '暂无可领取金额'
                           : '未命中'}
@@ -135,14 +154,20 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
                 <button
                   type="button"
                   onClick={() => claim(r.id)}
-                  disabled={isClaiming}
+                  disabled={isClaiming || isSubmitted}
                   className="w-full rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-sm font-medium text-accent transition hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isClaiming ? '领取提交中...' : `Claim ${fmtUsdc(r.pendingPayout)} USDC`}
+                  {isClaiming
+                    ? '领取提交中...'
+                    : isSubmitted
+                      ? '等待链上确认'
+                      : `Claim ${fmtUsdc(r.pendingPayout)} USDC`}
                 </button>
               ) : (
                 <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-400">
-                  {r.pendingPayout > 0n
+                  {rowStatus
+                    ? rowStatus
+                    : r.pendingPayout > 0n
                     ? `待领取 ${fmtUsdc(r.pendingPayout)} USDC`
                     : r.claimed_
                       ? '该仓位已完成领取。'
