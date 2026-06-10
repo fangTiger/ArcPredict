@@ -18,6 +18,7 @@ contract InvariantHandler is Test {
     address[ACTOR_COUNT] public actors;
 
     uint256 public totalPaid;
+    mapping(uint256 => uint256) public paidByMarket;
 
     constructor(PredictionMarket market_, MockUSDC usdc_, MockPyth pyth_) {
         market = market_;
@@ -108,7 +109,9 @@ contract InvariantHandler is Test {
         vm.prank(actor);
         market.claim(marketId);
 
-        totalPaid += usdc.balanceOf(actor) - beforeBalance;
+        uint256 payout = usdc.balanceOf(actor) - beforeBalance;
+        totalPaid += payout;
+        paidByMarket[marketId] += payout;
     }
 }
 
@@ -199,12 +202,20 @@ contract PredictionMarketInvariantTest is StdInvariant, Test {
                 uint256 losingPool =
                     m.outcome == PredictionMarket.Outcome.Yes ? uint256(m.noPool) : uint256(m.yesPool);
                 uint256 expectedFee = losingPool * uint256(m.feeBpsSnapshot) / 10_000;
+                uint256 pendingForWinners = 0;
+                uint256 paidForMarket = handler.paidByMarket(marketId);
 
                 expectedFeeBalance += expectedFee;
+
+                for (uint256 actorIndex = 0; actorIndex < ACTOR_COUNT; actorIndex++) {
+                    pendingForWinners += market.pendingPayout(marketId, handler.actors(actorIndex));
+                }
 
                 assertEq(uint256(m.protocolFee), expectedFee);
                 assertEq(uint256(m.winnerPool) + uint256(m.protocolFee), totalPool);
                 assertLe(uint256(m.winnerPool), totalPool);
+                assertLe(paidForMarket, uint256(m.winnerPool));
+                assertLe(paidForMarket + pendingForWinners, uint256(m.winnerPool));
             } else {
                 assertEq(uint256(m.winnerPool), 0);
                 assertEq(uint256(m.protocolFee), 0);
@@ -234,5 +245,25 @@ contract PredictionMarketInvariantTest is StdInvariant, Test {
                 }
             }
         }
+    }
+
+    function testFuzzClaimTracksPaidByMarket() public {
+        uint256 marketId = 0;
+        uint256 winningAmount = 100_000_000;
+        uint256 losingAmount = 50_000_000;
+
+        handler.fuzz_bet(0, marketId, winningAmount, 0);
+        handler.fuzz_bet(1, marketId, losingAmount, 1);
+        handler.fuzz_resolve(marketId, 70_000_00000000);
+
+        address winner = handler.actors(0);
+        uint256 pendingBeforeClaim = market.pendingPayout(marketId, winner);
+
+        handler.fuzz_claim(0, marketId);
+
+        assertGt(pendingBeforeClaim, 0);
+        assertEq(handler.paidByMarket(marketId), pendingBeforeClaim);
+        assertEq(handler.totalPaid(), pendingBeforeClaim);
+        assertEq(market.pendingPayout(marketId, winner), 0);
     }
 }
