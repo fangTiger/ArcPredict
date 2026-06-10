@@ -98,4 +98,21 @@ contract OpsScriptsTest is Test {
 
         listResolvable.run();
     }
+
+    function test_ListResolvable_ExcludesAlreadyResolvedDueMarket() external {
+        vm.warp(1_700_000_000 + 2 hours);
+        vm.setEnv("PREDICTION_MARKET", vm.toString(address(market)));
+
+        pyth.setNextPrice(THRESHOLD_BTC, EXPO_8, uint64(block.timestamp), 0);
+        market.resolve{value: pyth.fee()}(0, new bytes[](0));
+
+        PredictionMarket.Market memory market0 = market.getMarket(0);
+        assertEq(uint256(market0.outcome), uint256(PredictionMarket.Outcome.Invalid));
+
+        uint256[] memory resolvableIds = listResolvable.collectResolvableIds(address(market));
+
+        assertEq(resolvableIds.length, 0);
+
+        listResolvable.run();
+    }
 }
