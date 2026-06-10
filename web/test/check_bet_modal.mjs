@@ -95,10 +95,12 @@ assertIncludesAll('BetModal.tsx balance', betModal, [
 assertIncludesAll('BetModal.tsx 独立交易状态', betModal, [
   'const approveWrite = useWriteContract();',
   'const betWrite = useWriteContract();',
-  'const approveHash = approveWrite.data;',
-  'const betHash = betWrite.data;',
-  'hash: approveHash',
-  'hash: betHash',
+  'currentApproveHash',
+  'currentBetHash',
+  'hash: currentApproveHash',
+  'hash: currentBetHash',
+  'setCurrentApproveHash(undefined)',
+  'setCurrentBetHash(undefined)',
 ]);
 
 assertIncludesAll('BetModal.tsx approve 写入', betModal, [
@@ -135,6 +137,7 @@ assertIncludesAll('BetModal.tsx 最小下注与余额提示', betModal, [
   '余额不足',
   '正在读取 USDC 余额',
   '正在读取 USDC 授权',
+  '正在确认是否需要 Approve',
   'https://faucet.circle.com',
   'Place Bet',
   'YES',
@@ -157,6 +160,8 @@ assertExcludesAll('BetModal.tsx 不应把未就绪读数当作 0', betModal, [
   'const allowanceRaw = (allowance as bigint | undefined) ?? 0n;',
   'const balanceRaw = (balance as bigint | undefined) ?? 0n;',
   'const safeAmount = parsedAmount ?? 0n;',
+  'const approveHash = approveWrite.data;',
+  'const betHash = betWrite.data;',
 ]);
 
 console.log('bet modal 检查通过');

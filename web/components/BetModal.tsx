@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { Abi } from 'viem';
-import { maxUint256 } from 'viem';
+import { maxUint256, type Abi, type Hash } from 'viem';
 import {
   useAccount,
   useReadContract,
@@ -95,6 +94,8 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
   const [amount, setAmount] = useState('10');
   const [step, setStep] = useState<Step>('idle');
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [currentApproveHash, setCurrentApproveHash] = useState<Hash | undefined>();
+  const [currentBetHash, setCurrentBetHash] = useState<Hash | undefined>();
 
   const { address, chainId } = useAccount();
   const { switchChainAsync } = useSwitchChain();
@@ -125,17 +126,15 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
 
   const approveWrite = useWriteContract();
   const betWrite = useWriteContract();
-  const approveHash = approveWrite.data;
-  const betHash = betWrite.data;
   const approveReceipt = useWaitForTransactionReceipt({
     chainId: arcTestnet.id,
-    hash: approveHash,
-    query: { enabled: !!approveHash },
+    hash: currentApproveHash,
+    query: { enabled: !!currentApproveHash },
   });
   const betReceipt = useWaitForTransactionReceipt({
     chainId: arcTestnet.id,
-    hash: betHash,
-    query: { enabled: !!betHash },
+    hash: currentBetHash,
+    query: { enabled: !!currentBetHash },
   });
 
   const parsedAmount = safeParseUsdc(amount);
@@ -197,24 +196,33 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
       : 0n;
 
   useEffect(() => {
-    if (step !== 'approving' || !approveReceipt.isSuccess || parsedAmount === null) {
+    if (
+      step !== 'approving' ||
+      !currentApproveHash ||
+      !approveReceipt.isSuccess ||
+      parsedAmount === null
+    ) {
       return;
     }
 
     setFeedback(null);
+    setCurrentApproveHash(undefined);
     setStep('betting');
     void refetchAllowance();
 
     const placeBetAfterApprove = async () => {
       try {
-        await betWrite.writeContractAsync({
+        setCurrentBetHash(undefined);
+        const hash = await betWrite.writeContractAsync({
           address: PREDICTION_MARKET_ADDRESS,
           abi: predictionMarketAbi,
           functionName: 'bet',
           args: [row.id, side, parsedAmount],
           chainId: arcTestnet.id,
         });
+        setCurrentBetHash(hash);
       } catch (error) {
+        setCurrentBetHash(undefined);
         setStep('idle');
         setFeedback(humanizeError(error));
       }
@@ -222,6 +230,7 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
 
     void placeBetAfterApprove();
   }, [
+    currentApproveHash,
     approveReceipt.isSuccess,
     betWrite,
     parsedAmount,
@@ -232,19 +241,21 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
   ]);
 
   useEffect(() => {
-    if (step !== 'approving' || !approveReceipt.isError) {
+    if (step !== 'approving' || !currentApproveHash || !approveReceipt.isError) {
       return;
     }
 
+    setCurrentApproveHash(undefined);
     setStep('idle');
     setFeedback(humanizeError(approveReceipt.error));
-  }, [approveReceipt.error, approveReceipt.isError, step]);
+  }, [currentApproveHash, approveReceipt.error, approveReceipt.isError, step]);
 
   useEffect(() => {
-    if (step !== 'betting' || !betReceipt.isSuccess) {
+    if (step !== 'betting' || !currentBetHash || !betReceipt.isSuccess) {
       return;
     }
 
+    setCurrentBetHash(undefined);
     setStep('success');
     setFeedback('下注已提交成功。');
     void refetchAllowance();
@@ -256,6 +267,7 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
 
     return () => window.clearTimeout(timer);
   }, [
+    currentBetHash,
     betReceipt.isSuccess,
     onClose,
     refetchAllowance,
@@ -264,13 +276,14 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
   ]);
 
   useEffect(() => {
-    if (step !== 'betting' || !betReceipt.isError) {
+    if (step !== 'betting' || !currentBetHash || !betReceipt.isError) {
       return;
     }
 
+    setCurrentBetHash(undefined);
     setStep('idle');
     setFeedback(humanizeError(betReceipt.error));
-  }, [betReceipt.error, betReceipt.isError, step]);
+  }, [currentBetHash, betReceipt.error, betReceipt.isError, step]);
 
   const handleConfirm = async () => {
     setFeedback(null);
@@ -318,17 +331,21 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
     }
 
     if (needsApprove) {
+      setCurrentApproveHash(undefined);
+      setCurrentBetHash(undefined);
       setStep('approving');
 
       try {
-        await approveWrite.writeContractAsync({
+        const hash = await approveWrite.writeContractAsync({
           address: USDC_ADDRESS,
           abi: erc20Abi,
           functionName: 'approve',
           args: [PREDICTION_MARKET_ADDRESS, maxUint256],
           chainId: arcTestnet.id,
         });
+        setCurrentApproveHash(hash);
       } catch (error) {
+        setCurrentApproveHash(undefined);
         setStep('idle');
         setFeedback(humanizeError(error));
       }
@@ -336,17 +353,21 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
       return;
     }
 
+    setCurrentApproveHash(undefined);
+    setCurrentBetHash(undefined);
     setStep('betting');
 
     try {
-      await betWrite.writeContractAsync({
+      const hash = await betWrite.writeContractAsync({
         address: PREDICTION_MARKET_ADDRESS,
         abi: predictionMarketAbi,
         functionName: 'bet',
         args: [row.id, side, parsedAmount],
         chainId: arcTestnet.id,
       });
+      setCurrentBetHash(hash);
     } catch (error) {
+      setCurrentBetHash(undefined);
       setStep('idle');
       setFeedback(humanizeError(error));
     }
@@ -412,7 +433,11 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
           赔率随新下注变化，最终会在截止后锁定。
         </div>
 
-        {needsApprove ? (
+        {readingAllowance ? (
+          <div className="mb-4 rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-zinc-300">
+            正在确认是否需要 Approve...
+          </div>
+        ) : needsApprove ? (
           <div className="mb-4 rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-zinc-300">
             <div className="mb-1">Step 1/2: Approve USDC</div>
             <div>Step 2/2: Place Bet</div>
