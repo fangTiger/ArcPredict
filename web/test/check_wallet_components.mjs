@@ -67,6 +67,7 @@ assertIncludesAll('NetworkBanner.tsx', networkBanner, [
 assertIncludesAll('FaucetCard.tsx', faucetCard, [
   'https://faucet.circle.com',
   'balBn > 0n',
+  'bal === undefined',
   '需要 testnet USDC',
   '下注本金和 gas',
   '前往 Circle Faucet',
