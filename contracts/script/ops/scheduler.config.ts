@@ -24,7 +24,7 @@ export const PYTH_PRICE_ID: Record<Asset, `0x${string}`> = {
 export const TARGET_ACTIVE: Record<Asset, Record<Cadence, number>> = {
   BTC: { daily: 1, weekly: 3, monthly: 3, quarterly: 2 },
   ETH: { daily: 1, weekly: 3, monthly: 3, quarterly: 2 },
-  SOL: { daily: 1, weekly: 2, monthly: 2, quarterly: 2 },
+  SOL: { daily: 1, weekly: 3, monthly: 2, quarterly: 2 },
 };
 
 // 阈值偏移百分比阶梯；长度必须覆盖该 cadence 的目标活跃数上限
@@ -64,8 +64,9 @@ export function validateConfig(): void {
       }
     }
   }
-  if (totalActive() < 25) {
-    throw new Error(`总活跃数 ${totalActive()} 小于 25`);
+  const total = totalActive();
+  if (total !== 26) {
+    throw new Error(`总活跃数必须等于 26，当前为 ${total}`);
   }
   for (const id of Object.values(PYTH_PRICE_ID)) {
     if (!/^0x[0-9a-fA-F]{64}$/.test(id)) {

@@ -29,8 +29,8 @@ test("THRESHOLD_OFFSETS_PCT 覆盖 TARGET_ACTIVE 所需长度", () => {
   }
 });
 
-test("总活跃数 >= 25", () => {
-  assert.ok(totalActive() >= 25, "总活跃数必须 >= 25");
+test("总活跃数 = 26", () => {
+  assert.equal(totalActive(), 26, "总活跃数必须等于 26");
 });
 
 test("PYTH_PRICE_ID 三个值都是 32 字节 hex", () => {
