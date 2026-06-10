@@ -92,6 +92,14 @@ assertIncludesAll('ResolvedList.tsx', resolvedList, [
   'new Set(ids).add(id.toString())',
   '等待链上确认',
   'statusById',
+  'useWaitForTransactionReceipt',
+  'currentClaimHash',
+  'currentClaimId',
+  'hash: currentClaimHash',
+  'next.delete(currentClaimId)',
+  '领取已确认',
+  '领取交易失败',
+  'r.claimed_ || r.pendingPayout === 0n',
 ]);
 
 assertExcludesAll('ResolvedList.tsx', resolvedList, [
