@@ -885,14 +885,14 @@ contract ClaimTest is PredictionMarketTestBase {
         assertFalse(market.claimed(id, address(attacker)));
         assertEq(market.pendingPayout(id, address(attacker)), 149_500_000);
 
-        vm.expectRevert(bytes("MockUSDC: reentrancy call failed"));
         attacker.attackClaim(id);
 
-        // 整笔交易回滚时，攻击合约的 reentered 标记也会一并回滚，
-        // 因此这里用精确 revert 原因和最终状态不变来证明二次进入路径被 CEI 阻断。
-        assertEq(usdc.balanceOf(address(attacker)), 0);
-        assertFalse(market.claimed(id, address(attacker)));
-        assertEq(market.pendingPayout(id, address(attacker)), 149_500_000);
+        assertTrue(attacker.reentered());
+        assertFalse(attacker.reenterSucceeded());
+        assertEq(attacker.reenterSelector(), PredictionMarket.AlreadyClaimed.selector);
+        assertEq(usdc.balanceOf(address(attacker)), 149_500_000);
+        assertTrue(market.claimed(id, address(attacker)));
+        assertEq(market.pendingPayout(id, address(attacker)), 0);
     }
 
     function test_Claim_RevertsIfInvalidMarketId() public {
@@ -906,6 +906,8 @@ contract ReentrantAttacker {
     MockUSDC public immutable usdc;
     uint256 public attackId;
     bool public reentered;
+    bool public reenterSucceeded;
+    bytes4 public reenterSelector;
 
     constructor(PredictionMarket m, MockUSDC u) {
         market = m;
@@ -923,6 +925,8 @@ contract ReentrantAttacker {
     function attackClaim(uint256 id) external {
         attackId = id;
         reentered = false;
+        reenterSucceeded = false;
+        reenterSelector = bytes4(0);
         usdc.setReentrancyCallback(address(this), abi.encodeCall(this.reenter, ()));
         market.claim(id);
     }
@@ -930,6 +934,16 @@ contract ReentrantAttacker {
     function reenter() external {
         require(msg.sender == address(usdc), "ReentrantAttacker: only usdc");
         reentered = true;
-        market.claim(attackId);
+
+        (bool ok, bytes memory data) = address(market).call(abi.encodeCall(market.claim, (attackId)));
+        reenterSucceeded = ok;
+
+        if (data.length >= 4) {
+            bytes4 selector;
+            assembly {
+                selector := mload(add(data, 32))
+            }
+            reenterSelector = selector;
+        }
     }
 }
