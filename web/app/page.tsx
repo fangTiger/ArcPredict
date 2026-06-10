@@ -255,23 +255,41 @@ export default function HomePage() {
 
           <section className="grid gap-8 xl:grid-cols-2">
             <div>
-              <PositionList rows={rows} />
-              {!hasPositionRows ? (
+              {isConnected ? (
+                <>
+                  <PositionList rows={rows} />
+                  {!hasPositionRows ? (
+                    <EmptyPanel
+                      title="我的持仓"
+                      body="你当前没有未结算仓位。连接钱包后，新下注的市场会在这里持续显示直到结算。"
+                    />
+                  ) : null}
+                </>
+              ) : (
                 <EmptyPanel
                   title="我的持仓"
-                  body="你当前没有未结算仓位。连接钱包后，新下注的市场会在这里持续显示直到结算。"
+                  body="连接钱包后查看你的未结算仓位。"
                 />
-              ) : null}
+              )}
             </div>
 
             <div>
-              <ResolvedList rows={rows} />
-              {!hasResolvedRows ? (
+              {isConnected ? (
+                <>
+                  <ResolvedList rows={rows} />
+                  {!hasResolvedRows ? (
+                    <EmptyPanel
+                      title="已结算市场"
+                      body="最近读取到的市场还没有结算结果。等链上完成结算后，这里会出现结果与领取动作。"
+                    />
+                  ) : null}
+                </>
+              ) : (
                 <EmptyPanel
                   title="已结算市场"
-                  body="最近读取到的市场还没有结算结果。等链上完成结算后，这里会出现结果与领取动作。"
+                  body="连接钱包后查看你的结算结果与可领取金额。"
                 />
-              ) : null}
+              )}
             </div>
           </section>
         </div>

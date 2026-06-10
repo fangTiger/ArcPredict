@@ -110,6 +110,25 @@ assertMatches(
   'BetModal.onClose 必须关闭 modal 并触发 refetch()。',
 );
 
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /isConnected\s*\?\s*\(\s*<>\s*<PositionList rows=\{rows\} \/>/u,
+  '个人化 PositionList 必须在已连接条件下才渲染。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /isConnected\s*\?\s*\(\s*<>\s*<ResolvedList rows=\{rows\} \/>/u,
+  '个人化 ResolvedList 必须在已连接条件下才渲染。',
+);
+
+assertIncludesAll('page.tsx', pageSource, [
+  '连接钱包后查看你的未结算仓位',
+  '连接钱包后查看你的结算结果',
+]);
+
 assertExcludesAll('page.tsx', pageSource, [
   'getDashboard(user, 0, 100)',
   'claimedFlag',
