@@ -827,6 +827,15 @@ contract ClaimTest is PredictionMarketTestBase {
         market.claim(id);
     }
 
+    function test_Claim_RevertsForYesLoserWhenNoWins() public {
+        uint256 id = _setupAndBet();
+        _resolveNo(id);
+
+        vm.prank(alice);
+        vm.expectRevert(PredictionMarket.NotAWinner.selector);
+        market.claim(id);
+    }
+
     function test_Claim_RevertsForNoStakeUserAfterResolve() public {
         uint256 id = _setupAndBet();
         _resolveYes(id);
