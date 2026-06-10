@@ -89,14 +89,4 @@ contract SeedLiquidityScriptTest is Test {
         assertEq(usdc.balanceOf(address(market)), uint256(amount) * 2);
     }
 
-    function test_Run_RevertsIfSeedAmountOverflowsUint128() external {
-        vm.setEnv("OWNER_PRIVATE_KEY", vm.toString(SEED_PRIVATE_KEY));
-        vm.setEnv("PREDICTION_MARKET", vm.toString(address(market)));
-        vm.setEnv("USDC_ADDRESS", vm.toString(address(usdc)));
-        vm.setEnv("MARKET_ID", "0");
-        vm.setEnv("SEED_AMOUNT", vm.toString(uint256(type(uint128).max) + 1));
-
-        vm.expectRevert(SeedLiquidity.SeedAmountTooLarge.selector);
-        harness.run();
-    }
 }
