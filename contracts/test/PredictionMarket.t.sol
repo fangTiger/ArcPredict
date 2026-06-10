@@ -451,8 +451,26 @@ contract ResolveTest is PredictionMarketTestBase {
 
         vm.warp(mBefore.resolveAfter + 1);
         vm.deal(address(this), 1 ether);
-        vm.expectRevert();
+        vm.expectRevert(bytes("MockPyth: forced revert"));
         market.resolve{value: 1 wei}(id, updateData);
+
+        PredictionMarket.Market memory mAfterRevert = market.getMarket(id);
+        assertEq(uint8(mAfterRevert.outcome), uint8(PredictionMarket.Outcome.Unresolved));
+        assertEq(mAfterRevert.settlePrice, 0);
+        assertEq(mAfterRevert.settleTime, 0);
+        assertEq(mAfterRevert.winnerPool, 0);
+        assertEq(mAfterRevert.protocolFee, 0);
+
+        pyth.setShouldRevert(false);
+        pyth.setNextPrice(75000_00000000, EXPO_8, mBefore.resolveAfter, 0);
+        market.resolve{value: 1 wei}(id, updateData);
+
+        PredictionMarket.Market memory mAfterRetry = market.getMarket(id);
+        assertEq(uint8(mAfterRetry.outcome), uint8(PredictionMarket.Outcome.Yes));
+        assertEq(mAfterRetry.settlePrice, 75000_00000000);
+        assertEq(mAfterRetry.settleTime, mBefore.resolveAfter);
+        assertEq(mAfterRetry.winnerPool, 149_500_000);
+        assertEq(mAfterRetry.protocolFee, 500_000);
     }
 
     function test_Resolve_RefundsExtraPythFee() public {
