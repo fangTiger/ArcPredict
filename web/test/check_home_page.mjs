@@ -75,6 +75,7 @@ assertIncludesAll('page.tsx', pageSource, [
   '钱包状态',
   'dashboardLoaded',
   'loadingValue',
+  'activeSectionCountValue',
   '正在读取你的未结算仓位',
   '正在读取你的结算结果',
   '个人仓位读取失败',
@@ -130,8 +131,16 @@ assertMatches(
   '已加载 / 总数 摘要必须在 dashboardLoaded 后才显示真实数量。',
 );
 
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /dashboardLoaded\s*\?\s*`?\$\{activeMarkets\.length\}\s*\/\s*\$\{rows\.length\}`?\s*:\s*loadingValue/u,
+  '活跃市场区块计数必须在 dashboardLoaded 后才显示真实数量。',
+);
+
 assertExcludesAll('page.tsx', pageSource, [
   '{activeMarkets.length} / {resolvedCount}',
+  '已加载 {activeMarkets.length} / 总计 {rows.length}',
 ]);
 
 assertMatches(

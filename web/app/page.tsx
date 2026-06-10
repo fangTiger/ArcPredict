@@ -88,6 +88,9 @@ export default function HomePage() {
   const loadedCountValue = dashboardLoaded
     ? `${rows.length} / ${totalCount.toString()}`
     : loadingValue;
+  const activeSectionCountValue = dashboardLoaded
+    ? `${activeMarkets.length} / ${rows.length}`
+    : loadingValue;
   const resolvedCountValue = dashboardLoaded
     ? `${activeMarkets.length} / ${resolvedCount}`
     : loadingValue;
@@ -165,9 +168,7 @@ export default function HomePage() {
                       这里只显示尚未结算的市场，便于继续下注或观察池子变化。
                     </p>
                   </div>
-                  <div className="font-mono text-sm text-zinc-500">
-                    已加载 {activeMarkets.length} / 总计 {rows.length}
-                  </div>
+                  <div className="font-mono text-sm text-zinc-500">已加载 {activeSectionCountValue}</div>
                 </div>
 
                 {isLoading ? (
