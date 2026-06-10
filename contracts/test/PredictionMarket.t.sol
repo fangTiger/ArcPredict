@@ -622,3 +622,69 @@ contract ResolveTest is PredictionMarketTestBase {
         market.bet(id, true, 1_000_000);
     }
 }
+
+contract PendingPayoutTest is PredictionMarketTestBase {
+    function _setupAndBet() internal returns (uint256 id) {
+        id = _makeMarket(70000_00000000, 24);
+
+        vm.prank(alice);
+        market.bet(id, true, 100_000_000);
+
+        vm.prank(bob);
+        market.bet(id, false, 50_000_000);
+    }
+
+    function _resolve(uint256 id, int64 price, uint64 ts) internal {
+        pyth.setNextPrice(price, EXPO_8, ts, 0);
+
+        bytes[] memory updateData = new bytes[](1);
+
+        vm.warp(ts + 1);
+        vm.deal(address(this), 1 ether);
+        market.resolve{value: 1 wei}(id, updateData);
+    }
+
+    function test_PendingPayout_ReturnsZeroWhenUnresolved() public {
+        uint256 id = _setupAndBet();
+
+        assertEq(market.pendingPayout(id, alice), 0);
+    }
+
+    function test_PendingPayout_ReturnsZeroForLoserAndPositiveForWinner() public {
+        uint256 id = _setupAndBet();
+        uint64 resolveAfter = market.getMarket(id).resolveAfter;
+
+        _resolve(id, 60_000_00000000, resolveAfter);
+
+        assertEq(market.pendingPayout(id, alice), 0);
+        assertGt(market.pendingPayout(id, bob), 0);
+    }
+
+    function test_PendingPayout_ReturnsZeroForUserWithoutStake() public {
+        uint256 id = _setupAndBet();
+        uint64 resolveAfter = market.getMarket(id).resolveAfter;
+
+        _resolve(id, 75_000_00000000, resolveAfter);
+
+        assertEq(market.pendingPayout(id, carol), 0);
+    }
+
+    function test_PendingPayout_ReturnsFullRefundOnInvalidOutcome() public {
+        uint256 id = _makeMarket(70000_00000000, 24);
+
+        vm.startPrank(alice);
+        market.bet(id, true, 12_000_000);
+        market.bet(id, false, 7_000_000);
+        vm.stopPrank();
+
+        uint64 resolveAfter = market.getMarket(id).resolveAfter;
+        _resolve(id, -1, resolveAfter);
+
+        assertEq(market.pendingPayout(id, alice), 19_000_000);
+    }
+
+    function test_PendingPayout_RevertsIfInvalidMarketId() public {
+        vm.expectRevert(PredictionMarket.InvalidMarketId.selector);
+        market.pendingPayout(99, alice);
+    }
+}

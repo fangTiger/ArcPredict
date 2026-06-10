@@ -311,10 +311,36 @@ contract PredictionMarket is Ownable2Step {
         }
     }
 
+    function _quotePayout(uint256 id, address user) internal view returns (uint256) {
+        Market storage m = _markets[id];
+        if (m.outcome == Outcome.Unresolved) return 0;
+
+        uint128 yesAmount = yesStake[id][user];
+        uint128 noAmount = noStake[id][user];
+
+        if (m.outcome == Outcome.Invalid) {
+            return uint256(yesAmount) + uint256(noAmount);
+        }
+
+        if (m.outcome == Outcome.Yes) {
+            if (yesAmount == 0) return 0;
+            return uint256(yesAmount) * m.winnerPool / m.yesPool;
+        }
+
+        if (noAmount == 0) return 0;
+        return uint256(noAmount) * m.winnerPool / m.noPool;
+    }
+
     function userStake(uint256 id, address u) external view returns (uint128 yes_, uint128 no_) {
         if (id >= marketCount) revert InvalidMarketId();
 
         yes_ = yesStake[id][u];
         no_ = noStake[id][u];
+    }
+
+    function pendingPayout(uint256 id, address u) external view returns (uint256) {
+        if (id >= marketCount) revert InvalidMarketId();
+        if (claimed[id][u]) return 0;
+        return _quotePayout(id, u);
     }
 }
