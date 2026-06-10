@@ -16,12 +16,17 @@ export function deterministicSeedFromBigInt(v: bigint): number {
   return Number(v & 0xffffffffn);
 }
 
-// Fisher-Yates 从 pool 取前 k 个不重复元素；不修改原数组
+// Fisher-Yates 从 pool 的不同位置取前 k 项；若 pool 本身有重复值，返回值也可能重复；不修改原数组
 export function pickK<T>(pool: readonly T[], k: number, rand: () => number): T[] {
-  if (k > pool.length) throw new Error(`pickK: k(${k}) > pool.length(${pool.length})`);
+  if (!Number.isInteger(k)) throw new Error("pickK: k 必须是整数");
+  if (k < 0 || k > pool.length) throw new Error("pickK: k 必须满足 0 <= k <= pool.length");
   const arr = [...pool];
   for (let i = 0; i < k; i++) {
-    const j = i + Math.floor(rand() * (arr.length - i));
+    const r = rand();
+    if (!Number.isFinite(r) || r < 0 || r >= 1) {
+      throw new Error("pickK: rand() 必须返回 [0, 1) 范围内的有限数");
+    }
+    const j = i + Math.floor(r * (arr.length - i));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr.slice(0, k);
