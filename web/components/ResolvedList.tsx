@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { Abi, Hash } from 'viem';
-import { useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { useAccount, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import PredictionMarketAbi from '@/lib/abis/PredictionMarket.json';
 import { PREDICTION_MARKET_ADDRESS } from '@/lib/addresses';
 import { arcTestnet } from '@/lib/chain';
@@ -51,6 +51,7 @@ function humanizeError(error: unknown): string {
 
 export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
   const resolved = rows.filter((r) => OUTCOMES[r.market.outcome] !== 'Unresolved');
+  const { address } = useAccount();
   const { writeContractAsync, isPending } = useWriteContract();
   const [pendingId, setPendingId] = useState<bigint | null>(null);
   const [submittedIds, setSubmittedIds] = useState<Set<string>>(() => new Set());
@@ -62,6 +63,14 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
     hash: currentClaimHash,
     query: { enabled: !!currentClaimHash },
   });
+
+  useEffect(() => {
+    setSubmittedIds(() => new Set());
+    setStatusById({});
+    setPendingId(null);
+    setCurrentClaimId(null);
+    setCurrentClaimHash(undefined);
+  }, [address]);
 
   useEffect(() => {
     const settledRows = rows.filter((r) => r.claimed_ || r.pendingPayout === 0n);

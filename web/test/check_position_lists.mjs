@@ -100,6 +100,14 @@ assertIncludesAll('ResolvedList.tsx', resolvedList, [
   '领取已确认',
   '领取交易失败',
   'r.claimed_ || r.pendingPayout === 0n',
+  'useAccount',
+  'const { address } = useAccount();',
+  '[address]',
+  'setSubmittedIds(() => new Set())',
+  'setStatusById({})',
+  'setPendingId(null)',
+  'setCurrentClaimId(null)',
+  'setCurrentClaimHash(undefined)',
 ]);
 
 assertExcludesAll('ResolvedList.tsx', resolvedList, [
