@@ -51,7 +51,6 @@ assertIncludesAll('WalletPill.tsx', walletPill, [
   'USDC_ADDRESS',
   'ERC20Abi',
   "functionName: 'balanceOf'",
-  'fmtUsdc',
   'truncateAddr',
   'refetchInterval: 10_000',
   'openConnectModal',
@@ -62,6 +61,15 @@ assertIncludesAll('WalletPill.tsx', walletPill, [
   '-translate-y-px',
   'h-2 w-2 rounded-full bg-arc',
 ]);
+
+assertIncludesAll('WalletPill.tsx 已连接态文案', walletPill, [
+  'truncateAddr(address)',
+]);
+
+assert(
+  !walletPill.includes('fmtUsdc(balance)'),
+  'WalletPill.tsx 已连接态不应显示 USDC 余额。',
+);
 
 assertIncludesAll('NetworkBanner.tsx', networkBanner, [
   'useSwitchChain',

@@ -43,9 +43,11 @@ const assertExcludesAll = (label, source, tokens) => {
 
 const resolveCountdown = readRequiredText('components/ResolveCountdown.tsx');
 const marketCard = readRequiredText('components/MarketCard.tsx');
+const marketDetailCard = readRequiredText('components/MarketDetailCard.tsx');
 
 assertUseClient('ResolveCountdown.tsx', resolveCountdown);
 assertUseClient('MarketCard.tsx', marketCard);
+assertUseClient('MarketDetailCard.tsx', marketDetailCard);
 
 assertIncludesAll('ResolveCountdown.tsx', resolveCountdown, [
   'useEffect',
@@ -96,9 +98,33 @@ assertExcludesAll('MarketCard.tsx', marketCard, [
   '下注已关闭',
 ]);
 
+assertIncludesAll('MarketDetailCard.tsx', marketDetailCard, [
+  'DashboardRow',
+  'ResolveCountdown',
+  'yesPercent',
+  'fmtUsdc',
+  'OUTCOMES',
+  'bg-surface',
+  'm.question',
+  '总池',
+  'YES 比例',
+  '下注已关闭',
+  'Outcome:',
+  'Bet YES',
+  'Bet NO',
+]);
+
+assertExcludesAll('MarketDetailCard.tsx', marketDetailCard, [
+  'Seed disclosure on market page',
+  'parseCadenceTag',
+  'PYTH_PRICE_ID_TO_ASSET',
+  'bg-paper',
+]);
+
 for (const [label, source] of [
   ['ResolveCountdown.tsx', resolveCountdown],
   ['MarketCard.tsx', marketCard],
+  ['MarketDetailCard.tsx', marketDetailCard],
 ]) {
   assertExcludesAll(label, source, ['rounded-2xl', 'rounded-xl', 'tracking-', 'letterSpacing']);
 }

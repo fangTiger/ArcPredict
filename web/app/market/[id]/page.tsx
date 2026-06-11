@@ -7,7 +7,7 @@ import type { Abi } from 'viem';
 import { maxUint256, parseAbiItem, zeroAddress } from 'viem';
 import { useAccount, usePublicClient, useReadContract } from 'wagmi';
 import { BetModal } from '@/components/BetModal';
-import { MarketCard } from '@/components/MarketCard';
+import { MarketDetailCard } from '@/components/MarketDetailCard';
 import { NetworkBanner } from '@/components/NetworkBanner';
 import { SeedDisclosure, sumSeedContribution } from '@/components/SeedDisclosure';
 import { WalletPill } from '@/components/WalletPill';
@@ -25,7 +25,7 @@ const betEvent = parseAbiItem(
   'event Bet(uint256 indexed id, address indexed user, bool yes, uint128 amount, uint128 yesPoolAfter, uint128 noPoolAfter)',
 );
 
-type MarketRow = ComponentProps<typeof MarketCard>['row'];
+type MarketRow = ComponentProps<typeof MarketDetailCard>['row'];
 type DashboardResult = readonly [MarketRow[], bigint];
 type BetSelection = {
   row: MarketRow;
@@ -245,7 +245,7 @@ export default function MarketDetailPage() {
                   </div>
 
                   <div className="mt-5">
-                    <MarketCard
+                    <MarketDetailCard
                       row={row}
                       onBet={(_id, side) => setBetting({ row, side })}
                     />

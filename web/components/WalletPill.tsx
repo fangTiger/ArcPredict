@@ -5,20 +5,19 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useReadContract } from 'wagmi';
 import ERC20Abi from '@/lib/abis/ERC20.json';
 import { USDC_ADDRESS } from '@/lib/addresses';
-import { fmtUsdc, truncateAddr } from '@/lib/format';
+import { truncateAddr } from '@/lib/format';
 
 const erc20Abi = ERC20Abi as Abi;
 
 export function WalletPill() {
   const { address } = useAccount();
-  const { data: bal } = useReadContract({
+  useReadContract({
     address: USDC_ADDRESS,
     abi: erc20Abi,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     query: { enabled: !!address, refetchInterval: 10_000 },
   });
-  const balance = (bal as bigint | undefined) ?? 0n;
 
   return (
     <ConnectButton.Custom>
@@ -40,7 +39,6 @@ export function WalletPill() {
                 <>
                   <span className="h-2 w-2 rounded-full bg-arc" aria-hidden="true" />
                   <span>{truncateAddr(address)}</span>
-                  <span className="font-mono text-[12px] text-paper/70">{fmtUsdc(balance)} USDC</span>
                 </>
               ) : (
                 <span>Connect Wallet</span>

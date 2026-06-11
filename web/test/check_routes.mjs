@@ -45,9 +45,11 @@ const assertMatches = (label, source, pattern, message) => {
   assert(pattern.test(source), `${label} ${message}`);
 };
 
+const homePage = readRequiredText('app/page.tsx');
 const marketPage = readRequiredText('app/market/[id]/page.tsx');
 const connectPage = readRequiredText('app/connect/page.tsx');
 
+assertUseClient('page.tsx', homePage);
 assertUseClient('market/[id]/page.tsx', marketPage);
 assertUseClient('connect/page.tsx', connectPage);
 
@@ -93,10 +95,22 @@ assertIncludesAll('market/[id]/page.tsx 合约读取', marketPage, [
   'user = address ?? zeroAddress',
   'NetworkBanner',
   'WalletPill',
-  'MarketCard',
+  'MarketDetailCard',
   'BetModal',
   'refetch',
   'setBetting',
+]);
+
+assertIncludesAll('market/[id]/page.tsx 详情页卡片隔离', marketPage, [
+  "from '@/components/MarketDetailCard'",
+  "ComponentProps<typeof MarketDetailCard>['row']",
+  '<MarketDetailCard',
+]);
+
+assertExcludesAll('market/[id]/page.tsx 禁止复用首页卡片', marketPage, [
+  "from '@/components/MarketCard'",
+  'ComponentProps<typeof MarketCard>',
+  '<MarketCard',
 ]);
 
 assert(
@@ -172,6 +186,16 @@ assertExcludesAll('market/[id]/page.tsx 禁止暴露实现细节', marketPage, [
   '5000 ms',
   'zeroAddress}',
   ': zeroAddress',
+]);
+
+assertIncludesAll('page.tsx 首页卡片', homePage, [
+  "from '@/components/MarketCard'",
+  '<SiteHeader />',
+  '<MarketCard',
+]);
+
+assertExcludesAll('page.tsx 首页禁止详情页卡片', homePage, [
+  'MarketDetailCard',
 ]);
 
 assertIncludesAll('connect/page.tsx Arc 网络', connectPage, [

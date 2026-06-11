@@ -40,6 +40,9 @@ assertIncludesAll('SiteHeader.tsx', siteHeader, [
   '@keyframes pulse',
   'sticky top-0 z-50',
   'border-b border-hair',
+  'px-5 sm:px-8',
+  'hidden md:inline',
+  'shrink-0',
 ]);
 
 assertIncludesAll('SiteFooter.tsx', siteFooter, [
