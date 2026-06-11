@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import Module from 'node:module';
 import ts from 'typescript';
 
-const repoRoot = process.cwd();
-const webRoot = resolve(repoRoot, 'web');
+const testDir = dirname(fileURLToPath(import.meta.url));
+const webRoot = resolve(testDir, '..');
+const repoRoot = resolve(webRoot, '..');
 const moduleCache = new Map();
 const nodeRequire = Module.createRequire(import.meta.url);
 
