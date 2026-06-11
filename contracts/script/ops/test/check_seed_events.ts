@@ -101,18 +101,116 @@ test("fetchBetEvents 用 stub client 校验参数并映射日志", async () => {
     },
   };
 
-  const events = await fetchBetEvents(client, marketAddress, 123n);
+  const events = await fetchBetEvents(client, marketAddress, 123n, 789n);
 
   assert.deepEqual(captured, {
     address: marketAddress,
     event: captured?.event,
     fromBlock: 123n,
-    toBlock: "latest",
+    toBlock: 789n,
   });
   assert.deepEqual(events, [
     { id: 11n, user: seedA, yes: true, amount: 6_000_000n },
     { id: 12n, user: seedB, yes: false, amount: 8_000_000n },
   ]);
+});
+
+test("fetchBetEvents 在明确区块上限时按 10000 block 分页聚合日志", async () => {
+  const calls: Array<{ fromBlock: bigint; toBlock: bigint | "latest" }> = [];
+  const client = {
+    async getLogs(params: {
+      address: Address;
+      event: unknown;
+      fromBlock: bigint;
+      toBlock: bigint | "latest";
+    }) {
+      calls.push({ fromBlock: params.fromBlock, toBlock: params.toBlock });
+      return [
+        {
+          args: {
+            id: BigInt(calls.length),
+            user: calls.length === 2 ? seedB : seedA,
+            yes: calls.length !== 2,
+            amount: BigInt(calls.length) * 1_000_000n,
+          },
+        },
+      ];
+    },
+  };
+
+  const events = await fetchBetEvents(client, marketAddress, 100n, 20_250n);
+
+  assert.deepEqual(calls, [
+    { fromBlock: 100n, toBlock: 10_099n },
+    { fromBlock: 10_100n, toBlock: 20_099n },
+    { fromBlock: 20_100n, toBlock: 20_250n },
+  ]);
+  assert.deepEqual(events, [
+    { id: 1n, user: seedA, yes: true, amount: 1_000_000n },
+    { id: 2n, user: seedB, yes: false, amount: 2_000_000n },
+    { id: 3n, user: seedA, yes: true, amount: 3_000_000n },
+  ]);
+});
+
+test("fetchBetEvents 在 toBlock=latest 时先解析最新区块再分页，不把 latest 传给 getLogs", async () => {
+  let blockNumberCalls = 0;
+  const calls: Array<{ fromBlock: bigint; toBlock: bigint | "latest" }> = [];
+  const client = {
+    async getBlockNumber() {
+      blockNumberCalls += 1;
+      return 20_250n;
+    },
+    async getLogs(params: {
+      address: Address;
+      event: unknown;
+      fromBlock: bigint;
+      toBlock: bigint | "latest";
+    }) {
+      calls.push({ fromBlock: params.fromBlock, toBlock: params.toBlock });
+      if (params.toBlock === "latest") {
+        throw new Error("不应把 latest 直接传给 getLogs");
+      }
+      return [
+        {
+          args: {
+            id: BigInt(calls.length + 10),
+            user: seedA,
+            yes: true,
+            amount: 5_000_000n,
+          },
+        },
+      ];
+    },
+  };
+
+  const events = await fetchBetEvents(client, marketAddress, 100n);
+
+  assert.equal(blockNumberCalls, 1);
+  assert.deepEqual(calls, [
+    { fromBlock: 100n, toBlock: 10_099n },
+    { fromBlock: 10_100n, toBlock: 20_099n },
+    { fromBlock: 20_100n, toBlock: 20_250n },
+  ]);
+  assert.deepEqual(events, [
+    { id: 11n, user: seedA, yes: true, amount: 5_000_000n },
+    { id: 12n, user: seedA, yes: true, amount: 5_000_000n },
+    { id: 13n, user: seedA, yes: true, amount: 5_000_000n },
+  ]);
+});
+
+test("fetchBetEvents 在 fromBlock 大于上限时直接返回空数组且不调用 getLogs", async () => {
+  let getLogsCalls = 0;
+  const client = {
+    async getLogs() {
+      getLogsCalls += 1;
+      return [];
+    },
+  };
+
+  const events = await fetchBetEvents(client, marketAddress, 300n, 200n);
+
+  assert.deepEqual(events, []);
+  assert.equal(getLogsCalls, 0);
 });
 
 test("fetchBetEvents 遇到缺少必需参数的日志会抛中文错误", async () => {

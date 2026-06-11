@@ -1844,7 +1844,7 @@ export function collectSeededMarketIds(events: BetEvent[], seeds: readonly Addre
   return out;
 }
 
-// 从合约 Bet 事件中拉历史；调用方提供 client 与起止 block
+// 从合约 Bet 事件中拉历史；Arc RPC 要求按 10,000 block 分页扫描
 export async function fetchBetEvents(
   client: PublicClient,
   marketAddress: Address,
@@ -1854,7 +1854,12 @@ export async function fetchBetEvents(
   const event = parseAbiItem(
     "event Bet(uint256 indexed id, address indexed user, bool yes, uint128 amount, uint128 yesPoolAfter, uint128 noPoolAfter)"
   );
-  const logs = await client.getLogs({ address: marketAddress, event, fromBlock, toBlock });
+  const resolvedToBlock = toBlock === "latest" ? await client.getBlockNumber() : toBlock;
+  const logs = [];
+  for (let cursor = fromBlock; cursor <= resolvedToBlock; cursor += 10_000n) {
+    const chunkToBlock = cursor + 9_999n < resolvedToBlock ? cursor + 9_999n : resolvedToBlock;
+    logs.push(...await client.getLogs({ address: marketAddress, event, fromBlock: cursor, toBlock: chunkToBlock }));
+  }
   return logs.map((l) => ({
     id: l.args.id!,
     user: l.args.user!,
@@ -3173,7 +3178,7 @@ spec §10 待验证项：
 - [ ] BTC/ETH/SOL Pyth priceId 三个验证 → Task E1
 - [ ] Circle faucet 是否能程序化 → 留半自动（spec §6.2 层 1），层 2 由 owner 后续探测
 - [ ] Arc brand 视觉元素 → 由 web-design-engineer 调研（Task D0）
-- [ ] Arc testnet log retention 实际窗口 → Task E3 在真实运行中观察 `fetchBetEvents` 跨大区块范围是否稳定
+- [x] Arc testnet `eth_getLogs` 单次窗口已确认是 10,000 block；`fetchBetEvents` 已改为分页扫描，Task E3 只需在真实补 seed 时继续观察稳定性
 
 ---
 

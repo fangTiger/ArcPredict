@@ -247,7 +247,7 @@ systemd / cron 等价配置写进 `ops/README.md`。
 
 对每个 **未到 `betDeadline` 且 outcome == Unresolved** 的市场，扫 `Bet` 事件过滤 `user ∈ SEED_WALLETS`，按 `id` 去重。无任何 seed 钱包参与过 → 需 seed。
 
-**事件扫描范围**：从合约 `DEPLOY_BLOCK`（写在 config）到 latest。Arc testnet log retention 一般够用；日后若收紧再加 checkpoint 优化。
+**事件扫描范围**：从合约 `DEPLOY_BLOCK`（写在 config）到 latest，但调用 `eth_getLogs` 时必须按 **10,000 block** 分页扫描。已在 Arc testnet 实测：单次超过 10,000 block 会失败。
 
 ### 5.2 钱包选择（确定性）
 
@@ -555,7 +555,7 @@ web 端新增（沿用 `web/test/check_*.mjs`）：
 1. **Arc testnet 上 BTC/ETH/SOL 的 Pyth priceId**：`PYTH_PRICE_ID` 三个值从 Pyth 官方 doc 获取，并在 Arc testnet 上用一个临时市场跑通一次"创建 → 等到 resolveAfter → ResolveDueMarkets 结算成功"完整路径，三个 asset 都要走一遍。
 2. **Circle faucet endpoint**：手动用浏览器 devtools 抓 form-post URL + payload + 是否 captcha。这决定 § 4 是否能从层 1 升到层 2。
 3. **Arc brand guideline 可用色 / 图形元素**：web-design-engineer 调研产出 mock 后纳入实施。
-4. **Arc testnet log retention 实际窗口**：用 `eth_getLogs` 跨较大区块范围测试，确认 § 5.1 的"扫整段历史"策略不会失败。
+4. **Arc testnet `eth_getLogs` 实际窗口**：已实测单次请求超过 `10,000` block 会失败；§ 5.1 已改为固定按 `10,000` block 分页扫描。
 
 ---
 
