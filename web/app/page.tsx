@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react';
 import type { Abi } from 'viem';
 import { zeroAddress } from 'viem';
 import { useAccount, useReadContract } from 'wagmi';
-import { ActivityBadges } from '@/components/ActivityBadges';
 import { BetModal } from '@/components/BetModal';
 import { FaucetCard } from '@/components/FaucetCard';
 import {
@@ -199,11 +198,7 @@ export default function HomePage() {
                 </div>
 
                 {showPhase16 && (
-                  <div className="mt-4 space-y-3">
-                    <ActivityBadges
-                      markets={activeMarkets.map((row) => row.market)}
-                      nowSec={Math.floor(Date.now() / 1000)}
-                    />
+                  <div className="mt-4">
                     <MarketFilterBar
                       asset={asset}
                       cadence={cadence}

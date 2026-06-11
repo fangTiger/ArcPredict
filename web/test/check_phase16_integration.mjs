@@ -43,13 +43,19 @@ const betEventScanSource = readSource('lib/bet-event-scan.ts');
 const seedWalletSource = readSource('lib/seed-wallets.ts');
 const ensureProductionEnvSource = readSource('scripts/ensure-production-env.mjs');
 const envExampleSource = readSource('.env.example');
+const activityBadgesComponentPath = resolve(webRoot, 'components/ActivityBadges.tsx');
+const activityBadgesTestPath = resolve(webRoot, 'test/check_activity_badges.mjs');
+
+check(() => {
+  assert(!existsSync(activityBadgesComponentPath), 'web/components/ActivityBadges.tsx 应已删除。');
+  assert(!existsSync(activityBadgesTestPath), 'web/test/check_activity_badges.mjs 应已删除。');
+});
 
 if (homeSource) {
   check(() => {
     assertIncludesAll('web/app/page.tsx D5 首页契约', homeSource, [
       'MarketFilterBar',
       'filterMarkets',
-      'ActivityBadges',
       'isPhase16Enabled',
       'PYTH_PRICE_ID_TO_ASSET',
     ]);
@@ -75,9 +81,13 @@ if (homeSource) {
     assertMatches(
       'web/app/page.tsx',
       homeSource,
-      /showPhase16\s*&&[\s\S]*<ActivityBadges[\s\S]*<MarketFilterBar/u,
-      '首页启用 Phase16 时必须同时渲染 ActivityBadges 与 MarketFilterBar。',
+      /showPhase16\s*&&[\s\S]*<MarketFilterBar/u,
+      '首页启用 Phase16 时必须渲染 MarketFilterBar。',
     );
+  });
+
+  check(() => {
+    assert(!homeSource.includes('ActivityBadges'), '首页不应再引用 ActivityBadges。');
   });
 
   check(() => {
