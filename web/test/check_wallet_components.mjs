@@ -45,15 +45,21 @@ assertUseClient('FaucetCard.tsx', faucetCard);
 
 assertIncludesAll('WalletPill.tsx', walletPill, [
   'ConnectButton',
+  'ConnectButton.Custom',
   'useReadContract',
   'USDC_ADDRESS',
   'ERC20Abi',
   "functionName: 'balanceOf'",
   'fmtUsdc',
+  'truncateAddr',
   'refetchInterval: 10_000',
-  'showBalance={false}',
-  'accountStatus="address"',
-  'chainStatus="icon"',
+  'openConnectModal',
+  'openAccountModal',
+  'Connect Wallet',
+  'bg-ink text-paper rounded-full px-4 py-2 text-sm font-medium',
+  'hover:bg-arc-deep',
+  '-translate-y-px',
+  'h-2 w-2 rounded-full bg-arc',
 ]);
 
 assertIncludesAll('NetworkBanner.tsx', networkBanner, [

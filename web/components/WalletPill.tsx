@@ -5,7 +5,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useReadContract } from 'wagmi';
 import ERC20Abi from '@/lib/abis/ERC20.json';
 import { USDC_ADDRESS } from '@/lib/addresses';
-import { fmtUsdc } from '@/lib/format';
+import { fmtUsdc, truncateAddr } from '@/lib/format';
 
 const erc20Abi = ERC20Abi as Abi;
 
@@ -21,11 +21,34 @@ export function WalletPill() {
   const balance = (bal as bigint | undefined) ?? 0n;
 
   return (
-    <div className="flex items-center gap-3">
-      {address ? (
-        <span className="font-mono text-sm text-zinc-400">{fmtUsdc(balance)} USDC</span>
-      ) : null}
-      <ConnectButton accountStatus="address" chainStatus="icon" showBalance={false} />
-    </div>
+    <ConnectButton.Custom>
+      {({ account, mounted, authenticationStatus, openAccountModal, openConnectModal }) => {
+        const ready = mounted && authenticationStatus !== 'loading';
+        const connected = ready && !!account && !!address;
+
+        return (
+          <div
+            aria-hidden={!ready}
+            className={!ready ? 'pointer-events-none opacity-0' : undefined}
+          >
+            <button
+              type="button"
+              onClick={connected ? openAccountModal : openConnectModal}
+              className="inline-flex items-center gap-2 bg-ink text-paper rounded-full px-4 py-2 text-sm font-medium transition duration-150 hover:bg-arc-deep hover:-translate-y-px"
+            >
+              {connected ? (
+                <>
+                  <span className="h-2 w-2 rounded-full bg-arc" aria-hidden="true" />
+                  <span>{truncateAddr(address)}</span>
+                  <span className="font-mono text-[12px] text-paper/70">{fmtUsdc(balance)} USDC</span>
+                </>
+              ) : (
+                <span>Connect Wallet</span>
+              )}
+            </button>
+          </div>
+        );
+      }}
+    </ConnectButton.Custom>
   );
 }
