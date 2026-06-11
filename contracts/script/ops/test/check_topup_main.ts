@@ -23,7 +23,7 @@ const seeds = [
 
 const usdcByAddress: Record<(typeof seeds)[number], bigint> = {
   "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": 100_000_000n,
-  "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb": 10_000_000n,
+  "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb": 9_999_999n,
   "0xcccccccccccccccccccccccccccccccccccccccc": 0n,
 };
 

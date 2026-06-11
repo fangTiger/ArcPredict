@@ -183,8 +183,8 @@ launchctl print "gui/$(id -u)/com.arcpredict.ops.resolve"
 
 `TopUpSeeds.ts` 会扫描 `contracts/.env.seeds` 列出的全部 seed 钱包余额，并按 Phase 16+ spec §6.3 的阈值分类：
 
-- `healthy`：USDC `>= 50` 且 native `>= 0.01`
-- `needsTopup`：USDC `>= 5` 且 `< 50`，同时 native `>= 0.01`
+- `healthy`：USDC `>= 10` 且 native `>= 0.01`
+- `needsTopup`：USDC `>= 5` 且 `< 10`，同时 native `>= 0.01`
 - `skipSeed`：USDC `< 5`，或 native `< 0.01`
 
 扫描结果会写到 `/tmp/arc-predict-topup-needed.json`，stdout 同时打印可直接复制粘贴到 Circle faucet 的地址清单，方便 owner 做日常顶配。

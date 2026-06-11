@@ -361,13 +361,13 @@ SEED_ADDRESS_1=0x...
 
 ```typescript
 export const BALANCE_THRESHOLDS = {
-  warn:   50_000_000n,            // 50 USDC：进 warn 名单
+  warn:   10_000_000n,            // 10 USDC：faucet 冷启动期的临时最低健康线
   skip:    5_000_000n,            //  5 USDC：本轮 ensureSeed 跳过
   gasMin: parseEther('0.01'),     // 0.01 native：gas 不够跳过
 };
 ```
 
-`warn` 取 50 USDC 而不是更低：单市场 seed 上界 ~20 USDC，留 2.5× buffer。
+`warn` 暂降到 10 USDC，作为 faucet 冷启动阶段的临时最低健康线：先保证 12 个 seed 钱包都能进入 healthy，等 faucet 供给稳定后再评估是否恢复更高 buffer。
 
 ### 6.4 launchd 集成
 
@@ -501,7 +501,7 @@ web 端新增（沿用 `web/test/check_*.mjs`）：
 
 **首次启用**：
 1. `npm run generate-seeds` → 把地址清单复制到 Circle faucet 领第一轮
-2. `npm run topup` 验证 12 个钱包余额 ≥ 50 USDC
+2. `npm run topup` 验证 12 个钱包余额 ≥ 10 USDC（faucet 冷启动期的临时最低健康线）
 3. `DRY_RUN=1 npm run schedule` 验证目标矩阵正确
 4. 加载 launchd plist：`schedule` / `topup`（`resolve` 已在跑）
 

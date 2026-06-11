@@ -1,8 +1,8 @@
 import { parseEther } from "viem";
 
-// seed 钱包余额阈值：warn 进补资名单，skip 直接跳过，gasMin 保证能发交易。
+// seed 钱包余额阈值：最低 10 USDC 视为健康，5 USDC 以下或 gas 不足直接跳过。
 export const BALANCE_THRESHOLDS = {
-  warn: 50_000_000n,
+  warn: 10_000_000n,
   skip: 5_000_000n,
   gasMin: parseEther("0.01"),
 };
