@@ -106,13 +106,17 @@ const tailwindConfigSource = readFileSync(resolve(webRoot, 'tailwind.config.ts')
 const requiredTailwindTokens = [
   "./app/**/*.{ts,tsx}",
   "./components/**/*.{ts,tsx}",
-  "accent: '#ff6b35'",
-  "yes: '#22c55e'",
-  "no: '#ef4444'",
-  "warning: '#f59e0b'",
-  "base: '#0b0c0e'",
-  "surface: '#14161a'",
-  "elevated: '#1c1f24'",
+  "canvas: '#FBFAF7'",
+  "paper: '#FFFFFF'",
+  "ink: '#0A0B0F'",
+  "'ink-2': '#5B6478'",
+  "hair: '#E8E6DF'",
+  "arc: '#1652F0'",
+  "'arc-deep': '#0B2DB8'",
+  "'arc-tint': '#E8EEFE'",
+  "yes: '#16A34A'",
+  "no: '#DC2626'",
+  "heat: '#FF6B35'",
   "sans: ['Geist', 'system-ui', 'sans-serif']",
   "mono: ['Geist Mono', 'monospace']",
 ];
@@ -120,6 +124,20 @@ const requiredTailwindTokens = [
 for (const token of requiredTailwindTokens) {
   if (!tailwindConfigSource.includes(token)) {
     throw new Error(`tailwind.config.ts 缺少配置: ${token}`);
+  }
+}
+
+const forbiddenTailwindTokens = [
+  "accent: '#ff6b35'",
+  "warning: '#f59e0b'",
+  "base: '#0b0c0e'",
+  "surface: '#14161a'",
+  "elevated: '#1c1f24'",
+];
+
+for (const token of forbiddenTailwindTokens) {
+  if (tailwindConfigSource.includes(token)) {
+    throw new Error(`tailwind.config.ts 不应保留旧 token: ${token}`);
   }
 }
 
