@@ -56,16 +56,10 @@ if (homeSource) {
     assertIncludesAll('web/app/page.tsx D5 首页契约', homeSource, [
       'MarketFilterBar',
       'filterMarkets',
-      'isPhase16Enabled',
       'PYTH_PRICE_ID_TO_ASSET',
+      'SiteHeader',
+      'SiteFooter',
     ]);
-  });
-
-  check(() => {
-    assert(
-      /\bshowPhase16\b/u.test(homeSource) || /isPhase16Enabled\(\)/u.test(homeSource),
-      'web/app/page.tsx 必须有 showPhase16 或等价 isPhase16Enabled() 开关。',
-    );
   });
 
   check(() => {
@@ -81,8 +75,8 @@ if (homeSource) {
     assertMatches(
       'web/app/page.tsx',
       homeSource,
-      /showPhase16\s*&&[\s\S]*<MarketFilterBar/u,
-      '首页启用 Phase16 时必须渲染 MarketFilterBar。',
+      /<MarketFilterBar/u,
+      '首页必须渲染 MarketFilterBar。',
     );
   });
 

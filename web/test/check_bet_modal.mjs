@@ -173,6 +173,16 @@ assertIncludesAll('BetModal.tsx 最小下注与余额提示', betModal, [
   'NO',
 ]);
 
+assertIncludesAll('BetModal.tsx Phase16 样式', betModal, [
+  'bg-paper',
+  'border-hair',
+  'bg-canvas',
+  'bg-arc',
+  'bg-heat/10',
+  'text-ink',
+  'text-ink-2',
+]);
+
 assertIncludesAll('BetModal.tsx 地址切换重置授权', betModal, [
   'setHasFreshApproval(false);',
   '[address]',
@@ -188,6 +198,10 @@ assertExcludesAll('BetModal.tsx 样式约束', betModal, [
   'rounded-xl',
   'tracking-',
   'letterSpacing',
+  'bg-base/80',
+  'bg-elevated',
+  'bg-surface',
+  'bg-accent',
 ]);
 
 assertExcludesAll('BetModal.tsx 不应把未就绪读数当作 0', betModal, [

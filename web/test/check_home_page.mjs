@@ -48,6 +48,7 @@ assertIncludesAll('page.tsx', pageSource, [
   'useAccount',
   'useReadContract',
   'useState',
+  'useMemo',
   'PREDICTION_MARKET_ADDRESS',
   'PredictionMarketAbi',
   'PredictionMarketAbi as Abi',
@@ -58,28 +59,20 @@ assertIncludesAll('page.tsx', pageSource, [
   'args: [user, 100n]',
   'query: { refetchInterval:',
   'NetworkBanner',
-  'WalletPill',
-  'FaucetCard',
+  'SiteHeader',
+  'SiteFooter',
+  'MarketFilterBar',
   'MarketCard',
   'BetModal',
-  'PositionList',
-  'ResolvedList',
-  'OUTCOMES',
-  'fmtUsdc',
+  'filterMarkets',
+  'PYTH_PRICE_ID_TO_ASSET',
+  'visibleActiveMarkets',
   'refetch',
   'setBetting',
-  'Arc Testnet',
-  '活跃市场',
-  '活跃总池',
-  '已加载 / 总数',
-  '钱包状态',
-  'dashboardLoaded',
-  'loadingValue',
-  'activeSectionCountValue',
-  '正在读取你的未结算仓位',
-  '正在读取你的结算结果',
-  '个人仓位读取失败',
-  '结算结果读取失败',
+  '正在读取最新市场',
+  '首页数据读取失败',
+  '当前没有未结算市场',
+  '当前筛选条件下没有未结算市场',
 ]);
 
 assertMatches(
@@ -99,49 +92,23 @@ assertMatches(
 assertMatches(
   'page.tsx',
   pageSource,
-  /activeMarkets\s*\.reduce\(\s*\(sum,\s*row\)\s*=>\s*sum\s*\+\s*row\.market\.yesPool\s*\+\s*row\.market\.noPool,\s*0n,\s*\)/u,
-  'total pool 必须基于 active markets 的 yesPool + noPool 聚合。',
+  /const visibleActiveMarkets = useMemo\(\s*\(\)\s*=>\s*filterMarkets\(\s*activeMarkets,\s*\{[\s\S]*asset,[\s\S]*cadence,[\s\S]*priceIdToAsset:\s*PYTH_PRICE_ID_TO_ASSET/u,
+  'visibleActiveMarkets 必须基于 activeMarkets 与 filterMarkets 计算。',
 );
 
 assertMatches(
   'page.tsx',
   pageSource,
-  /fmtUsdc\(totalActivePool\)/u,
-  '总池展示必须通过 fmtUsdc 格式化。',
+  /\{\s*visibleActiveMarkets\.map\(\(row\)\s*=>[\s\S]{0,300}<MarketCard/u,
+  'MarketCard 列表必须来自 visibleActiveMarkets.map。',
 );
 
 assertMatches(
   'page.tsx',
   pageSource,
-  /dashboardLoaded\s*\?\s*activeMarkets\.length\.toString\(\)\s*:\s*loadingValue/u,
-  '活跃市场摘要必须在 dashboardLoaded 后才显示真实数量。',
+  /<>\s*<NetworkBanner \/>\s*<SiteHeader \/>\s*<main[\s\S]*<SiteFooter \/>\s*\{betting \?/u,
+  '首页顺序必须是 NetworkBanner -> SiteHeader -> main -> SiteFooter -> BetModal。',
 );
-
-assertMatches(
-  'page.tsx',
-  pageSource,
-  /dashboardLoaded\s*\?\s*`?\$\{fmtUsdc\(totalActivePool\)\}\s+USDC`?\s*:\s*loadingValue/u,
-  '活跃总池摘要必须在 dashboardLoaded 后才显示真实金额。',
-);
-
-assertMatches(
-  'page.tsx',
-  pageSource,
-  /dashboardLoaded\s*\?\s*`?\$\{rows\.length\}\s*\/\s*\$\{totalCount\.toString\(\)\}`?\s*:\s*loadingValue/u,
-  '已加载 / 总数 摘要必须在 dashboardLoaded 后才显示真实数量。',
-);
-
-assertMatches(
-  'page.tsx',
-  pageSource,
-  /dashboardLoaded\s*\?\s*`?\$\{activeMarkets\.length\}\s*\/\s*\$\{rows\.length\}`?\s*:\s*loadingValue/u,
-  '活跃市场区块计数必须在 dashboardLoaded 后才显示真实数量。',
-);
-
-assertExcludesAll('page.tsx', pageSource, [
-  '{activeMarkets.length} / {resolvedCount}',
-  '已加载 {activeMarkets.length} / 总计 {rows.length}',
-]);
 
 assertMatches(
   'page.tsx',
@@ -150,51 +117,24 @@ assertMatches(
   'BetModal.onClose 必须关闭 modal 并触发 refetch()。',
 );
 
-assertMatches(
-  'page.tsx',
-  pageSource,
-  /dashboardLoaded\s*\?\s*\(\s*<>\s*<PositionList rows=\{rows\} \/>/u,
-  'PositionList 必须在 dashboardLoaded 后才渲染。',
-);
-
-assertMatches(
-  'page.tsx',
-  pageSource,
-  /dashboardLoaded\s*\?\s*\(\s*<>\s*<ResolvedList rows=\{rows\} \/>/u,
-  'ResolvedList 必须在 dashboardLoaded 后才渲染。',
-);
-
-assertIncludesAll('page.tsx', pageSource, [
-  '连接钱包后查看你的未结算仓位',
-  '连接钱包后查看你的结算结果',
-]);
-
 assertExcludesAll('page.tsx', pageSource, [
-  'getDashboard(user, 0, 100)',
-  'claimedFlag',
-  'rounded-2xl',
-  'rounded-xl',
-  'tracking-',
-  'letterSpacing',
-  '准备中',
-  '使用提示',
-  '读取说明',
-  '单次链上读取',
-  '刷新频率',
-  '首屏通过',
-  '未连接时按空地址',
-  '`getDashboardLatest(user, 100)`',
-  '连接钱包后，新下注',
+  'ActivityBadges',
+  'FaucetCard',
+  'PositionList',
+  'ResolvedList',
+  'SummaryCard',
+  'EmptyPanel',
+  'shortAddress',
+  '活跃总池',
+  '已加载 / 总数',
+  '钱包状态',
+  '市场总览',
+  '链上入口',
+  '我的持仓',
+  '已结算市场',
 ]);
 
 const chineseCharCount = (pageSource.match(/[\u4e00-\u9fff]/gu) ?? []).length;
-assert(chineseCharCount >= 30, 'page.tsx 文案应以中文为主。');
-
-assertMatches(
-  'page.tsx',
-  pageSource,
-  /活跃市场/u,
-  '需要包含首页 dashboard 的中文活跃市场文案。',
-);
+assert(chineseCharCount >= 20, 'page.tsx 仍应保留必要中文状态文案。');
 
 console.log('home page 检查通过');

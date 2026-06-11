@@ -382,87 +382,87 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-base/80 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,11,15,0.24)] p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
-        className="w-full max-w-md rounded-lg border border-white/10 bg-elevated p-5 shadow-2xl"
+        className="w-full max-w-md rounded-[16px] border border-hair bg-paper p-5 shadow-[0_24px_60px_rgba(10,11,15,0.16)]"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="mb-1 text-xs text-zinc-500">下注</div>
-        <div className="mb-4 text-lg font-medium leading-7 text-white">{market.question}</div>
+        <div className="mb-1 text-xs text-ink-2">下注</div>
+        <div className="mb-4 text-lg font-medium leading-7 text-ink">{market.question}</div>
 
-        <div className="mb-4 flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-3">
+        <div className="mb-4 flex items-center justify-between rounded-[12px] border border-hair bg-canvas px-3 py-3">
           <div>
-            <div className="mb-1 text-xs text-zinc-500">方向</div>
+            <div className="mb-1 text-xs text-ink-2">方向</div>
             <div className={`text-sm font-semibold ${side ? 'text-yes' : 'text-no'}`}>
               {sideLabel}
             </div>
           </div>
           <div className="text-right">
-            <div className="mb-1 text-xs text-zinc-500">钱包余额</div>
-            <div className="font-mono text-sm text-white">
+            <div className="mb-1 text-xs text-ink-2">钱包余额</div>
+            <div className="font-mono text-sm text-ink">
               {balanceRaw === null ? '读取中...' : `${fmtUsdc(balanceRaw)} USDC`}
             </div>
           </div>
         </div>
 
         <label className="mb-3 block">
-          <div className="mb-2 text-sm text-zinc-300">金额</div>
-          <div className="rounded-lg border border-white/10 bg-surface px-3 py-3">
+          <div className="mb-2 text-sm text-ink">金额</div>
+          <div className="rounded-[12px] border border-hair bg-canvas px-3 py-3">
             <input
               type="text"
               inputMode="decimal"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
               disabled={step !== 'idle'}
-              className="w-full bg-transparent text-lg text-white outline-none placeholder:text-zinc-500 disabled:cursor-not-allowed"
+              className="w-full bg-transparent text-lg text-ink outline-none placeholder:text-ink-2 disabled:cursor-not-allowed"
               placeholder="10"
             />
           </div>
-          <div className="mt-2 text-xs text-zinc-500">最小下注 0.1 USDC</div>
+          <div className="mt-2 text-xs text-ink-2">最小下注 0.1 USDC</div>
         </label>
 
-        <div className="mb-3 grid grid-cols-2 gap-3 rounded-lg border border-white/10 bg-white/5 p-4">
+        <div className="mb-3 grid grid-cols-2 gap-3 rounded-[12px] border border-hair bg-canvas p-4">
           <div>
-            <div className="mb-1 text-xs text-zinc-500">Your Stake</div>
-            <div className="font-mono text-sm text-white">{fmtUsdc(previewAmount)} USDC</div>
+            <div className="mb-1 text-xs text-ink-2">Your Stake</div>
+            <div className="font-mono text-sm text-ink">{fmtUsdc(previewAmount)} USDC</div>
           </div>
           <div>
-            <div className="mb-1 text-xs text-zinc-500">Implied Win</div>
+            <div className="mb-1 text-xs text-ink-2">Implied Win</div>
             <div className="font-mono text-sm text-yes">~{fmtUsdc(impliedWin)} USDC</div>
           </div>
         </div>
 
-        <div className="mb-3 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+        <div className="mb-3 rounded-[12px] border border-heat/30 bg-heat/10 px-3 py-2 text-xs text-heat">
           赔率随新下注变化，最终会在截止后锁定。
         </div>
 
         {readingAllowance ? (
-          <div className="mb-4 rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-zinc-300">
+          <div className="mb-4 rounded-[12px] border border-hair bg-canvas px-3 py-3 text-xs text-ink-2">
             正在确认是否需要 Approve...
           </div>
         ) : needsApprove ? (
-          <div className="mb-4 rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-zinc-300">
+          <div className="mb-4 rounded-[12px] border border-hair bg-canvas px-3 py-3 text-xs text-ink-2">
             <div className="mb-1">Step 1/2: Approve USDC</div>
             <div>Step 2/2: Place Bet</div>
           </div>
         ) : (
-          <div className="mb-4 rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-zinc-300">
+          <div className="mb-4 rounded-[12px] border border-hair bg-canvas px-3 py-3 text-xs text-ink-2">
             已授权，当前将直接进入 Step 2/2: Place Bet
           </div>
         )}
 
         {amountError ? (
-          <div className="mb-3 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
+          <div className="mb-3 rounded-[12px] border border-heat/30 bg-heat/10 px-3 py-2 text-sm text-heat">
             {amountError}
           </div>
         ) : null}
 
         {readingBalance ? (
-          <div className="mb-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-300">
+          <div className="mb-3 rounded-[12px] border border-hair bg-canvas px-3 py-2 text-sm text-ink-2">
             正在读取 USDC 余额，请稍候。
           </div>
         ) : null}
@@ -484,10 +484,10 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
 
         {feedback ? (
           <div
-            className={`mb-3 rounded-lg px-3 py-2 text-sm ${
+            className={`mb-3 rounded-[12px] px-3 py-2 text-sm ${
               step === 'success'
                 ? 'border border-yes/30 bg-yes/10 text-yes'
-                : 'border border-white/10 bg-white/5 text-zinc-300'
+                : 'border border-hair bg-canvas text-ink-2'
             }`}
           >
             {feedback}
@@ -498,7 +498,7 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-white/10 px-4 py-3 text-sm text-zinc-200 transition hover:bg-white/5"
+            className="rounded-full border border-hair px-4 py-3 text-sm text-ink transition hover:bg-canvas"
           >
             取消
           </button>
@@ -508,7 +508,7 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
               void handleConfirm();
             }}
             disabled={confirmDisabled}
-            className="rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full bg-arc px-4 py-3 text-sm font-semibold text-paper transition hover:bg-arc-deep disabled:cursor-not-allowed disabled:opacity-50"
           >
             {step === 'idle' && (needsApprove ? 'Approve USDC' : 'Place Bet')}
             {step === 'approving' && '等待 Approve USDC'}
