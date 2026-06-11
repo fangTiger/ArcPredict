@@ -66,20 +66,33 @@ assert(
 
 assertIncludesAll('MarketCard.tsx', marketCard, [
   'DashboardRow',
+  'PYTH_PRICE_ID_TO_ASSET',
+  'parseCadenceTag',
   'yesPercent',
-  'OUTCOMES',
   'fmtUsdc',
-  'ResolveCountdown',
-  'isUnresolved ? (',
+  'fmtCountdown',
+  'OUTCOMES',
+  'font-display',
+  'bg-paper',
+  'border-hair',
+  'bg-canvas',
+  'Closes in',
+  'Seed disclosure on market page',
+  'Monthly · closing',
   'now < m.betDeadline',
   'bettingOpen',
-  '下注已关闭',
-  'bettingOpen ? (',
   'onBet(row.id, true)',
   'onBet(row.id, false)',
   'm.yesPool + m.noPool',
   'Bet YES',
   'Bet NO',
+  'betDeadline - now < 24n * 60n * 60n',
+]);
+
+assertExcludesAll('MarketCard.tsx', marketCard, [
+  'ResolveCountdown',
+  'bg-surface',
+  '下注已关闭',
 ]);
 
 for (const [label, source] of [
