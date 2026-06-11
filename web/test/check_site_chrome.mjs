@@ -41,8 +41,10 @@ assertIncludesAll('SiteHeader.tsx', siteHeader, [
   'sticky top-0 z-50',
   'border-b border-hair',
   'px-5 sm:px-8',
+  'hidden sm:inline',
   'hidden md:inline',
   'shrink-0',
+  'px-2 sm:px-3',
 ]);
 
 assertIncludesAll('SiteFooter.tsx', siteFooter, [

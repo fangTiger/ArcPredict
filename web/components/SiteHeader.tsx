@@ -3,8 +3,8 @@ import { WalletPill } from './WalletPill';
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-hair bg-paper/85 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 sm:px-8 py-3.5">
-        <div className="min-w-0 flex items-center gap-3">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-5 sm:px-8 py-3.5 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <span
             className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-full border-[1.5px] border-arc"
             aria-hidden="true"
@@ -17,9 +17,9 @@ export function SiteHeader() {
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <span className="inline-flex items-center gap-2 rounded-full border border-hair bg-paper px-3 py-1.5 text-[13px] text-ink-2">
+          <span className="inline-flex items-center gap-2 rounded-full border border-hair bg-paper px-2 sm:px-3 py-1.5 text-[13px] text-ink-2">
             <span className="h-2 w-2 rounded-full bg-arc shadow-[0_0_0_3px_theme(colors.arc-tint)]" />
-            <span>Arc Testnet</span>
+            <span className="hidden sm:inline">Arc Testnet</span>
             <span className="hidden md:inline font-mono text-[12px] text-ink">·5042002</span>
           </span>
           <WalletPill />

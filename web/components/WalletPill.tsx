@@ -33,7 +33,7 @@ export function WalletPill() {
             <button
               type="button"
               onClick={connected ? openAccountModal : openConnectModal}
-              className="inline-flex items-center gap-2 bg-ink text-paper rounded-full px-4 py-2 text-sm font-medium transition duration-150 hover:bg-arc-deep hover:-translate-y-px"
+              className="inline-flex items-center gap-2 bg-ink text-paper rounded-full px-3 py-2 text-xs font-medium sm:px-4 sm:text-sm whitespace-nowrap transition duration-150 hover:bg-arc-deep hover:-translate-y-px"
             >
               {connected ? (
                 <>
