@@ -94,6 +94,7 @@ const loadTsModule = (modulePath) => {
 };
 
 const marketFilterPath = resolve(webRoot, 'components/MarketFilterBar.tsx');
+const marketFilterSource = readFileSync(marketFilterPath, 'utf8');
 const { filterMarkets } = loadTsModule(marketFilterPath);
 
 const priceIdToAsset = {
@@ -128,5 +129,17 @@ assert(
   '未知 priceId 在指定 asset 下不应出现。',
 );
 assert.deepEqual(idsOf('SOL', 'daily'), [3], 'asset 过滤必须兼容大写 priceId 与 lowercase 映射。');
+
+for (const token of [
+  'border-y border-hair',
+  'my-10',
+  'w-px h-6 bg-hair',
+  'text-ink-2',
+  'hover:bg-paper',
+  'hover:border-hair',
+  'bg-ink text-paper',
+]) {
+  assert(marketFilterSource.includes(token), `MarketFilterBar.tsx 缺少 Phase16 样式: ${token}`);
+}
 
 console.log('market filter 检查通过');

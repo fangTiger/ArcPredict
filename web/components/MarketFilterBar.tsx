@@ -28,11 +28,11 @@ const assetOptions: AssetFilter[] = ['all', 'BTC', 'ETH', 'SOL'];
 const cadenceOptions: CadenceFilter[] = ['all', 'daily', 'weekly', 'monthly', 'quarterly'];
 
 const baseButtonClassName =
-  'rounded-full border px-3 py-1.5 text-sm transition-colors transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200';
+  'rounded-[12px] border border-transparent px-3.5 py-[7px] text-sm font-medium text-ink-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc/20';
 
-const activeButtonClassName = `${baseButtonClassName} border-blue-600 bg-blue-600 text-white`;
+const activeButtonClassName = `${baseButtonClassName} bg-ink text-paper`;
 const inactiveButtonClassName =
-  `${baseButtonClassName} border-slate-200 bg-slate-50 text-slate-700 hover:border-blue-300 hover:bg-blue-50`;
+  `${baseButtonClassName} hover:border-hair hover:bg-paper hover:text-ink`;
 
 function buttonClassName(active: boolean): string {
   return active ? activeButtonClassName : inactiveButtonClassName;
@@ -75,9 +75,9 @@ export function filterMarkets<T extends FilterMarketInput>(
 
 export function MarketFilterBar({ asset, cadence, onChange }: Props) {
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-3 text-sm">
+    <div className="my-10 flex flex-wrap items-center gap-6 border-y border-hair px-2 py-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium uppercase text-slate-500">Asset</span>
+        <span className="text-xs font-medium uppercase text-ink-2">Asset</span>
         <div className="flex flex-wrap items-center gap-2">
           {assetOptions.map((option) => (
             <button
@@ -93,8 +93,10 @@ export function MarketFilterBar({ asset, cadence, onChange }: Props) {
         </div>
       </div>
 
+      <div className="w-px h-6 bg-hair" aria-hidden="true" />
+
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium uppercase text-slate-500">Cadence</span>
+        <span className="text-xs font-medium uppercase text-ink-2">Cadence</span>
         <div className="flex flex-wrap items-center gap-2">
           {cadenceOptions.map((option) => (
             <button
