@@ -66,8 +66,11 @@ assertIncludesAll('NetworkBanner.tsx', networkBanner, [
   'useSwitchChain',
   'arcTestnet.id',
   'switchChain({ chainId: arcTestnet.id })',
-  '你当前不在 Arc Testnet。',
-  '切换到 Arc Testnet',
+  'Wrong network. Switch to Arc Testnet.',
+  "isPending ? 'Switching...' : 'Switch'",
+  'bg-heat/10',
+  'text-heat',
+  'border-b border-heat/30',
 ]);
 
 assertIncludesAll('FaucetCard.tsx', faucetCard, [
