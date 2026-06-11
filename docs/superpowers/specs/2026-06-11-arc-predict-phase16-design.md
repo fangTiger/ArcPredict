@@ -273,16 +273,18 @@ function pickSeedWallets(marketId: bigint, seeds: Address[]): Address[] {
 function seedAmount(marketId: bigint, walletIndex: number, side: 'yes' | 'no'): bigint {
   const seedNum = Number(marketId % BigInt(2**32)) ^ walletIndex ^ (side === 'yes' ? 0 : 1);
   const rng = mulberry32(seedNum);
-  const usdc = 1 + Math.floor(rng() * 10);       // 1–10 USDC
+  const usdc = 1 + Math.floor(rng() * 2);        // 1–2 USDC
   return BigInt(usdc) * 1_000_000n;              // 6 decimals
 }
 ```
 
 **两边对称但不相等**：YES/NO 各自独立 RNG → 池子大体平衡但不刻意工整，更像真人。
 
-**单市场总注入量级**：k=2 时约 4–40 USDC；上界 k=3 × 10 USDC × 2 边 = 60 USDC。
+**冷启动期预算口径**：单边金额压到 1–2 USDC，优先保证 26 个新市场首轮 seed 不会在中途撞上 faucet 供给上限。
 
-**钱包余额不足时**：若钱包当前 USDC < 25 USDC（约一次 seed 的安全 buffer），跳过该钱包、日志告警，由 topup 守护进程接管；其它被选中的钱包继续。
+**单市场总注入量级**：k=2 时约 4–8 USDC；上界 k=3 × 2 USDC × 2 边 = 12 USDC，明显低于旧的 60 USDC 预算假设。
+
+**钱包余额不足时**：冷启动阶段以 `warn=10 USDC` 为最低健康线；若钱包落到 `skip` 以下仍直接跳过并告警，由 topup 守护进程接管；其它被选中的钱包继续。
 
 ### 5.4 approve 模式
 
@@ -367,7 +369,7 @@ export const BALANCE_THRESHOLDS = {
 };
 ```
 
-`warn` 暂降到 10 USDC，作为 faucet 冷启动阶段的临时最低健康线：先保证 12 个 seed 钱包都能进入 healthy，等 faucet 供给稳定后再评估是否恢复更高 buffer。
+`warn` 暂降到 10 USDC，作为 faucet 冷启动阶段的临时最低健康线；同时 seed 单边金额同步降到 1–2 USDC，使 26 市场首轮 schedule 与这条健康线兼容，等 faucet 供给稳定后再评估是否恢复更高 buffer。
 
 ### 6.4 launchd 集成
 
@@ -488,7 +490,7 @@ export const BALANCE_THRESHOLDS = {
 - `check_compute_gaps.mjs`：snapshot fixture → gap 输出正确（缺补、超不删）
 - `check_question_tag.mjs`：模板正反对称；解析失败回 'unknown'
 - `check_pick_seed_wallets.mjs`：同 marketId 多次调用同结果；分布合理
-- `check_seed_amount.mjs`：金额 ∈ [1, 10] USDC；YES/NO 独立
+- `check_seed_amount.ts`：金额 ∈ [1, 2] USDC、返回 6 decimals；YES/NO 独立
 - `check_ensure_seed_idempotent.mjs`：含 seed Bet 事件输入 → 不重复 seed
 - `check_topup_threshold.mjs`：余额 vs 阈值的分类正确
 
@@ -573,7 +575,7 @@ contracts/script/ops/
 │   ├── check_compute_gaps.mjs
 │   ├── check_question_tag.mjs
 │   ├── check_pick_seed_wallets.mjs
-│   ├── check_seed_amount.mjs
+│   ├── check_seed_amount.ts
 │   ├── check_ensure_seed_idempotent.mjs
 │   └── check_topup_threshold.mjs
 ├── package.json                  (加 schedule / topup / generate-seeds)
