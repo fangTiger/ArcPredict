@@ -34,22 +34,22 @@ export function MarketDetailCard({
   const bettingOpen = isUnresolved && now < m.betDeadline;
 
   return (
-    <article className="rounded-lg border border-white/10 bg-surface p-5 transition hover:border-white/20">
+    <article className="rounded-lg border border-hair bg-paper p-5 transition hover:border-arc/20">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <span className="font-mono text-xs text-zinc-500">#{row.id.toString()}</span>
+        <span className="font-mono text-xs text-ink-2">#{row.id.toString()}</span>
         <ResolveCountdown row={row} />
       </div>
 
-      <div className="mb-4 text-lg font-medium leading-7 text-white">{m.question}</div>
+      <div className="mb-4 text-lg font-medium leading-7 text-ink">{m.question}</div>
 
       <div className="mb-4 grid grid-cols-2 gap-4">
         <div>
-          <div className="mb-1 text-xs text-zinc-500">总池</div>
-          <div className="font-mono text-lg text-white">{fmtUsdc(totalPool)} USDC</div>
+          <div className="mb-1 text-xs text-ink-2">总池</div>
+          <div className="font-mono text-lg text-ink">{fmtUsdc(totalPool)} USDC</div>
         </div>
         <div>
-          <div className="mb-1 text-xs text-zinc-500">YES 比例</div>
-          <div className="font-mono text-lg text-white">{yesPct.toFixed(0)}%</div>
+          <div className="mb-1 text-xs text-ink-2">YES 比例</div>
+          <div className="font-mono text-lg text-ink">{yesPct.toFixed(0)}%</div>
         </div>
       </div>
 
@@ -62,14 +62,14 @@ export function MarketDetailCard({
         <div className="h-full bg-yes transition-[width]" style={{ width: `${yesPct}%` }} />
       </div>
 
-      <div className="mb-5 grid grid-cols-2 gap-4 text-xs text-zinc-400">
-        <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
+      <div className="mb-5 grid grid-cols-2 gap-4 text-xs text-ink-2">
+        <div className="flex items-center justify-between rounded-lg bg-canvas px-3 py-2">
           <span className="font-medium text-yes">YES</span>
-          <span className="font-mono">{fmtUsdc(m.yesPool)} USDC</span>
+          <span className="font-mono text-ink">{fmtUsdc(m.yesPool)} USDC</span>
         </div>
-        <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
+        <div className="flex items-center justify-between rounded-lg bg-canvas px-3 py-2">
           <span className="font-medium text-no">NO</span>
-          <span className="font-mono">{fmtUsdc(m.noPool)} USDC</span>
+          <span className="font-mono text-ink">{fmtUsdc(m.noPool)} USDC</span>
         </div>
       </div>
 
@@ -94,12 +94,12 @@ export function MarketDetailCard({
             </button>
           </div>
         ) : (
-          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-sm text-zinc-300">
+          <div className="rounded-lg border border-hair bg-canvas px-3 py-3 text-sm text-ink-2">
             下注已关闭
           </div>
         )
       ) : (
-        <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-sm text-zinc-300">
+        <div className="rounded-lg border border-hair bg-canvas px-3 py-3 text-sm text-ink-2">
           Outcome: <span className="font-mono">{outcome}</span>
         </div>
       )}

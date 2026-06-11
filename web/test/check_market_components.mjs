@@ -60,6 +60,8 @@ assertIncludesAll('ResolveCountdown.tsx', resolveCountdown, [
   '等待结算',
   '可强制作废',
   '已结算',
+  'text-heat',
+  'text-ink-2',
 ]);
 
 assert(
@@ -104,7 +106,9 @@ assertIncludesAll('MarketDetailCard.tsx', marketDetailCard, [
   'yesPercent',
   'fmtUsdc',
   'OUTCOMES',
-  'bg-surface',
+  'bg-paper',
+  'border-hair',
+  'bg-canvas',
   'm.question',
   '总池',
   'YES 比例',
@@ -118,7 +122,9 @@ assertExcludesAll('MarketDetailCard.tsx', marketDetailCard, [
   'Seed disclosure on market page',
   'parseCadenceTag',
   'PYTH_PRICE_ID_TO_ASSET',
-  'bg-paper',
+  'bg-surface',
+  'bg-white/5',
+  'border-white/10',
 ]);
 
 for (const [label, source] of [

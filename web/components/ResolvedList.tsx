@@ -208,14 +208,14 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
   };
 
   return (
-    <section className="mt-8 rounded-lg border border-white/10 bg-surface">
-      <div className="border-b border-white/10 px-5 py-4">
+    <section className="mt-8 rounded-lg border border-hair bg-paper">
+      <div className="border-b border-hair px-5 py-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-white">已结算市场</h2>
-            <p className="mt-1 text-xs text-zinc-400">已结算结果与待领取金额会在这里汇总显示。</p>
+            <h2 className="text-sm font-semibold text-ink">已结算市场</h2>
+            <p className="mt-1 text-xs text-ink-2">已结算结果与待领取金额会在这里汇总显示。</p>
           </div>
-          <span className="font-mono text-sm text-zinc-500">{resolved.length}</span>
+          <span className="font-mono text-sm text-ink-2">{resolved.length}</span>
         </div>
       </div>
 
@@ -232,25 +232,25 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
               ? 'text-yes'
               : outcome === 'No'
                 ? 'text-no'
-                : 'text-zinc-300';
+                : 'text-ink-2';
 
           return (
-            <article key={r.id.toString()} className="rounded-lg border border-white/10 bg-white/5 p-4">
+            <article key={r.id.toString()} className="rounded-lg border border-hair bg-canvas p-4">
               <div className="mb-2 flex items-center justify-between gap-3">
-                <span className="font-mono text-xs text-zinc-500">#{r.id.toString()}</span>
+                <span className="font-mono text-xs text-ink-2">#{r.id.toString()}</span>
                 <span className={`text-xs font-medium ${outcomeTone}`}>{outcome}</span>
               </div>
 
-              <div className="mb-4 text-sm leading-6 text-white">{r.market.question}</div>
+              <div className="mb-4 text-sm leading-6 text-ink">{r.market.question}</div>
 
-              <div className="mb-4 space-y-1 text-xs text-zinc-400">
+              <div className="mb-4 space-y-1 text-xs text-ink-2">
                 <div className="flex items-center justify-between gap-3">
                   <span>待领取</span>
-                  <span className="font-mono text-white">{fmtUsdc(r.pendingPayout)} USDC</span>
+                  <span className="font-mono text-ink">{fmtUsdc(r.pendingPayout)} USDC</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span>领取状态</span>
-                  <span className="text-zinc-300">
+                  <span className="text-ink">
                     {rowStatus
                       ? rowStatus
                       : r.claimed_
@@ -271,16 +271,16 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
                   type="button"
                   onClick={() => claim(r.id)}
                   disabled={isClaiming || isSubmitted}
-                  className="w-full rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-sm font-medium text-accent transition hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-lg border border-arc/20 bg-arc/10 px-3 py-2 text-sm font-medium text-arc-deep transition hover:bg-arc/15 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isClaiming
                     ? '领取提交中...'
                     : isSubmitted
-                      ? '等待链上确认'
+                    ? '等待链上确认'
                       : `Claim ${fmtUsdc(r.pendingPayout)} USDC`}
                 </button>
               ) : (
-                <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-400">
+                <div className="rounded-lg border border-hair bg-paper px-3 py-2 text-xs text-ink-2">
                   {rowStatus
                     ? rowStatus
                     : r.pendingPayout > 0n

@@ -25,21 +25,21 @@ export function ResolveCountdown({ row }: { row: DashboardRow }) {
     const countdownText = countdown === 'Closed' ? '已到达' : countdown;
 
     return (
-      <span className="font-mono text-xs text-warning">距结算窗口 {countdownText}</span>
+      <span className="font-mono text-xs text-heat">距结算窗口 {countdownText}</span>
     );
   }
 
   if (status === 'resolving') {
-    return <span className="font-mono text-xs text-warning">结算窗口开启</span>;
+    return <span className="font-mono text-xs text-heat">结算窗口开启</span>;
   }
 
   if (status === 'awaiting') {
-    return <span className="font-mono text-xs text-zinc-500">等待结算</span>;
+    return <span className="font-mono text-xs text-ink-2">等待结算</span>;
   }
 
   if (status === 'force-invalidatable') {
-    return <span className="font-mono text-xs text-zinc-500">可强制作废</span>;
+    return <span className="font-mono text-xs text-ink-2">可强制作废</span>;
   }
 
-  return <span className="font-mono text-xs text-zinc-500">已结算</span>;
+  return <span className="font-mono text-xs text-ink-2">已结算</span>;
 }

@@ -23,9 +23,9 @@ export function FaucetCard() {
   }
 
   return (
-    <section className="my-6 rounded-lg border border-warning/30 bg-warning/5 p-5">
-      <div className="mb-1 text-sm font-semibold text-warning">需要 testnet USDC</div>
-      <p className="mb-3 text-sm leading-6 text-zinc-300">
+    <section className="my-6 rounded-lg border border-heat/25 bg-heat/10 p-5">
+      <div className="mb-1 text-sm font-semibold text-heat">需要 testnet USDC</div>
+      <p className="mb-3 text-sm leading-6 text-ink-2">
         在 Arc 上 USDC 同时是下注本金和 gas。去 Circle Faucet 领取一些 testnet
         USDC，并顺手补一点 native 用作 Pyth update fee。
       </p>
@@ -33,7 +33,7 @@ export function FaucetCard() {
         href="https://faucet.circle.com"
         target="_blank"
         rel="noopener"
-        className="inline-flex items-center rounded-lg bg-warning px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-warning/90"
+        className="inline-flex items-center rounded-lg bg-heat px-4 py-2 text-sm font-semibold text-paper transition hover:bg-heat/90"
       >
         前往 Circle Faucet
       </a>

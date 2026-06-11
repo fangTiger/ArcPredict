@@ -5,10 +5,10 @@ import { OUTCOMES, userPositionOf } from '@/lib/derivePosition';
 import { fmtUsdc } from '@/lib/format';
 
 const positionTone: Record<UserPosition, string> = {
-  none: 'text-zinc-400',
+  none: 'text-ink-2',
   yes: 'text-yes',
   no: 'text-no',
-  both: 'text-accent',
+  both: 'text-arc',
 };
 
 const positionLabel: Record<UserPosition, string> = {
@@ -26,16 +26,16 @@ export function PositionList({ rows }: { rows: DashboardRow[] }) {
   if (userRows.length === 0) return null;
 
   return (
-    <section className="mt-8 rounded-lg border border-white/10 bg-surface">
-      <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+    <section className="mt-8 rounded-lg border border-hair bg-paper">
+      <div className="flex items-center justify-between border-b border-hair px-5 py-4">
         <div>
-          <h2 className="text-sm font-semibold text-white">我的持仓</h2>
-          <p className="mt-1 text-xs text-zinc-400">仅显示你仍在等待结算的市场仓位。</p>
+          <h2 className="text-sm font-semibold text-ink">我的持仓</h2>
+          <p className="mt-1 text-xs text-ink-2">仅显示你仍在等待结算的市场仓位。</p>
         </div>
-        <span className="font-mono text-sm text-zinc-500">{userRows.length}</span>
+        <span className="font-mono text-sm text-ink-2">{userRows.length}</span>
       </div>
 
-      <div className="divide-y divide-white/10">
+      <div className="divide-y divide-hair">
         {userRows.map((r) => {
           const pos = userPositionOf(r);
           const stake =
@@ -54,19 +54,19 @@ export function PositionList({ rows }: { rows: DashboardRow[] }) {
             >
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex items-center gap-3">
-                  <span className="font-mono text-xs text-zinc-500">#{r.id.toString()}</span>
+                  <span className="font-mono text-xs text-ink-2">#{r.id.toString()}</span>
                   <span
-                    className={`rounded-full bg-white/5 px-2 py-1 text-xs font-medium ${positionTone[pos]}`}
+                    className={`rounded-full bg-canvas px-2 py-1 text-xs font-medium ${positionTone[pos]}`}
                   >
                     {positionLabel[pos]}
                   </span>
                 </div>
-                <div className="text-sm leading-6 text-white">{r.market.question}</div>
+                <div className="text-sm leading-6 text-ink">{r.market.question}</div>
               </div>
 
               <div className="shrink-0 text-left sm:text-right">
-                <div className="text-xs text-zinc-500">持仓金额</div>
-                <div className="font-mono text-sm text-white">{fmtUsdc(stake)} USDC</div>
+                <div className="text-xs text-ink-2">持仓金额</div>
+                <div className="font-mono text-sm text-ink">{fmtUsdc(stake)} USDC</div>
               </div>
             </article>
           );

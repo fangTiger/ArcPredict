@@ -23,9 +23,9 @@ function describeWalletError(error: unknown): string {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm">
-      <span className="text-zinc-400">{label}</span>
-      <span className="overflow-x-auto font-mono text-white">{value}</span>
+    <div className="flex items-center justify-between gap-4 rounded-lg border border-hair bg-canvas px-4 py-3 text-sm">
+      <span className="text-ink-2">{label}</span>
+      <span className="overflow-x-auto font-mono text-ink">{value}</span>
     </div>
   );
 }
@@ -73,24 +73,24 @@ export default function ConnectPage() {
     <>
       <NetworkBanner />
 
-      <nav className="sticky top-0 z-30 border-b border-white/10 bg-base/90 backdrop-blur">
+      <nav className="sticky top-0 z-30 border-b border-hair bg-paper/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <div className="min-w-0">
-            <Link href="/" className="text-sm text-zinc-400 transition hover:text-white">
+            <Link href="/" className="text-sm text-ink-2 transition hover:text-ink">
               返回首页
             </Link>
-            <h1 className="mt-2 text-xl font-semibold text-white">连接 Arc Testnet</h1>
+            <h1 className="mt-2 text-xl font-semibold text-ink">连接 Arc Testnet</h1>
           </div>
           <WalletPill />
         </div>
       </nav>
 
-      <main className="min-h-screen bg-base text-white">
+      <main className="min-h-screen bg-canvas text-ink">
         <div className="mx-auto grid max-w-6xl gap-6 px-4 pb-12 pt-6 sm:px-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.9fr)] lg:px-8">
-          <section className="rounded-lg border border-white/10 bg-surface p-5">
-            <div className="border-b border-white/10 pb-5">
-              <h2 className="text-lg font-semibold text-white">一键添加网络</h2>
-              <p className="mt-2 text-sm leading-6 text-zinc-400">
+          <section className="rounded-lg border border-hair bg-paper p-5">
+            <div className="border-b border-hair pb-5">
+              <h2 className="text-lg font-semibold text-ink">一键添加网络</h2>
+              <p className="mt-2 text-sm leading-6 text-ink-2">
                 如果钱包没有 Arc Testnet，先点下面按钮请求自动添加；如果钱包拦截或不支持，再按右侧参数手动填写。
               </p>
             </div>
@@ -100,12 +100,12 @@ export default function ConnectPage() {
                 type="button"
                 onClick={() => void addArcNetwork()}
                 disabled={isPending}
-                className="inline-flex items-center justify-center rounded-lg border border-accent/40 bg-accent/15 px-4 py-3 text-sm font-medium text-white transition hover:bg-accent/25 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex items-center justify-center rounded-lg border border-arc/20 bg-arc px-4 py-3 text-sm font-medium text-paper transition hover:bg-arc-deep disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isPending ? '正在请求钱包添加 Arc Testnet...' : '添加 Arc Testnet 到钱包'}
               </button>
 
-              <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm leading-6 text-zinc-300">
+              <div className="rounded-lg border border-hair bg-canvas p-4 text-sm leading-6 text-ink-2">
                 {status ?? '未检测到钱包时可直接参考右侧参数手动添加。'}
               </div>
             </div>
@@ -115,26 +115,26 @@ export default function ConnectPage() {
                 href="https://testnet.arcscan.app"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 transition hover:border-white/20 hover:bg-white/10"
+                className="flex items-center justify-between rounded-lg border border-hair bg-canvas px-4 py-3 text-sm text-ink-2 transition hover:border-arc/20 hover:bg-paper"
               >
                 <span>Arcscan</span>
-                <span className="font-mono text-xs text-zinc-500">浏览器</span>
+                <span className="font-mono text-xs text-ink-2">浏览器</span>
               </a>
               <a
                 href="https://faucet.circle.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 transition hover:border-white/20 hover:bg-white/10"
+                className="flex items-center justify-between rounded-lg border border-hair bg-canvas px-4 py-3 text-sm text-ink-2 transition hover:border-arc/20 hover:bg-paper"
               >
                 <span>Circle Faucet</span>
-                <span className="font-mono text-xs text-zinc-500">USDC</span>
+                <span className="font-mono text-xs text-ink-2">USDC</span>
               </a>
             </div>
           </section>
 
           <aside className="space-y-6">
-            <section className="rounded-lg border border-white/10 bg-surface p-5">
-              <h2 className="text-sm font-semibold text-white">手动参数</h2>
+            <section className="rounded-lg border border-hair bg-paper p-5">
+              <h2 className="text-sm font-semibold text-ink">手动参数</h2>
               <div className="mt-4 space-y-3">
                 <DetailRow label="Chain ID" value={`${arcTestnet.id} (${params.chainId})`} />
                 <DetailRow label="Name" value={arcTestnet.name} />
@@ -148,9 +148,9 @@ export default function ConnectPage() {
               </div>
             </section>
 
-            <section className="rounded-lg border border-white/10 bg-surface p-5">
-              <h2 className="text-sm font-semibold text-white">排查建议</h2>
-              <div className="mt-4 space-y-3 text-sm leading-6 text-zinc-300">
+            <section className="rounded-lg border border-hair bg-paper p-5">
+              <h2 className="text-sm font-semibold text-ink">排查建议</h2>
+              <div className="mt-4 space-y-3 text-sm leading-6 text-ink-2">
                 <p>1. 钱包里确认当前网络是否已经切到 Arc Testnet。</p>
                 <p>2. 如果钱包没有弹窗，刷新页面后重新点击添加按钮。</p>
                 <p>3. 如果自动添加失败，复制右侧参数手动新建网络。</p>

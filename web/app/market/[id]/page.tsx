@@ -194,13 +194,13 @@ export default function MarketDetailPage() {
     <>
       <NetworkBanner />
 
-      <nav className="sticky top-0 z-30 border-b border-white/10 bg-base/90 backdrop-blur">
+      <nav className="sticky top-0 z-30 border-b border-hair bg-paper/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <div className="min-w-0">
-            <Link href="/" className="text-sm text-zinc-400 transition hover:text-white">
+            <Link href="/" className="text-sm text-ink-2 transition hover:text-ink">
               返回首页
             </Link>
-            <h1 className="mt-2 text-xl font-semibold text-white">
+            <h1 className="mt-2 text-xl font-semibold text-ink">
               市场 #{routeId ?? '未知编号'}
             </h1>
           </div>
@@ -208,14 +208,14 @@ export default function MarketDetailPage() {
         </div>
       </nav>
 
-      <main className="min-h-screen bg-base text-white">
+      <main className="min-h-screen bg-canvas text-ink">
         <div className="mx-auto max-w-6xl px-4 pb-12 pt-6 sm:px-6 lg:px-8">
           {idBn === null ? (
             <section className="rounded-lg border border-no/35 bg-no/10 p-5 text-sm text-no">
               市场编号无效，请返回首页重新选择。
             </section>
           ) : isLoading ? (
-            <section className="rounded-lg border border-white/10 bg-surface p-5 text-sm text-zinc-300">
+            <section className="rounded-lg border border-hair bg-paper p-5 text-sm text-ink-2">
               正在读取市场详情……
             </section>
           ) : isError ? (
@@ -223,24 +223,24 @@ export default function MarketDetailPage() {
               {marketMissing ? '未找到该市场，请返回首页查看其他市场。' : '市场详情读取失败，请检查网络后重试。'}
             </section>
           ) : !row ? (
-            <section className="rounded-lg border border-white/10 bg-surface p-5 text-sm text-zinc-300">
+            <section className="rounded-lg border border-hair bg-paper p-5 text-sm text-ink-2">
               未找到该市场，可能尚未发布或已超出当前范围。
             </section>
           ) : (
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.9fr)]">
               <div className="space-y-6">
-                <section className="rounded-lg border border-white/10 bg-surface p-5">
-                  <div className="flex flex-col gap-4 border-b border-white/10 pb-4 sm:flex-row sm:items-start sm:justify-between">
+                <section className="rounded-lg border border-hair bg-paper p-5">
+                  <div className="flex flex-col gap-4 border-b border-hair pb-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="max-w-2xl">
-                      <div className="font-mono text-xs text-zinc-500">市场编号 #{idBn.toString()}</div>
-                      <h2 className="mt-2 text-lg font-semibold text-white">市场详情</h2>
-                      <p className="mt-2 text-sm leading-6 text-zinc-400">
+                      <div className="font-mono text-xs text-ink-2">市场编号 #{idBn.toString()}</div>
+                      <h2 className="mt-2 text-lg font-semibold text-ink">市场详情</h2>
+                      <p className="mt-2 text-sm leading-6 text-ink-2">
                         这里展示市场题目、池子状态和下注入口，适合从分享链接直接进入查看或继续操作。
                       </p>
                     </div>
-                    <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300">
-                      <div>当前网络：{arcTestnet.name}</div>
-                      <div className="mt-1 text-zinc-400">钱包状态：{walletStatus}</div>
+                    <div className="rounded-lg border border-hair bg-canvas px-4 py-3 text-sm text-ink-2">
+                      <div className="font-medium text-ink">当前网络：{arcTestnet.name}</div>
+                      <div className="mt-1">钱包状态：{walletStatus}</div>
                     </div>
                   </div>
 
@@ -262,42 +262,42 @@ export default function MarketDetailPage() {
               </div>
 
               <aside className="space-y-6">
-                <section className="rounded-lg border border-white/10 bg-surface p-5">
-                  <h2 className="text-sm font-semibold text-white">市场状态</h2>
-                  <div className="mt-4 space-y-3 text-sm text-zinc-300">
-                    <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
-                      <span className="text-zinc-400">市场编号</span>
-                      <span className="font-mono text-white">{idBn.toString()}</span>
+                <section className="rounded-lg border border-hair bg-paper p-5">
+                  <h2 className="text-sm font-semibold text-ink">市场状态</h2>
+                  <div className="mt-4 space-y-3 text-sm text-ink-2">
+                    <div className="flex items-center justify-between rounded-lg border border-hair bg-canvas px-4 py-3">
+                      <span className="text-ink-2">市场编号</span>
+                      <span className="font-mono text-ink">{idBn.toString()}</span>
                     </div>
-                    <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
-                      <span className="text-zinc-400">当前网络</span>
-                      <span className="font-mono text-white">{arcTestnet.name}</span>
+                    <div className="flex items-center justify-between rounded-lg border border-hair bg-canvas px-4 py-3">
+                      <span className="text-ink-2">当前网络</span>
+                      <span className="font-mono text-ink">{arcTestnet.name}</span>
                     </div>
-                    <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3">
-                      <span className="text-zinc-400">钱包状态</span>
-                      <span className="font-mono text-white">{walletStatus}</span>
+                    <div className="flex items-center justify-between rounded-lg border border-hair bg-canvas px-4 py-3">
+                      <span className="text-ink-2">钱包状态</span>
+                      <span className="font-mono text-ink">{walletStatus}</span>
                     </div>
                   </div>
                 </section>
 
-                <section className="rounded-lg border border-white/10 bg-surface p-5">
-                  <h2 className="text-sm font-semibold text-white">辅助入口</h2>
+                <section className="rounded-lg border border-hair bg-paper p-5">
+                  <h2 className="text-sm font-semibold text-ink">辅助入口</h2>
                   <div className="mt-4 space-y-3">
                     <Link
                       href="/connect"
-                      className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 transition hover:border-white/20 hover:bg-white/10"
+                      className="flex items-center justify-between rounded-lg border border-hair bg-canvas px-4 py-3 text-sm text-ink-2 transition hover:border-arc/20 hover:bg-paper"
                     >
                       <span>网络与钱包排查</span>
-                      <span className="font-mono text-xs text-zinc-500">/connect</span>
+                      <span className="font-mono text-xs text-ink-2">/connect</span>
                     </Link>
                     <a
                       href={`https://testnet.arcscan.app/address/${PREDICTION_MARKET_ADDRESS}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 transition hover:border-white/20 hover:bg-white/10"
+                      className="flex items-center justify-between rounded-lg border border-hair bg-canvas px-4 py-3 text-sm text-ink-2 transition hover:border-arc/20 hover:bg-paper"
                     >
                       <span>合约浏览器</span>
-                      <span className="font-mono text-xs text-zinc-500">{contractAddressLabel}</span>
+                      <span className="font-mono text-xs text-ink-2">{contractAddressLabel}</span>
                     </a>
                   </div>
                 </section>
