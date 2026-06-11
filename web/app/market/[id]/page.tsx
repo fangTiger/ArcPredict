@@ -14,6 +14,7 @@ import { WalletPill } from '@/components/WalletPill';
 import PredictionMarketAbi from '@/lib/abis/PredictionMarket.json';
 import { PREDICTION_MARKET_ADDRESS } from '@/lib/addresses';
 import { FRONTEND_DEPLOY_BLOCK } from '@/lib/asset-price-map';
+import { fetchLogsPaged } from '@/lib/bet-event-scan';
 import { arcTestnet } from '@/lib/chain';
 import { isPhase16Enabled } from '@/lib/phase16-flag';
 import { SEED_WALLETS } from '@/lib/seed-wallets';
@@ -33,6 +34,12 @@ type BetSelection = {
 type SeedBetEvent = {
   user: `0x${string}`;
   amount: bigint;
+};
+type SeedBetLog = {
+  args?: {
+    user?: `0x${string}`;
+    amount?: bigint;
+  };
 };
 
 function parseMarketId(value: string | undefined): bigint | null {
@@ -56,6 +63,10 @@ function parseMarketId(value: string | undefined): bigint | null {
 }
 
 function isInvalidMarketError(error: unknown): boolean {
+  if (error === null || typeof error !== 'object') {
+    return false;
+  }
+
   const maybeError = error as {
     name?: string;
     shortMessage?: string;
@@ -126,21 +137,33 @@ export default function MarketDetailPage() {
 
     const loadSeedBetEvents = async () => {
       try {
-        const logs = await publicClient.getLogs({
-          address: PREDICTION_MARKET_ADDRESS,
-          event: betEvent,
-          args: { id: idBn },
-          fromBlock: FRONTEND_DEPLOY_BLOCK,
-          toBlock: 'latest',
-        });
+        const logs = await fetchLogsPaged<
+          SeedBetLog,
+          typeof PREDICTION_MARKET_ADDRESS,
+          typeof betEvent,
+          { id: bigint }
+        >(
+          {
+            getBlockNumber: () => publicClient.getBlockNumber(),
+            getLogs: (params) =>
+              publicClient.getLogs(params as never) as Promise<readonly SeedBetLog[]>,
+          },
+          {
+            address: PREDICTION_MARKET_ADDRESS,
+            event: betEvent,
+            args: { id: idBn },
+            fromBlock: FRONTEND_DEPLOY_BLOCK,
+            toBlock: 'latest',
+          },
+        );
 
         if (cancelled) {
           return;
         }
 
         const nextEvents = logs.flatMap((log) => {
-          const eventUser = log.args.user;
-          const eventAmount = log.args.amount;
+          const eventUser = log.args?.user;
+          const eventAmount = log.args?.amount;
 
           if (!eventUser || eventAmount === undefined) {
             return [];

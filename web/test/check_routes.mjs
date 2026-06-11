@@ -125,6 +125,16 @@ assert(
   'market/[id]/page.tsx 必须显式识别 InvalidMarketId 类错误。',
 );
 
+assert(
+  /isInvalidMarketError[\s\S]{0,240}(error === null|error !== null|!error)[\s\S]{0,240}typeof error/u.test(
+    marketPage,
+  ) ||
+    /isInvalidMarketError[\s\S]{0,240}typeof error[\s\S]{0,240}(error === null|error !== null|!error)/u.test(
+      marketPage,
+    ),
+  'market/[id]/page.tsx 的错误识别必须先保护 null / 非对象，避免 readError 为 null 时崩溃。',
+);
+
 assertMatches(
   'market/[id]/page.tsx',
   marketPage,

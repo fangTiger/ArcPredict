@@ -39,6 +39,7 @@ const assertMatches = (label, source, pattern, message) => {
 const homeSource = readSource('app/page.tsx');
 const marketDetailSource = readSource('app/market/[id]/page.tsx');
 const assetPriceMapSource = readSource('lib/asset-price-map.ts');
+const betEventScanSource = readSource('lib/bet-event-scan.ts');
 const seedWalletSource = readSource('lib/seed-wallets.ts');
 const ensureProductionEnvSource = readSource('scripts/ensure-production-env.mjs');
 const envExampleSource = readSource('.env.example');
@@ -110,7 +111,9 @@ if (marketDetailSource) {
 
   check(() => {
     assert(
-      /(getLogs|watchContractEvent|getContractEvents|useBetEventsForMarket)/u.test(marketDetailSource) &&
+      /(fetchLogsPaged|getLogs|watchContractEvent|getContractEvents|useBetEventsForMarket)/u.test(
+        marketDetailSource,
+      ) &&
         /\bBet\b/u.test(marketDetailSource),
       '必须包含 Bet 事件历史读取契约，例如 getLogs / getContractEvents / watchContractEvent / useBetEventsForMarket。',
     );
@@ -138,6 +141,44 @@ if (marketDetailSource) {
       marketDetailSource,
       /<SeedDisclosure[^>]*seedContribution=\{seedContribution\}[^>]*loading=\{/u,
       '必须渲染带 loading 态的 SeedDisclosure。',
+    );
+  });
+
+  check(() => {
+    assert(
+      !/publicClient\.getLogs\(\s*\{[\s\S]{0,240}fromBlock:\s*FRONTEND_DEPLOY_BLOCK[\s\S]{0,240}toBlock:\s*'latest'/u.test(
+        marketDetailSource,
+      ),
+      '市场详情不应再直接用单次 publicClient.getLogs 扫描 FRONTEND_DEPLOY_BLOCK..latest。',
+    );
+  });
+
+  check(() => {
+    assert(
+      /fetchLogsPaged/u.test(marketDetailSource) &&
+        /fromBlock:\s*FRONTEND_DEPLOY_BLOCK/u.test(marketDetailSource) &&
+        /toBlock:\s*'latest'/u.test(marketDetailSource),
+      '市场详情必须通过分页 helper 读取 FRONTEND_DEPLOY_BLOCK..latest 的 Bet 事件。',
+    );
+  });
+}
+
+if (betEventScanSource) {
+  check(() => {
+    assertMatches(
+      'web/lib/bet-event-scan.ts',
+      betEventScanSource,
+      /export\s+const\s+LOG_SCAN_BLOCK_STEP\s*=\s*10_000n/u,
+      '必须导出 10,000 block 分页步长常量。',
+    );
+  });
+
+  check(() => {
+    assertMatches(
+      'web/lib/bet-event-scan.ts',
+      betEventScanSource,
+      /eth_getLogs[\s\S]{0,40}10,000/u,
+      '注释必须说明 Arc RPC 的 eth_getLogs 存在 10,000 block 限制。',
     );
   });
 }
