@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const webRoot = resolve(process.cwd(), 'web');
+const cwd = process.cwd();
+const webRoot = cwd.endsWith('/web') ? cwd : resolve(cwd, 'web');
 const vercelConfigPath = resolve(webRoot, 'vercel.json');
 
 assert(existsSync(vercelConfigPath), '缺少文件: web/vercel.json');

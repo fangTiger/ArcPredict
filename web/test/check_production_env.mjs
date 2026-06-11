@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 
-const webRoot = resolve(process.cwd(), 'web');
+const cwd = process.cwd();
+const webRoot = cwd.endsWith('/web') ? cwd : resolve(cwd, 'web');
 const scriptPath = resolve(webRoot, 'scripts/ensure-production-env.mjs');
 
 function runEnsureProductionEnv(envOverrides) {

@@ -4,8 +4,9 @@ import { dirname, resolve } from 'node:path';
 import Module from 'node:module';
 import ts from 'typescript';
 
-const repoRoot = process.cwd();
-const webRoot = resolve(repoRoot, 'web');
+const cwd = process.cwd();
+const repoRoot = cwd.endsWith('/web') ? resolve(cwd, '..') : cwd;
+const webRoot = cwd.endsWith('/web') ? cwd : resolve(repoRoot, 'web');
 const moduleCache = new Map();
 const nodeRequire = Module.createRequire(import.meta.url);
 

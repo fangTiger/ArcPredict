@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const webRoot = resolve(process.cwd(), 'web');
+const cwd = process.cwd();
+const webRoot = cwd.endsWith('/web') ? cwd : resolve(cwd, 'web');
 
 const readRequiredText = (relativePath) => {
   const filePath = resolve(webRoot, relativePath);

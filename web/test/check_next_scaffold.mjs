@@ -1,7 +1,9 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const webRoot = resolve(process.cwd(), 'web');
+const cwd = process.cwd();
+const repoRoot = cwd.endsWith('/web') ? resolve(cwd, '..') : cwd;
+const webRoot = cwd.endsWith('/web') ? cwd : resolve(cwd, 'web');
 const requiredFiles = [
   'package.json',
   'pnpm-lock.yaml',
@@ -84,7 +86,7 @@ for (const line of expectedEnvLines) {
   }
 }
 
-const gitignore = readFileSync(resolve(process.cwd(), '.gitignore'), 'utf8');
+const gitignore = readFileSync(resolve(repoRoot, '.gitignore'), 'utf8');
 const tsbuildIgnorePatterns = ['*.tsbuildinfo', 'web/tsconfig.tsbuildinfo'];
 
 if (!tsbuildIgnorePatterns.some((pattern) => gitignore.includes(pattern))) {
