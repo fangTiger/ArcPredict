@@ -183,7 +183,7 @@ test("listSnapshotMarketIds 遍历 BTC/ETH/SOL 四档并追加 unknown", () => {
   assert.deepEqual(listSnapshotMarketIds(snapshot), [1n, 2n, 3n, 4n, 5n, 6n]);
 });
 
-test("package.json 的 check 包含全部 C 段 checker，且保留 A/B 既有 checker", () => {
+test("package.json 的 check 包含全部 C 段 checker、QA 文档检查，且保留 A/B 既有 checker", () => {
   const pkg = JSON.parse(readFileSync(PACKAGE_JSON_PATH, "utf8")) as {
     scripts?: { check?: string };
   };
@@ -208,12 +208,19 @@ test("package.json 的 check 包含全部 C 段 checker，且保留 A/B 既有 c
     "tsx test/check_seed_events.ts",
     "tsx test/check_scheduler_main.ts",
   ];
+  const qaCheckers = [
+    "node ../../../docs/qa/check_phase16_manual_qa.mjs",
+    "node ../../../docs/qa/check_phase16_manual_qa_selftest.mjs",
+  ];
 
   for (const checker of existingCheckers) {
     assert.match(check, new RegExp(checker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
 
-  assert.equal(check.endsWith(cSectionTail.join(" && ")), true);
+  for (const checker of qaCheckers) {
+    assert.match(check, new RegExp(checker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.equal(check.endsWith(`${cSectionTail.join(" && ")} && ${qaCheckers.join(" && ")}`), true);
 });
 
 let failures = 0;

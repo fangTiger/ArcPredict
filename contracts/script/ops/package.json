@@ -8,7 +8,7 @@
     "topup": "tsx TopUpSeeds.ts",
     "generate-seeds": "tsx GenerateSeeds.ts",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && tsx test/check_resolve_due_markets.ts && tsx test/check_readme.ts && tsx test/check_scheduler_config.ts && tsx test/check_cadence_tag.ts && tsx test/check_rng.ts && tsx test/check_env.ts && tsx test/check_hermes.ts && tsx test/check_generate_seeds.ts && tsx test/check_topup_thresholds.ts && tsx test/check_topup_main.ts && tsx test/check_market_scan.ts && tsx test/check_compute_gaps.ts && tsx test/check_pick_seeds.ts && tsx test/check_seed_amount.ts && tsx test/check_seed_events.ts && tsx test/check_scheduler_main.ts"
+    "check": "npm run typecheck && tsx test/check_resolve_due_markets.ts && tsx test/check_readme.ts && tsx test/check_scheduler_config.ts && tsx test/check_cadence_tag.ts && tsx test/check_rng.ts && tsx test/check_env.ts && tsx test/check_hermes.ts && tsx test/check_generate_seeds.ts && tsx test/check_topup_thresholds.ts && tsx test/check_topup_main.ts && tsx test/check_market_scan.ts && tsx test/check_compute_gaps.ts && tsx test/check_pick_seeds.ts && tsx test/check_seed_amount.ts && tsx test/check_seed_events.ts && tsx test/check_scheduler_main.ts && node ../../../docs/qa/check_phase16_manual_qa.mjs && node ../../../docs/qa/check_phase16_manual_qa_selftest.mjs"
   },
   "dependencies": {
     "@pythnetwork/hermes-client": "^2.0.0",
