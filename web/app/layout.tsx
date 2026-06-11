@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { ArcBackground } from '@/components/ArcBackground';
 import './globals.css';
 import { Providers } from './providers';
 
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="bg-canvas text-ink antialiased">
+        <ArcBackground />
         <Providers>{children}</Providers>
       </body>
     </html>
