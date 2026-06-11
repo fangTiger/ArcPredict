@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { parseCadenceTag } from '@/lib/cadence-tag';
 import type { DashboardRow } from '@/lib/derivePosition';
@@ -120,6 +121,7 @@ export function MarketCard({
     : `Settled ${outcome}`;
   const yesMultiple = formatOddsMultiple(m.yesPool, totalPool);
   const noMultiple = formatOddsMultiple(m.noPool, totalPool);
+  const detailHref = `/market/${row.id.toString()}`;
 
   return (
     <article className="group relative overflow-hidden rounded-[16px] border border-hair bg-paper p-6 shadow-[0_1px_0_rgba(10,11,15,0.04)] transition duration-200 hover:-translate-y-0.5 hover:border-arc/25 hover:shadow-[0_12px_32px_rgba(10,11,15,0.08)]">
@@ -135,66 +137,74 @@ export function MarketCard({
       </svg>
 
       <div className="relative z-10">
-        <div className="mb-[18px] flex items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-[10px]">
+        <Link
+          href={detailHref}
+          className="block rounded-[12px] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-arc/40 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+        >
+          <div className="mb-[18px] flex items-center justify-between gap-3">
+            <div className="inline-flex items-center gap-[10px]">
+              <span
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-full font-mono text-[11px] font-semibold text-paper ${assetAccentClassName[asset] ?? 'bg-ink'}`}
+              >
+                {asset}
+              </span>
+              <span className="font-mono text-xs text-ink-2">#{row.id.toString()}</span>
+            </div>
+
             <span
-              className={`inline-flex h-8 w-8 items-center justify-center rounded-full font-mono text-[11px] font-semibold text-paper ${assetAccentClassName[asset] ?? 'bg-ink'}`}
+              className={`rounded-[12px] px-[10px] py-1 text-[11px] font-semibold uppercase ${
+                isClosingSoon ? 'bg-heat/10 text-heat' : 'bg-arc-tint text-arc-deep'
+              }`}
             >
-              {asset}
+              {cadenceLabel}
             </span>
-            <span className="font-mono text-xs text-ink-2">#{row.id.toString()}</span>
           </div>
 
-          <span
-            className={`rounded-[12px] px-[10px] py-1 text-[11px] font-semibold uppercase ${
-              isClosingSoon ? 'bg-heat/10 text-heat' : 'bg-arc-tint text-arc-deep'
-            }`}
-          >
-            {cadenceLabel}
-          </span>
-        </div>
+          <h3 className="mb-2 font-display text-[26px] leading-[1.18] text-ink">
+            {asset}/USD <span className="mx-1 text-arc">≥</span>{' '}
+            <span className="whitespace-nowrap text-arc">
+              {formatThresholdValue(m.threshold, m.thresholdExpo)}
+            </span>{' '}
+            by {formatShortDate(m.resolveAfter)}
+          </h3>
 
-        <h3 className="mb-2 font-display text-[26px] leading-[1.18] text-ink">
-          {asset}/USD <span className="mx-1 text-arc">≥</span>{' '}
-          <span className="whitespace-nowrap text-arc">
-            {formatThresholdValue(m.threshold, m.thresholdExpo)}
-          </span>{' '}
-          by {formatShortDate(m.resolveAfter)}
-        </h3>
+          <div className="mb-5 font-mono text-xs text-ink-2">
+            Resolves {formatUtcTimestamp(m.resolveAfter)}
+          </div>
 
-        <div className="mb-5 font-mono text-xs text-ink-2">
-          Resolves {formatUtcTimestamp(m.resolveAfter)}
-        </div>
-
-        <div className="mb-4">
-          <div className="mb-2 flex items-end justify-between gap-4">
-            <div className="flex items-end gap-1.5 text-yes">
-              <span className="font-display text-[28px] leading-none">{yesPct.toFixed(0)}</span>
-              <span>%</span>
-              <span className="pb-0.5 text-xs uppercase">YES</span>
+          <div className="mb-4">
+            <div className="mb-2 flex items-end justify-between gap-4">
+              <div className="flex items-end gap-1.5 text-yes">
+                <span className="font-display text-[28px] leading-none">{yesPct.toFixed(0)}</span>
+                <span>%</span>
+                <span className="pb-0.5 text-xs uppercase">YES</span>
+              </div>
+              <div className="flex items-end gap-1.5 text-no">
+                <span className="pb-0.5 text-xs uppercase">NO</span>
+                <span className="font-display text-[28px] leading-none">{noPct.toFixed(0)}</span>
+                <span>%</span>
+              </div>
             </div>
-            <div className="flex items-end gap-1.5 text-no">
-              <span className="pb-0.5 text-xs uppercase">NO</span>
-              <span className="font-display text-[28px] leading-none">{noPct.toFixed(0)}</span>
-              <span>%</span>
+
+            <div className="h-1.5 overflow-hidden rounded-full bg-no/15">
+              <div
+                className="h-full rounded-full bg-yes transition-[width]"
+                style={{ width: `${yesPct}%` }}
+              />
             </div>
           </div>
 
-          <div className="h-1.5 overflow-hidden rounded-full bg-no/15">
-            <div className="h-full rounded-full bg-yes transition-[width]" style={{ width: `${yesPct}%` }} />
+          <div className="mb-5 grid grid-cols-2 gap-3 font-mono text-xs text-ink-2">
+            <div className="flex items-center justify-between rounded-[12px] bg-canvas px-3 py-2">
+              <span>YES pool</span>
+              <span className="text-ink">{fmtUsdc(m.yesPool)} USDC</span>
+            </div>
+            <div className="flex items-center justify-between rounded-[12px] bg-canvas px-3 py-2">
+              <span>NO pool</span>
+              <span className="text-ink">{fmtUsdc(m.noPool)} USDC</span>
+            </div>
           </div>
-        </div>
-
-        <div className="mb-5 grid grid-cols-2 gap-3 font-mono text-xs text-ink-2">
-          <div className="flex items-center justify-between rounded-[12px] bg-canvas px-3 py-2">
-            <span>YES pool</span>
-            <span className="text-ink">{fmtUsdc(m.yesPool)} USDC</span>
-          </div>
-          <div className="flex items-center justify-between rounded-[12px] bg-canvas px-3 py-2">
-            <span>NO pool</span>
-            <span className="text-ink">{fmtUsdc(m.noPool)} USDC</span>
-          </div>
-        </div>
+        </Link>
 
         <div className="grid grid-cols-2 gap-2">
           <button
@@ -221,7 +231,12 @@ export function MarketCard({
           <span className={`font-medium ${isClosingSoon ? 'text-heat' : 'text-ink'}`}>
             {countdownLabel}
           </span>
-          <span className="font-sans text-[11px] text-ink-2">Seed disclosure on market page</span>
+          <Link
+            href={detailHref}
+            className="font-sans text-[11px] text-ink-2 transition hover:text-ink"
+          >
+            View details
+          </Link>
         </div>
       </div>
     </article>

@@ -41,6 +41,10 @@ const assertExcludesAll = (label, source, tokens) => {
   }
 };
 
+const assertMatches = (label, source, pattern, message) => {
+  assert(pattern.test(source), `${label} ${message}`);
+};
+
 const resolveCountdown = readRequiredText('components/ResolveCountdown.tsx');
 const marketCard = readRequiredText('components/MarketCard.tsx');
 const marketDetailCard = readRequiredText('components/MarketDetailCard.tsx');
@@ -70,6 +74,7 @@ assert(
 );
 
 assertIncludesAll('MarketCard.tsx', marketCard, [
+  "import Link from 'next/link';",
   'DashboardRow',
   'PYTH_PRICE_ID_TO_ASSET',
   'parseCadenceTag',
@@ -82,22 +87,86 @@ assertIncludesAll('MarketCard.tsx', marketCard, [
   'border-hair',
   'bg-canvas',
   'Closes in',
-  'Seed disclosure on market page',
+  'View details',
   'Monthly · closing',
   'now < m.betDeadline',
   'bettingOpen',
-  'onBet(row.id, true)',
-  'onBet(row.id, false)',
   'm.yesPool + m.noPool',
   'Bet YES',
   'Bet NO',
   'betDeadline - now < 24n * 60n * 60n',
 ]);
 
+assertExcludesAll('MarketCard.tsx 需移除 article 导航方案', marketCard, [
+  "import { useRouter } from 'next/navigation';",
+  'role="link"',
+  'tabIndex={0}',
+  'router.push(detailHref)',
+]);
+
+assertMatches(
+  'MarketCard.tsx',
+  marketCard,
+  /const detailHref = `\/market\/\$\{row\.id\.toString\(\)\}`;/u,
+  '必须声明详情地址 detailHref',
+);
+
+assertMatches(
+  'MarketCard.tsx',
+  marketCard,
+  /<Link[\s\S]*?href=\{detailHref\}/u,
+  '必须使用 Link href={detailHref} 提供详情导航',
+);
+
+const firstDetailLinkMatch = marketCard.match(/<Link[\s\S]*?href=\{detailHref\}[\s\S]*?<\/Link>/u);
+
+assert(firstDetailLinkMatch, 'MarketCard.tsx 必须存在一个详情 Link 片段');
+assertExcludesAll('MarketCard.tsx 主体 Link 不能包含按钮', firstDetailLinkMatch[0], [
+  '<button',
+  'Bet YES',
+  'Bet NO',
+]);
+
+assertMatches(
+  'MarketCard.tsx',
+  marketCard,
+  /<Link[\s\S]*?href=\{detailHref\}[\s\S]*?<\/Link>[\s\S]*?<div className="grid grid-cols-2 gap-2">/u,
+  '主体 Link 必须在按钮区域之前结束',
+);
+
+assertMatches(
+  'MarketCard.tsx',
+  marketCard,
+  /onClick=\{\(\) => onBet\(row\.id, true\)\}/u,
+  'Bet YES 按钮必须保持直接下注行为',
+);
+
+assertMatches(
+  'MarketCard.tsx',
+  marketCard,
+  /onClick=\{\(\) => onBet\(row\.id, false\)\}/u,
+  'Bet NO 按钮必须保持直接下注行为',
+);
+
+assertMatches(
+  'MarketCard.tsx',
+  marketCard,
+  />\s*(View details|查看详情)\s*</u,
+  '必须提供明确的详情可见文案',
+);
+
+assertMatches(
+  'MarketCard.tsx',
+  marketCard,
+  /<Link[\s\S]*?href=\{detailHref\}[\s\S]*?>[\s\S]*?(View details|查看详情)[\s\S]*?<\/Link>/u,
+  '必须保留清晰的 View details 详情入口',
+);
+
 assertExcludesAll('MarketCard.tsx', marketCard, [
   'ResolveCountdown',
   'bg-surface',
   '下注已关闭',
+  'Seed disclosure on market page',
 ]);
 
 assertIncludesAll('MarketDetailCard.tsx', marketDetailCard, [

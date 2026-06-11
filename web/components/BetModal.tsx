@@ -267,12 +267,7 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
     setFeedback('下注已提交成功。');
     void refetchAllowance();
     void refetchBalance();
-
-    const timer = window.setTimeout(() => {
-      onClose();
-    }, 1200);
-
-    return () => window.clearTimeout(timer);
+    onClose();
   }, [
     currentBetHash,
     betReceipt.isSuccess,

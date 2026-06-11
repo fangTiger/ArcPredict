@@ -41,6 +41,10 @@ const assertExcludesAll = (label, source, tokens) => {
   }
 };
 
+const assertMatches = (label, source, pattern, message) => {
+  assert(pattern.test(source), `${label} ${message}`);
+};
+
 const assertReadHookHasChainId = (label, source, functionName) => {
   const pattern = new RegExp(
     String.raw`useReadContract\(\{[\s\S]*?functionName: '${functionName}'[\s\S]*?chainId: arcTestnet\.id[\s\S]*?\}\);`,
@@ -188,6 +192,13 @@ assertIncludesAll('BetModal.tsx 地址切换重置授权', betModal, [
   'setHasFreshApproval(false);',
   '[address]',
 ]);
+
+assertMatches(
+  'BetModal.tsx',
+  betModal,
+  /if \(step !== 'betting' \|\| !currentBetHash \|\| !betReceipt\.isSuccess\) \{\s+return;\s+\}[\s\S]*?setCurrentBetHash\(undefined\);[\s\S]*?setStep\('success'\);[\s\S]*?setFeedback\('下注已提交成功。'\);[\s\S]*?void refetchAllowance\(\);[\s\S]*?void refetchBalance\(\);[\s\S]*?onClose\(\);/u,
+  '在 bet receipt 成功后必须直接调用 onClose()',
+);
 
 assertIncludesAll('BetModal.tsx 切链后重新确认', betModal, [
   'await switchChainAsync({ chainId: arcTestnet.id });',
