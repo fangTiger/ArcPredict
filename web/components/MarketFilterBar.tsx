@@ -56,7 +56,7 @@ export function filterMarkets<T extends FilterMarketInput>(
 ): T[] {
   return markets.filter((market) => {
     if (opts.asset !== 'all') {
-      const asset = opts.priceIdToAsset[market.pythPriceId];
+      const asset = opts.priceIdToAsset[market.pythPriceId.toLowerCase()];
       if (asset !== opts.asset) {
         return false;
       }

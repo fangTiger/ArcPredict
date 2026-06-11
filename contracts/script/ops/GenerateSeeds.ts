@@ -34,6 +34,7 @@ export function buildWebSeedListContent(seeds: readonly Seed[]): string {
 
   return [
     "// 自动生成，勿手动编辑。",
+    "// 由 npm run generate-seeds 写入真实地址；重跑时会替换这里的公开地址。",
     "// 由 contracts/script/ops/GenerateSeeds.ts 写出。",
     "// 用于前端披露：扫 Bet 事件时判断是否属于 seed 钱包。",
     "",

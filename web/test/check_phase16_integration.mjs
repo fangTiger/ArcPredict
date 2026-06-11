@@ -187,6 +187,28 @@ if (assetPriceMapSource) {
       '注释必须说明前端部署区块常量要和 ops DEPLOY_BLOCK 手动同步。',
     );
   });
+
+  check(() => {
+    assertMatches(
+      'web/lib/asset-price-map.ts',
+      assetPriceMapSource,
+      /FRONTEND_DEPLOY_BLOCK\s*=\s*46435108n/u,
+      'FRONTEND_DEPLOY_BLOCK 必须锁定为已验证部署区块 46435108n。',
+    );
+  });
+
+  check(() => {
+    for (const [priceId, asset] of [
+      ['0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43', 'BTC'],
+      ['0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace', 'ETH'],
+      ['0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d', 'SOL'],
+    ]) {
+      assert(
+        assetPriceMapSource.includes(`'${priceId}': '${asset}'`),
+        `web/lib/asset-price-map.ts 必须包含 ${asset} 的真实 priceId 映射。`,
+      );
+    }
+  });
 }
 
 if (seedWalletSource) {
@@ -196,15 +218,6 @@ if (seedWalletSource) {
       seedWalletSource,
       /export\s+const\s+SEED_WALLETS/u,
       '必须导出 SEED_WALLETS。',
-    );
-  });
-
-  check(() => {
-    assertMatches(
-      'web/lib/seed-wallets.ts',
-      seedWalletSource,
-      /E1/u,
-      '注释必须说明 E1 会覆盖真实 seed 地址。',
     );
   });
 
@@ -224,6 +237,10 @@ if (seedWalletSource) {
       /(覆盖|替换|写入)[\s\S]{0,40}真实地址|真实地址[\s\S]{0,40}(覆盖|替换|写入)/u,
       '注释必须明确这是可被 E1 覆盖的真实地址占位。',
     );
+  });
+
+  check(() => {
+    assert(!/E1/u.test(seedWalletSource), 'web/lib/seed-wallets.ts 注释不应写死阶段名 E1。');
   });
 
   check(() => {

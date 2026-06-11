@@ -97,14 +97,14 @@ const marketFilterPath = resolve(webRoot, 'components/MarketFilterBar.tsx');
 const { filterMarkets } = loadTsModule(marketFilterPath);
 
 const priceIdToAsset = {
-  '0xBTC': 'BTC',
-  '0xETH': 'ETH',
-  '0xSOL': 'SOL',
+  '0xbtc': 'BTC',
+  '0xeth': 'ETH',
+  '0xsol': 'SOL',
 };
 
 const markets = [
   { id: 1, pythPriceId: '0xBTC', question: 'BTC/USD ≥ 71200 @ 2026-06-17 12:00 UTC [weekly]' },
-  { id: 2, pythPriceId: '0xETH', question: 'ETH/USD ≥ 3500 @ 2026-06-17 12:00 UTC [monthly]' },
+  { id: 2, pythPriceId: '0xeth', question: 'ETH/USD ≥ 3500 @ 2026-06-17 12:00 UTC [monthly]' },
   { id: 3, pythPriceId: '0xSOL', question: 'SOL/USD ≥ 150 @ 2026-06-17 12:00 UTC [daily]' },
   { id: 4, pythPriceId: '0xBTC', question: 'BTC/USD ≥ 71200 @ 2026-06-17 12:00 UTC' },
   { id: 5, pythPriceId: '0xDOGE', question: 'DOGE/USD ≥ 0.25 @ 2026-06-17 12:00 UTC [weekly]' },
@@ -127,5 +127,6 @@ assert(
   !idsOf('BTC', 'all').includes(5),
   '未知 priceId 在指定 asset 下不应出现。',
 );
+assert.deepEqual(idsOf('SOL', 'daily'), [3], 'asset 过滤必须兼容大写 priceId 与 lowercase 映射。');
 
 console.log('market filter 检查通过');

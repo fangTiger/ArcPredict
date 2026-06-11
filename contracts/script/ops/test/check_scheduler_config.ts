@@ -60,14 +60,22 @@ test("总活跃数 = 26", () => {
   assert.equal(totalActive(), 26, "总活跃数必须等于 26");
 });
 
-test("DEPLOY_BLOCK 默认占位为 0", () => {
-  assert.equal(DEPLOY_BLOCK, 0n, "DEPLOY_BLOCK 默认值必须为 0n");
+test("DEPLOY_BLOCK 锁定已验证的部署区块", () => {
+  assert.equal(DEPLOY_BLOCK, 46435108n, "DEPLOY_BLOCK 必须等于已验证部署区块 46435108n");
 });
 
 test("PYTH_PRICE_ID 三个值都是 32 字节 hex", () => {
   for (const id of Object.values(PYTH_PRICE_ID)) {
     assert.match(id, /^0x[0-9a-fA-F]{64}$/, `${id} 不是 32 字节 hex`);
   }
+});
+
+test("PYTH_PRICE_ID 锁定已验证的真实 Stable Feed ID", () => {
+  assert.deepEqual(PYTH_PRICE_ID, {
+    BTC: "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43",
+    ETH: "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+    SOL: "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d",
+  });
 });
 
 test("validateConfig 不抛", () => {

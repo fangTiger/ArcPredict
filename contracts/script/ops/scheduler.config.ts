@@ -12,12 +12,11 @@ export const CADENCE_DURATION: Record<Cadence, { betHours: number; resolveHours:
   quarterly: { betHours: 90 * 24 - 12, resolveHours: 90 * 24 },
 };
 
-// Pyth Hermes 上的 priceId（32 字节 hex），实施前必须按 spec §10 用 cast 验证
-// 占位：实施时由 owner 替换为真实值
+// Pyth Hermes 上的 priceId（32 字节 hex），已按 E1 验证填入真实 Stable Feed ID
 export const PYTH_PRICE_ID: Record<Asset, `0x${string}`> = {
-  BTC: "0x0000000000000000000000000000000000000000000000000000000000000000",
-  ETH: "0x0000000000000000000000000000000000000000000000000000000000000000",
-  SOL: "0x0000000000000000000000000000000000000000000000000000000000000000",
+  BTC: "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43",
+  ETH: "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+  SOL: "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d",
 };
 
 // 同时活跃市场数目标，主力放在周/月/季度
@@ -35,8 +34,8 @@ export const THRESHOLD_OFFSETS_PCT: Record<Cadence, number[]> = {
   quarterly: [-15, 0, +15],
 };
 
-// 合约部署区块（用于扫 Bet 事件）；实施时由 owner 填真实值
-export const DEPLOY_BLOCK: bigint = 0n;
+// 合约部署区块（用于扫 Bet 事件）；已按 E1 验证填入
+export const DEPLOY_BLOCK: bigint = 46435108n;
 
 export function totalActive(): number {
   let s = 0;

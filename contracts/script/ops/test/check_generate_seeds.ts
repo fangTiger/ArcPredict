@@ -53,6 +53,13 @@ test("buildWebSeedListContent 输出 readonly 地址类型且不含 privateKey",
   assert.doesNotMatch(out, /privateKey/);
 });
 
+test("buildWebSeedListContent 注释说明 generate-seeds 写入真实公开地址且不写死阶段名", () => {
+  const out = buildWebSeedListContent(sample);
+  assert.match(out, /generate-seeds/);
+  assert.match(out, /(写入|替换)[\s\S]{0,40}真实地址|真实地址[\s\S]{0,40}(写入|替换)/);
+  assert.doesNotMatch(out, /E1/);
+});
+
 test("parseGenerationArgs 默认非 append 且 count=12", () => {
   assert.deepEqual(parseGenerationArgs([]), { append: false, count: 12 });
 });
