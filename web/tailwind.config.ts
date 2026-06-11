@@ -19,6 +19,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ['Geist', 'system-ui', 'sans-serif'],
+        display: ['Instrument Serif', 'Georgia', 'serif'],
         mono: ['Geist Mono', 'monospace'],
       },
     },

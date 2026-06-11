@@ -49,6 +49,7 @@ async function main() {
     'lang="zh-CN"',
     'fonts.googleapis.com/css2?family=Geist',
     'Geist+Mono',
+    'Instrument+Serif',
     'bg-base text-zinc-100 antialiased',
   ];
 

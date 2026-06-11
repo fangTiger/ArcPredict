@@ -118,6 +118,7 @@ const requiredTailwindTokens = [
   "no: '#DC2626'",
   "heat: '#FF6B35'",
   "sans: ['Geist', 'system-ui', 'sans-serif']",
+  "display: ['Instrument Serif', 'Georgia', 'serif']",
   "mono: ['Geist Mono', 'monospace']",
 ];
 
