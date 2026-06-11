@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           rel="stylesheet"
         />
       </head>
-      <body className="bg-base text-zinc-100 antialiased">
+      <body className="bg-canvas text-ink antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -3,7 +3,6 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
   font-family: 'Geist', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
   text-wrap: pretty;
@@ -11,6 +10,8 @@
 
 body {
   margin: 0;
+  background: #fbfaf7;
+  color: #0a0b0f;
 }
 
 .font-mono {

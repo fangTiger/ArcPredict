@@ -50,7 +50,7 @@ async function main() {
     'fonts.googleapis.com/css2?family=Geist',
     'Geist+Mono',
     'Instrument+Serif',
-    'bg-base text-zinc-100 antialiased',
+    'bg-canvas text-ink antialiased',
   ];
 
   for (const token of layoutTokens) {
@@ -70,6 +70,8 @@ async function main() {
   for (const token of globalTokens) {
     assert(globals.includes(token), `globals.css 缺少关键内容: ${token}`);
   }
+
+  assert(!globals.includes('color-scheme: dark'), 'globals.css 不应保留 color-scheme: dark');
 
   console.log('check_providers_layout: OK');
 }
