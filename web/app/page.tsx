@@ -1,11 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { Abi } from 'viem';
 import { zeroAddress } from 'viem';
 import { useAccount, useReadContract } from 'wagmi';
+import { ActivityBadges } from '@/components/ActivityBadges';
 import { BetModal } from '@/components/BetModal';
 import { FaucetCard } from '@/components/FaucetCard';
+import {
+  MarketFilterBar,
+  filterMarkets,
+  type AssetFilter,
+  type CadenceFilter,
+} from '@/components/MarketFilterBar';
 import { MarketCard } from '@/components/MarketCard';
 import { NetworkBanner } from '@/components/NetworkBanner';
 import { PositionList } from '@/components/PositionList';
@@ -16,7 +23,9 @@ import { PREDICTION_MARKET_ADDRESS } from '@/lib/addresses';
 import { arcTestnet } from '@/lib/chain';
 import type { DashboardRow } from '@/lib/derivePosition';
 import { OUTCOMES } from '@/lib/derivePosition';
+import { PYTH_PRICE_ID_TO_ASSET } from '@/lib/asset-price-map';
 import { fmtUsdc } from '@/lib/format';
+import { isPhase16Enabled } from '@/lib/phase16-flag';
 
 const predictionMarketAbi = PredictionMarketAbi as Abi;
 
@@ -62,6 +71,8 @@ export default function HomePage() {
   const { address, isConnected } = useAccount();
   const user = address ?? zeroAddress;
   const [betting, setBetting] = useState<BetSelection | null>(null);
+  const [asset, setAsset] = useState<AssetFilter>('all');
+  const [cadence, setCadence] = useState<CadenceFilter>('all');
 
   const { data, isLoading, isError, refetch } = useReadContract({
     address: PREDICTION_MARKET_ADDRESS,
@@ -76,7 +87,23 @@ export default function HomePage() {
   const dashboardLoaded = dashboardData !== undefined && !isLoading && !isError;
   const rows = dashboardData?.[0] ?? [];
   const totalCount = dashboardData?.[1] ?? 0n;
-  const activeMarkets = rows.filter((row) => OUTCOMES[row.market.outcome] === 'Unresolved');
+  const activeMarkets = rows.filter((row) => OUTCOMES[row.market.outcome] === 'Unresolved').map((row) => ({
+    ...row,
+    pythPriceId: row.market.pythPriceId,
+    question: row.market.question,
+  }));
+  const showPhase16 = isPhase16Enabled();
+  const visibleActiveMarkets = useMemo(
+    () =>
+      showPhase16
+        ? filterMarkets(activeMarkets, {
+            asset,
+            cadence,
+            priceIdToAsset: PYTH_PRICE_ID_TO_ASSET,
+          })
+        : activeMarkets,
+    [activeMarkets, asset, cadence, showPhase16],
+  );
   const totalActivePool = activeMarkets.reduce(
     (sum, row) => sum + row.market.yesPool + row.market.noPool,
     0n,
@@ -171,6 +198,23 @@ export default function HomePage() {
                   <div className="font-mono text-sm text-zinc-500">已加载 {activeSectionCountValue}</div>
                 </div>
 
+                {showPhase16 && (
+                  <div className="mt-4 space-y-3">
+                    <ActivityBadges
+                      markets={activeMarkets.map((row) => row.market)}
+                      nowSec={Math.floor(Date.now() / 1000)}
+                    />
+                    <MarketFilterBar
+                      asset={asset}
+                      cadence={cadence}
+                      onChange={({ asset: nextAsset, cadence: nextCadence }) => {
+                        setAsset(nextAsset);
+                        setCadence(nextCadence);
+                      }}
+                    />
+                  </div>
+                )}
+
                 {isLoading ? (
                   <div className="py-12 text-sm text-zinc-400">正在读取最新市场与个人视图……</div>
                 ) : isError ? (
@@ -181,9 +225,13 @@ export default function HomePage() {
                   <div className="py-12 text-sm text-zinc-400">
                     当前没有未结算市场，等新市场发布后这里会自动出现。
                   </div>
+                ) : visibleActiveMarkets.length === 0 ? (
+                  <div className="py-12 text-sm text-zinc-400">
+                    当前筛选条件下没有未结算市场，请切换 Asset 或 Cadence 后重试。
+                  </div>
                 ) : (
                   <div className="mt-5 grid gap-4 md:grid-cols-2">
-                    {activeMarkets.map((row) => (
+                    {visibleActiveMarkets.map((row) => (
                       <MarketCard
                         key={row.id.toString()}
                         row={row}

@@ -2,26 +2,36 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useState, type ComponentProps } from 'react';
+import { useEffect, useMemo, useState, type ComponentProps } from 'react';
 import type { Abi } from 'viem';
-import { maxUint256, zeroAddress } from 'viem';
-import { useAccount, useReadContract } from 'wagmi';
+import { maxUint256, parseAbiItem, zeroAddress } from 'viem';
+import { useAccount, usePublicClient, useReadContract } from 'wagmi';
 import { BetModal } from '@/components/BetModal';
 import { MarketCard } from '@/components/MarketCard';
 import { NetworkBanner } from '@/components/NetworkBanner';
+import { SeedDisclosure, sumSeedContribution } from '@/components/SeedDisclosure';
 import { WalletPill } from '@/components/WalletPill';
 import PredictionMarketAbi from '@/lib/abis/PredictionMarket.json';
 import { PREDICTION_MARKET_ADDRESS } from '@/lib/addresses';
 import { arcTestnet } from '@/lib/chain';
+import { isPhase16Enabled } from '@/lib/phase16-flag';
+import { SEED_WALLETS } from '@/lib/seed-wallets';
 
 const predictionMarketAbi = PredictionMarketAbi as Abi;
 const MAX_MARKET_ID = maxUint256;
+const betEvent = parseAbiItem(
+  'event Bet(uint256 indexed id, address indexed user, bool yes, uint128 amount, uint128 yesPoolAfter, uint128 noPoolAfter)',
+);
 
 type MarketRow = ComponentProps<typeof MarketCard>['row'];
 type DashboardResult = readonly [MarketRow[], bigint];
 type BetSelection = {
   row: MarketRow;
   side: boolean;
+};
+type SeedBetEvent = {
+  user: `0x${string}`;
+  amount: bigint;
 };
 
 function parseMarketId(value: string | undefined): bigint | null {
@@ -73,8 +83,10 @@ export default function MarketDetailPage() {
   const routeId = params.id;
   const idBn = parseMarketId(routeId);
   const { address } = useAccount();
+  const publicClient = usePublicClient({ chainId: arcTestnet.id });
   const user = address ?? zeroAddress;
   const [betting, setBetting] = useState<BetSelection | null>(null);
+  const [seedBetEvents, setSeedBetEvents] = useState<SeedBetEvent[] | undefined>(undefined);
   const readArgs = idBn === null ? undefined : [user, idBn, idBn + 1n];
 
   const { data, error, isLoading, isError, refetch } = useReadContract({
@@ -91,6 +103,66 @@ export default function MarketDetailPage() {
   const marketMissing = isInvalidMarketError(error);
   const walletStatus = address ? '已连接' : '未连接';
   const contractAddressLabel = shortAddress(PREDICTION_MARKET_ADDRESS);
+  const showPhase16 = isPhase16Enabled();
+  const seedContribution = useMemo(
+    () => sumSeedContribution(seedBetEvents ?? [], SEED_WALLETS),
+    [seedBetEvents],
+  );
+
+  useEffect(() => {
+    if (!showPhase16 || idBn === null) {
+      setSeedBetEvents([]);
+      return;
+    }
+
+    if (!publicClient) {
+      setSeedBetEvents([]);
+      return;
+    }
+
+    let cancelled = false;
+    setSeedBetEvents(undefined);
+
+    const loadSeedBetEvents = async () => {
+      try {
+        const logs = await publicClient.getLogs({
+          address: PREDICTION_MARKET_ADDRESS,
+          event: betEvent,
+          args: { id: idBn },
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        const nextEvents = logs.flatMap((log) => {
+          const eventUser = log.args.user;
+          const eventAmount = log.args.amount;
+
+          if (!eventUser || eventAmount === undefined) {
+            return [];
+          }
+
+          return [{ user: eventUser, amount: eventAmount }];
+        });
+
+        setSeedBetEvents(nextEvents);
+      } catch (loadError) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error('读取市场 Bet 历史事件失败，将按空数组继续显示。', loadError);
+        setSeedBetEvents([]);
+      }
+    };
+
+    void loadSeedBetEvents();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [idBn, publicClient, showPhase16]);
 
   return (
     <>
@@ -151,6 +223,14 @@ export default function MarketDetailPage() {
                       row={row}
                       onBet={(_id, side) => setBetting({ row, side })}
                     />
+                    {showPhase16 ? (
+                      <div className="mt-4">
+                        <SeedDisclosure
+                          seedContribution={seedContribution}
+                          loading={seedBetEvents === undefined}
+                        />
+                      </div>
+                    ) : null}
                   </div>
                 </section>
               </div>

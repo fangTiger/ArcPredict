@@ -15,6 +15,7 @@ function isValidHttpUrl(value) {
 
 const walletConnectProjectId = readEnv('NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID');
 const hermesEndpoint = readEnv('NEXT_PUBLIC_PYTH_HERMES_ENDPOINT');
+const phase16Enabled = readEnv('NEXT_PUBLIC_PHASE16_ENABLED');
 const errors = [];
 
 if (!walletConnectProjectId) {
@@ -30,6 +31,12 @@ if (!hermesEndpoint) {
 } else if (!isValidHttpUrl(hermesEndpoint)) {
   errors.push(
     `NEXT_PUBLIC_PYTH_HERMES_ENDPOINT 的值 "${hermesEndpoint}" 非法，必须是 http:// 或 https:// 开头的有效 URL。`,
+  );
+}
+
+if (phase16Enabled && phase16Enabled !== 'true' && phase16Enabled !== 'false') {
+  errors.push(
+    `NEXT_PUBLIC_PHASE16_ENABLED 是可选、非必需、非强制的前端开关；如需设置，只能使用 "true" 或 "false"。当前值为 "${phase16Enabled}"。`,
   );
 }
 
