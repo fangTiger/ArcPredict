@@ -13,6 +13,7 @@ import { SeedDisclosure, sumSeedContribution } from '@/components/SeedDisclosure
 import { WalletPill } from '@/components/WalletPill';
 import PredictionMarketAbi from '@/lib/abis/PredictionMarket.json';
 import { PREDICTION_MARKET_ADDRESS } from '@/lib/addresses';
+import { FRONTEND_DEPLOY_BLOCK } from '@/lib/asset-price-map';
 import { arcTestnet } from '@/lib/chain';
 import { isPhase16Enabled } from '@/lib/phase16-flag';
 import { SEED_WALLETS } from '@/lib/seed-wallets';
@@ -129,6 +130,8 @@ export default function MarketDetailPage() {
           address: PREDICTION_MARKET_ADDRESS,
           event: betEvent,
           args: { id: idBn },
+          fromBlock: FRONTEND_DEPLOY_BLOCK,
+          toBlock: 'latest',
         });
 
         if (cancelled) {

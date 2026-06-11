@@ -219,6 +219,33 @@ if (marketDetailSource) {
   });
 
   check(() => {
+    assertMatches(
+      'web/app/market/[id]/page.tsx',
+      marketDetailSource,
+      /import\s*\{\s*[^}]*\b(?:FRONTEND_DEPLOY_BLOCK|DEPLOY_BLOCK)\b[^}]*\}\s*from\s*['"]@\/lib\/[^'"]+['"]/u,
+      '必须从 lib 引入前端部署区块常量，用于限定 Bet 历史读取起点。',
+    );
+  });
+
+  check(() => {
+    assertMatches(
+      'web/app/market/[id]/page.tsx',
+      marketDetailSource,
+      /getLogs\(\s*\{[\s\S]*fromBlock\s*:\s*(?:FRONTEND_DEPLOY_BLOCK|DEPLOY_BLOCK)\b[\s\S]*\}\s*\)/u,
+      'Bet 历史 getLogs 必须设置 fromBlock，并引用前端部署区块常量。',
+    );
+  });
+
+  check(() => {
+    assertMatches(
+      'web/app/market/[id]/page.tsx',
+      marketDetailSource,
+      /getLogs\(\s*\{[\s\S]*toBlock\s*:[\s\S]*\}\s*\)/u,
+      'Bet 历史 getLogs 必须设置 toBlock，避免只依赖默认 latest 范围。',
+    );
+  });
+
+  check(() => {
     assert(
       /const\s+showPhase16\s*=\s*isPhase16Enabled\(\);/u.test(marketDetailSource) ||
         /isPhase16Enabled\(\)\s*&&[\s\S]*<SeedDisclosure/u.test(marketDetailSource),
@@ -261,6 +288,24 @@ if (assetPriceMapSource) {
       assetPriceMapSource,
       /(手动同步|手动对齐)/u,
       '注释必须说明 owner 需要手动同步或手动对齐。',
+    );
+  });
+
+  check(() => {
+    assertMatches(
+      'web/lib/asset-price-map.ts',
+      assetPriceMapSource,
+      /export\s+const\s+(?:FRONTEND_DEPLOY_BLOCK|DEPLOY_BLOCK)\b/u,
+      '必须导出前端部署区块常量，供市场详情 Bet 历史读取使用。',
+    );
+  });
+
+  check(() => {
+    assertMatches(
+      'web/lib/asset-price-map.ts',
+      assetPriceMapSource,
+      /DEPLOY_BLOCK/u,
+      '注释必须说明前端部署区块常量要和 ops DEPLOY_BLOCK 手动同步。',
     );
   });
 }
@@ -333,8 +378,8 @@ if (envExampleSource) {
     assertMatches(
       'web/.env.example',
       envExampleSource,
-      /^NEXT_PUBLIC_PHASE16_ENABLED=true$/mu,
-      '必须提供 NEXT_PUBLIC_PHASE16_ENABLED=true 示例。',
+      /^NEXT_PUBLIC_PHASE16_ENABLED=false$/mu,
+      'E1 前必须提供 NEXT_PUBLIC_PHASE16_ENABLED=false 示例，避免占位 priceId/seed 默认开启。',
     );
   });
 }
