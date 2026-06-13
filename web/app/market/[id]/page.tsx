@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, type ComponentProps } from 'react';
 import type { Abi } from 'viem';
 import { maxUint256, parseAbiItem, zeroAddress } from 'viem';
@@ -11,22 +11,37 @@ import { MarketDetailCard } from '@/components/MarketDetailCard';
 import { NetworkBanner } from '@/components/NetworkBanner';
 import { SeedDisclosure, sumSeedContribution } from '@/components/SeedDisclosure';
 import { WalletPill } from '@/components/WalletPill';
+import EventMarketAbi from '@/lib/abis/EventMarket.json';
 import PredictionMarketAbi from '@/lib/abis/PredictionMarket.json';
-import { PREDICTION_MARKET_ADDRESS } from '@/lib/addresses';
+import {
+  EVENT_MARKET_ADDRESS,
+  PREDICTION_MARKET_ADDRESS,
+} from '@/lib/addresses';
 import { FRONTEND_DEPLOY_BLOCK } from '@/lib/asset-price-map';
 import { fetchLogsPaged } from '@/lib/bet-event-scan';
 import { arcTestnet } from '@/lib/chain';
+import { WORLDCUP_ENABLED } from '@/lib/feature-flags';
 import { isPhase16Enabled } from '@/lib/phase16-flag';
 import { SEED_WALLETS } from '@/lib/seed-wallets';
+import {
+  WORLDCUP_SKELETON_MARKETS,
+  resolveWorldCupMarkets,
+  type WorldCupMarketRow,
+} from '@/lib/worldcup-markets';
 
+const eventMarketAbi = EventMarketAbi as Abi;
 const predictionMarketAbi = PredictionMarketAbi as Abi;
 const MAX_MARKET_ID = maxUint256;
 const betEvent = parseAbiItem(
   'event Bet(uint256 indexed id, address indexed user, bool yes, uint128 amount, uint128 yesPoolAfter, uint128 noPoolAfter)',
 );
 
-type MarketRow = ComponentProps<typeof MarketDetailCard>['row'];
+type DetailMarketRow = ComponentProps<typeof MarketDetailCard>['row'];
+type MarketRow = Exclude<DetailMarketRow, WorldCupMarketRow>;
+type EventRow = Extract<DetailMarketRow, WorldCupMarketRow>;
 type DashboardResult = readonly [MarketRow[], bigint];
+type EventRowsInput = Parameters<typeof resolveWorldCupMarkets>[0];
+type EventDashboardResult = readonly [EventRowsInput, bigint];
 type BetSelection = {
   row: MarketRow;
   side: boolean;
@@ -92,7 +107,11 @@ function shortAddress(address: string) {
 
 export default function MarketDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const routeId = params.id;
+  const kind = searchParams.get('kind') === 'event' ? 'event' : 'price';
+  const requestedKind = kind;
   const idBn = parseMarketId(routeId);
   const { address } = useAccount();
   const publicClient = usePublicClient({ chainId: arcTestnet.id });
@@ -100,6 +119,7 @@ export default function MarketDetailPage() {
   const [betting, setBetting] = useState<BetSelection | null>(null);
   const [seedBetEvents, setSeedBetEvents] = useState<SeedBetEvent[] | undefined>(undefined);
   const readArgs = idBn === null ? undefined : [user, idBn, idBn + 1n];
+  const hasEventMarket = WORLDCUP_ENABLED && EVENT_MARKET_ADDRESS !== zeroAddress;
 
   const { data, error, isLoading, isError, refetch } = useReadContract({
     address: PREDICTION_MARKET_ADDRESS,
@@ -107,19 +127,69 @@ export default function MarketDetailPage() {
     functionName: 'getDashboard',
     args: readArgs,
     chainId: arcTestnet.id,
-    query: { enabled: idBn !== null, refetchInterval: 5_000 },
+    query: {
+      enabled: requestedKind !== 'event' && idBn !== null,
+      refetchInterval: 5_000,
+    },
+  });
+  const {
+    data: eventData,
+    error: eventError,
+    isLoading: isEventLoading,
+    isError: isEventError,
+  } = useReadContract({
+    address: EVENT_MARKET_ADDRESS,
+    abi: eventMarketAbi,
+    functionName: 'getDashboard',
+    args: readArgs,
+    chainId: arcTestnet.id,
+    query: {
+      enabled: requestedKind === 'event' && hasEventMarket && idBn !== null,
+      refetchInterval: 5_000,
+    },
   });
 
   const dashboardData = data as DashboardResult | undefined;
+  const eventDashboardData = eventData as EventDashboardResult | undefined;
   const row = dashboardData?.[0]?.[0];
-  const marketMissing = isInvalidMarketError(error);
+  const resolvedEventRows = useMemo(
+    () => resolveWorldCupMarkets(eventDashboardData?.[0] ?? []),
+    [eventDashboardData],
+  );
+  const eventRow = useMemo(() => {
+    if (requestedKind !== 'event' || idBn === null) {
+      return null;
+    }
+
+    if (!hasEventMarket) {
+      return (WORLDCUP_SKELETON_MARKETS.find((market) => market.id === idBn) ?? null) as EventRow | null;
+    }
+
+    return (resolvedEventRows[0] ?? null) as EventRow | null;
+  }, [hasEventMarket, idBn, requestedKind, resolvedEventRows]);
+  const marketMissing =
+    kind === 'event'
+      ? hasEventMarket && isInvalidMarketError(eventError)
+      : isInvalidMarketError(error);
+  const detailLoading = kind === 'event' ? hasEventMarket && isEventLoading : isLoading;
+  const detailError = kind === 'event' ? hasEventMarket && isEventError : isError;
   const walletStatus = address ? '已连接' : '未连接';
-  const contractAddressLabel = shortAddress(PREDICTION_MARKET_ADDRESS);
-  const showPhase16 = isPhase16Enabled();
+  const detailTitle = kind === 'event' ? '世界杯市场详情' : '市场详情';
+  const backHref = kind === 'event' ? '/?category=worldcup' : '/';
+  const marketAddress = kind === 'event' ? EVENT_MARKET_ADDRESS : PREDICTION_MARKET_ADDRESS;
+  const contractAddressLabel =
+    kind === 'event' && !hasEventMarket ? 'Skeleton' : shortAddress(marketAddress);
+  const showPhase16 = kind !== 'event' && isPhase16Enabled();
   const seedContribution = useMemo(
     () => sumSeedContribution(seedBetEvents ?? [], SEED_WALLETS),
     [seedBetEvents],
   );
+
+  useEffect(() => {
+    if (kind === 'event' && !WORLDCUP_ENABLED) {
+      router.replace('/');
+    }
+  }, [kind, router]);
 
   useEffect(() => {
     if (!showPhase16 || idBn === null) {
@@ -190,6 +260,19 @@ export default function MarketDetailPage() {
     };
   }, [idBn, publicClient, showPhase16]);
 
+  if (kind === 'event' && !WORLDCUP_ENABLED) {
+    return (
+      <>
+        <NetworkBanner />
+        <main className="min-h-screen bg-canvas px-4 py-10 text-ink sm:px-6 lg:px-8">
+          <section className="mx-auto max-w-3xl rounded-lg border border-hair bg-paper p-5 text-sm text-ink-2">
+            World Cup 功能当前已关闭，正在返回首页……
+          </section>
+        </main>
+      </>
+    );
+  }
+
   return (
     <>
       <NetworkBanner />
@@ -197,11 +280,11 @@ export default function MarketDetailPage() {
       <nav className="sticky top-0 z-30 border-b border-hair bg-paper/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <div className="min-w-0">
-            <Link href="/" className="text-sm text-ink-2 transition hover:text-ink">
+            <Link href={backHref} className="text-sm text-ink-2 transition hover:text-ink">
               返回首页
             </Link>
             <h1 className="mt-2 text-xl font-semibold text-ink">
-              市场 #{routeId ?? '未知编号'}
+              {kind === 'event' ? 'World Cup ' : ''}市场 #{routeId ?? '未知编号'}
             </h1>
           </div>
           <WalletPill />
@@ -214,15 +297,19 @@ export default function MarketDetailPage() {
             <section className="rounded-lg border border-no/35 bg-no/10 p-5 text-sm text-no">
               市场编号无效，请返回首页重新选择。
             </section>
-          ) : isLoading ? (
+          ) : detailLoading ? (
             <section className="rounded-lg border border-hair bg-paper p-5 text-sm text-ink-2">
               正在读取市场详情……
             </section>
-          ) : isError ? (
+          ) : detailError ? (
             <section className="rounded-lg border border-no/35 bg-no/10 p-5 text-sm text-no">
               {marketMissing ? '未找到该市场，请返回首页查看其他市场。' : '市场详情读取失败，请检查网络后重试。'}
             </section>
-          ) : !row ? (
+          ) : requestedKind === 'event' && !eventRow ? (
+            <section className="rounded-lg border border-hair bg-paper p-5 text-sm text-ink-2">
+              未找到该市场，可能尚未部署对应 EventMarket 或该 skeleton 市场不存在。
+            </section>
+          ) : requestedKind !== 'event' && !row ? (
             <section className="rounded-lg border border-hair bg-paper p-5 text-sm text-ink-2">
               未找到该市场，可能尚未发布或已超出当前范围。
             </section>
@@ -233,9 +320,11 @@ export default function MarketDetailPage() {
                   <div className="flex flex-col gap-4 border-b border-hair pb-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="max-w-2xl">
                       <div className="font-mono text-xs text-ink-2">市场编号 #{idBn.toString()}</div>
-                      <h2 className="mt-2 text-lg font-semibold text-ink">市场详情</h2>
+                      <h2 className="mt-2 text-lg font-semibold text-ink">{detailTitle}</h2>
                       <p className="mt-2 text-sm leading-6 text-ink-2">
-                        这里展示市场题目、池子状态和下注入口，适合从分享链接直接进入查看或继续操作。
+                        {kind === 'event'
+                          ? '这里展示赛事信息、结算来源与隐含概率走势；当前阶段不接入 EventMarket 下注弹窗。'
+                          : '这里展示市场题目、池子状态和下注入口，适合从分享链接直接进入查看或继续操作。'}
                       </p>
                     </div>
                     <div className="rounded-lg border border-hair bg-canvas px-4 py-3 text-sm text-ink-2">
@@ -245,11 +334,16 @@ export default function MarketDetailPage() {
                   </div>
 
                   <div className="mt-5">
-                    <MarketDetailCard
-                      row={row}
-                      onBet={(_id, side) => setBetting({ row, side })}
-                    />
-                    {showPhase16 ? (
+                    {kind === 'event' && eventRow ? (
+                      <MarketDetailCard marketKind="event" row={eventRow} />
+                    ) : row ? (
+                      <MarketDetailCard
+                        marketKind="price"
+                        row={row}
+                        onBet={(_id, side) => setBetting({ row, side })}
+                      />
+                    ) : null}
+                    {showPhase16 && row ? (
                       <div className="mt-4">
                         <SeedDisclosure
                           seedContribution={seedContribution}
@@ -290,15 +384,21 @@ export default function MarketDetailPage() {
                       <span>网络与钱包排查</span>
                       <span className="font-mono text-xs text-ink-2">/connect</span>
                     </Link>
-                    <a
-                      href={`https://testnet.arcscan.app/address/${PREDICTION_MARKET_ADDRESS}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between rounded-lg border border-hair bg-canvas px-4 py-3 text-sm text-ink-2 transition hover:border-arc/20 hover:bg-paper"
-                    >
-                      <span>合约浏览器</span>
-                      <span className="font-mono text-xs text-ink-2">{contractAddressLabel}</span>
-                    </a>
+                    {kind === 'event' && !hasEventMarket ? (
+                      <div className="rounded-lg border border-hair bg-canvas px-4 py-3 text-sm text-ink-2">
+                        当前 EventMarket 仍未部署，详情页已回退到 skeleton 视图。
+                      </div>
+                    ) : (
+                      <a
+                        href={`https://testnet.arcscan.app/address/${marketAddress}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between rounded-lg border border-hair bg-canvas px-4 py-3 text-sm text-ink-2 transition hover:border-arc/20 hover:bg-paper"
+                      >
+                        <span>合约浏览器</span>
+                        <span className="font-mono text-xs text-ink-2">{contractAddressLabel}</span>
+                      </a>
+                    )}
                   </div>
                 </section>
               </aside>
@@ -307,7 +407,7 @@ export default function MarketDetailPage() {
         </div>
       </main>
 
-      {betting ? (
+      {requestedKind !== 'event' && betting ? (
         <BetModal
           row={betting.row}
           side={betting.side}

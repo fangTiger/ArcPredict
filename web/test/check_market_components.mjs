@@ -46,12 +46,24 @@ const assertMatches = (label, source, pattern, message) => {
 };
 
 const resolveCountdown = readRequiredText('components/ResolveCountdown.tsx');
-const marketCard = readRequiredText('components/MarketCard.tsx');
+const baseMarketCard = readRequiredText('components/BaseMarketCard.tsx');
+const cryptoMarketCard = readRequiredText('components/CryptoMarketCard.tsx');
+const marketCardShim = readRequiredText('components/MarketCard.tsx');
+const worldCupMarketCard = readRequiredText('components/WorldCupMarketCard.tsx');
+const worldCupOutcomePanel = readRequiredText('components/WorldCupOutcomePanel.tsx');
 const marketDetailCard = readRequiredText('components/MarketDetailCard.tsx');
+const eventInfoPanel = readRequiredText('components/EventInfoPanel.tsx');
+const impliedProbabilityChart = readRequiredText('components/ImpliedProbabilityChart.tsx');
+const siteHeader = readRequiredText('components/SiteHeader.tsx');
 
 assertUseClient('ResolveCountdown.tsx', resolveCountdown);
-assertUseClient('MarketCard.tsx', marketCard);
+assertUseClient('CryptoMarketCard.tsx', cryptoMarketCard);
+assertUseClient('MarketCard.tsx', marketCardShim);
+assertUseClient('WorldCupMarketCard.tsx', worldCupMarketCard);
+assertUseClient('WorldCupOutcomePanel.tsx', worldCupOutcomePanel);
 assertUseClient('MarketDetailCard.tsx', marketDetailCard);
+assertUseClient('EventInfoPanel.tsx', eventInfoPanel);
+assertUseClient('ImpliedProbabilityChart.tsx', impliedProbabilityChart);
 
 assertIncludesAll('ResolveCountdown.tsx', resolveCountdown, [
   'useEffect',
@@ -73,7 +85,19 @@ assert(
   'ResolveCountdown.tsx active 分支不应再使用 betDeadline。',
 );
 
-assertIncludesAll('MarketCard.tsx', marketCard, [
+assertIncludesAll('BaseMarketCard.tsx', baseMarketCard, [
+  'renderHeader',
+  'renderOutcomes',
+  'renderFooter',
+  'className',
+  'rounded-[16px] border border-hair bg-paper p-6',
+  'hover:-translate-y-0.5',
+  'relative z-10',
+]);
+
+assertIncludesAll('CryptoMarketCard.tsx', cryptoMarketCard, [
+  "import Link from 'next/link';",
+  'BaseMarketCard',
   "import Link from 'next/link';",
   'DashboardRow',
   'PYTH_PRICE_ID_TO_ASSET',
@@ -97,7 +121,7 @@ assertIncludesAll('MarketCard.tsx', marketCard, [
   'betDeadline - now < 24n * 60n * 60n',
 ]);
 
-assertExcludesAll('MarketCard.tsx 需移除 article 导航方案', marketCard, [
+assertExcludesAll('CryptoMarketCard.tsx 需移除 article 导航方案', cryptoMarketCard, [
   "import { useRouter } from 'next/navigation';",
   'role="link"',
   'tabIndex={0}',
@@ -105,68 +129,104 @@ assertExcludesAll('MarketCard.tsx 需移除 article 导航方案', marketCard, [
 ]);
 
 assertMatches(
-  'MarketCard.tsx',
-  marketCard,
+  'CryptoMarketCard.tsx',
+  cryptoMarketCard,
   /const detailHref = `\/market\/\$\{row\.id\.toString\(\)\}`;/u,
   '必须声明详情地址 detailHref',
 );
 
 assertMatches(
-  'MarketCard.tsx',
-  marketCard,
+  'CryptoMarketCard.tsx',
+  cryptoMarketCard,
   /<Link[\s\S]*?href=\{detailHref\}/u,
   '必须使用 Link href={detailHref} 提供详情导航',
 );
 
-const firstDetailLinkMatch = marketCard.match(/<Link[\s\S]*?href=\{detailHref\}[\s\S]*?<\/Link>/u);
+const firstDetailLinkMatch = cryptoMarketCard.match(/<Link[\s\S]*?href=\{detailHref\}[\s\S]*?<\/Link>/u);
 
-assert(firstDetailLinkMatch, 'MarketCard.tsx 必须存在一个详情 Link 片段');
-assertExcludesAll('MarketCard.tsx 主体 Link 不能包含按钮', firstDetailLinkMatch[0], [
+assert(firstDetailLinkMatch, 'CryptoMarketCard.tsx 必须存在一个详情 Link 片段');
+assertExcludesAll('CryptoMarketCard.tsx 主体 Link 不能包含按钮', firstDetailLinkMatch[0], [
   '<button',
   'Bet YES',
   'Bet NO',
 ]);
 
 assertMatches(
-  'MarketCard.tsx',
-  marketCard,
+  'CryptoMarketCard.tsx',
+  cryptoMarketCard,
   /<Link[\s\S]*?href=\{detailHref\}[\s\S]*?<\/Link>[\s\S]*?<div className="grid grid-cols-2 gap-2">/u,
   '主体 Link 必须在按钮区域之前结束',
 );
 
 assertMatches(
-  'MarketCard.tsx',
-  marketCard,
+  'CryptoMarketCard.tsx',
+  cryptoMarketCard,
   /onClick=\{\(\) => onBet\(row\.id, true\)\}/u,
   'Bet YES 按钮必须保持直接下注行为',
 );
 
 assertMatches(
-  'MarketCard.tsx',
-  marketCard,
+  'CryptoMarketCard.tsx',
+  cryptoMarketCard,
   /onClick=\{\(\) => onBet\(row\.id, false\)\}/u,
   'Bet NO 按钮必须保持直接下注行为',
 );
 
 assertMatches(
-  'MarketCard.tsx',
-  marketCard,
+  'CryptoMarketCard.tsx',
+  cryptoMarketCard,
   />\s*(View details|查看详情)\s*</u,
   '必须提供明确的详情可见文案',
 );
 
 assertMatches(
-  'MarketCard.tsx',
-  marketCard,
+  'CryptoMarketCard.tsx',
+  cryptoMarketCard,
   /<Link[\s\S]*?href=\{detailHref\}[\s\S]*?>[\s\S]*?(View details|查看详情)[\s\S]*?<\/Link>/u,
   '必须保留清晰的 View details 详情入口',
 );
 
-assertExcludesAll('MarketCard.tsx', marketCard, [
+assertExcludesAll('CryptoMarketCard.tsx', cryptoMarketCard, [
   'ResolveCountdown',
   'bg-surface',
   '下注已关闭',
   'Seed disclosure on market page',
+]);
+
+assertIncludesAll('MarketCard.tsx shim', marketCardShim, [
+  "export { CryptoMarketCard as MarketCard }",
+]);
+
+assertIncludesAll('WorldCupMarketCard.tsx', worldCupMarketCard, [
+  "import Link from 'next/link';",
+  'BaseMarketCard',
+  'WorldCupOutcomePanel',
+  'useMediaQuery',
+  'flagIconUrlForTeam',
+  '⚽',
+  'stageLabel',
+  'kickoffLabel',
+  'liquidityLabel',
+  'positionLabel',
+  'backgroundImage',
+  '?kind=event',
+  'View details',
+]);
+
+assertExcludesAll('WorldCupMarketCard.tsx', worldCupMarketCard, ['BetModal', 'router.push']);
+
+assertIncludesAll('WorldCupOutcomePanel.tsx', worldCupOutcomePanel, [
+  '主队 WIN',
+  '其他',
+  '查看前 8 队',
+  '查看全部',
+  '收起',
+  'grid-cols-3',
+  'grid-cols-2',
+  'implied',
+  'isMobile',
+  'overflow-y-auto',
+  'max-h-',
 ]);
 
 assertIncludesAll('MarketDetailCard.tsx', marketDetailCard, [
@@ -185,6 +245,9 @@ assertIncludesAll('MarketDetailCard.tsx', marketDetailCard, [
   'Outcome:',
   'Bet YES',
   'Bet NO',
+  'marketKind',
+  'EventInfoPanel',
+  'ImpliedProbabilityChart',
 ]);
 
 assertExcludesAll('MarketDetailCard.tsx', marketDetailCard, [
@@ -196,10 +259,79 @@ assertExcludesAll('MarketDetailCard.tsx', marketDetailCard, [
   'border-white/10',
 ]);
 
+assertMatches(
+  'MarketDetailCard.tsx',
+  marketDetailCard,
+  /marketKind\s*===\s*'event'|row\.marketKind\s*===\s*'event'/u,
+  '必须按 marketKind 区分 EVENT 详情视图',
+);
+
+assertMatches(
+  'MarketDetailCard.tsx',
+  marketDetailCard,
+  /marketKind\s*===\s*'price'|row\.marketKind\s*!==\s*'event'/u,
+  '必须保留 PRICE 详情分支',
+);
+
+assertIncludesAll('EventInfoPanel.tsx', eventInfoPanel, [
+  'useLiveScore',
+  'containerRef',
+  'matchInProgress',
+  'kickoffTime',
+  'stageLabel',
+  'Resolution Source: AdminEventOracle (Owner + 72h Dispute Window)',
+  'ADMIN_EVENT_ORACLE_ADDRESS',
+  'testnet.arcscan.app/address/',
+]);
+
+assertExcludesAll('EventInfoPanel.tsx', eventInfoPanel, ['BetModal', 'writeContract', 'placeBet']);
+
+assertIncludesAll('ImpliedProbabilityChart.tsx', impliedProbabilityChart, [
+  '<svg',
+  'polyline',
+  'outcomes',
+  'openingProbability',
+  'impliedProbability',
+  'Outcome',
+]);
+
+assertExcludesAll('ImpliedProbabilityChart.tsx', impliedProbabilityChart, [
+  'recharts',
+  'lightweight-charts',
+  'chart.js',
+]);
+
+assertIncludesAll('SiteHeader.tsx', siteHeader, [
+  "import Link from 'next/link';",
+  'allPositionsHref',
+  'allPositionsActive',
+  'WalletPill',
+  '全部持仓',
+  '持仓',
+]);
+
+assertMatches(
+  'SiteHeader.tsx',
+  siteHeader,
+  /allPositionsHref[\s\S]*?<Link[\s\S]*?href=\{allPositionsHref\}/u,
+  '全部持仓入口必须存在可点击 Link。',
+);
+
+assertExcludesAll('SiteHeader.tsx 全部持仓入口移动端不可隐藏', siteHeader, [
+  'hidden rounded-full border px-3 py-1.5 text-xs transition sm:inline-flex',
+]);
+
 for (const [label, source] of [
   ['ResolveCountdown.tsx', resolveCountdown],
-  ['MarketCard.tsx', marketCard],
+  ['BaseMarketCard.tsx', baseMarketCard],
+  ['CryptoMarketCard.tsx', cryptoMarketCard],
+  ['MarketCard.tsx', marketCardShim],
+  ['WorldCupMarketCard.tsx', worldCupMarketCard],
+  ['WorldCupOutcomePanel.tsx', worldCupOutcomePanel],
   ['MarketDetailCard.tsx', marketDetailCard],
+  ['EventInfoPanel.tsx', eventInfoPanel],
+  ['ImpliedProbabilityChart.tsx', impliedProbabilityChart],
+  ['SiteHeader.tsx', siteHeader],
 ]) {
   assertExcludesAll(label, source, ['rounded-2xl', 'rounded-xl', 'tracking-', 'letterSpacing']);
 }

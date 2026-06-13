@@ -1,0 +1,56 @@
+{
+  "teamIds": [
+    "QAT", "ECU", "SEN", "NED",
+    "ENG", "IRN", "USA", "WAL",
+    "ARG", "KSA", "MEX", "POL",
+    "FRA", "AUS", "DEN", "TUN",
+    "ESP", "GER", "JPN", "CRC",
+    "BEL", "CRO", "MAR", "CAN",
+    "BRA", "SRB", "SUI", "CMR",
+    "POR", "GHA", "URU", "KOR"
+  ],
+  "groupMatchIds": [
+    "group-a-1", "group-a-2", "group-a-3", "group-a-4", "group-a-5", "group-a-6",
+    "group-b-1", "group-b-2", "group-b-3", "group-b-4", "group-b-5", "group-b-6",
+    "group-c-1", "group-c-2", "group-c-3", "group-c-4", "group-c-5", "group-c-6",
+    "group-d-1", "group-d-2", "group-d-3", "group-d-4", "group-d-5", "group-d-6",
+    "group-e-1", "group-e-2", "group-e-3", "group-e-4", "group-e-5", "group-e-6",
+    "group-f-1", "group-f-2", "group-f-3", "group-f-4", "group-f-5", "group-f-6",
+    "group-g-1", "group-g-2", "group-g-3", "group-g-4", "group-g-5", "group-g-6",
+    "group-h-1", "group-h-2", "group-h-3", "group-h-4", "group-h-5", "group-h-6"
+  ],
+  "kickoffTimes": [
+    1668960000, 1669046400, 1669381200, 1669392000, 1669734000, 1669734000,
+    1669035600, 1669057200, 1669370400, 1669402800, 1669748400, 1669748400,
+    1669111200, 1669132800, 1669467600, 1669489200, 1669834800, 1669834800,
+    1669122000, 1669143600, 1669456800, 1669478400, 1669820400, 1669820400,
+    1669208400, 1669219200, 1669543200, 1669575600, 1669921200, 1669921200,
+    1669197600, 1669230000, 1669554000, 1669564800, 1669906800, 1669906800,
+    1669284000, 1669316400, 1669629600, 1669651200, 1670007600, 1670007600,
+    1669294800, 1669305600, 1669640400, 1669662000, 1669993200, 1669993200
+  ],
+  "homeTeams": [
+    "QAT", "SEN", "QAT", "NED", "ECU", "NED",
+    "ENG", "USA", "WAL", "ENG", "WAL", "IRN",
+    "ARG", "MEX", "POL", "ARG", "POL", "KSA",
+    "DEN", "FRA", "TUN", "FRA", "AUS", "TUN",
+    "GER", "ESP", "JPN", "ESP", "JPN", "CRC",
+    "MAR", "BEL", "BEL", "CRO", "CRO", "CAN",
+    "SUI", "BRA", "CMR", "BRA", "SRB", "CMR",
+    "URU", "POR", "KOR", "POR", "KOR", "GHA"
+  ],
+  "awayTeams": [
+    "ECU", "NED", "SEN", "ECU", "SEN", "QAT",
+    "IRN", "WAL", "IRN", "USA", "ENG", "USA",
+    "KSA", "POL", "KSA", "MEX", "ARG", "MEX",
+    "TUN", "AUS", "AUS", "DEN", "DEN", "FRA",
+    "JPN", "CRC", "CRC", "GER", "ESP", "GER",
+    "CRO", "CAN", "MAR", "CAN", "BEL", "MAR",
+    "CMR", "SRB", "SRB", "SUI", "SUI", "BRA",
+    "KOR", "GHA", "GHA", "URU", "POR", "URU"
+  ],
+  "finalMatchId": "final-1",
+  "finalKickoffTime": 1671375600,
+  "finalHomeTeam": "ARG",
+  "finalAwayTeam": "FRA"
+}

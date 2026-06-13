@@ -103,7 +103,7 @@ const priceIdToAsset = {
   '0xsol': 'SOL',
 };
 
-const markets = [
+const cryptoMarkets = [
   { id: 1, pythPriceId: '0xBTC', question: 'BTC/USD ≥ 71200 @ 2026-06-17 12:00 UTC [weekly]' },
   { id: 2, pythPriceId: '0xeth', question: 'ETH/USD ≥ 3500 @ 2026-06-17 12:00 UTC [monthly]' },
   { id: 3, pythPriceId: '0xSOL', question: 'SOL/USD ≥ 150 @ 2026-06-17 12:00 UTC [daily]' },
@@ -111,24 +111,45 @@ const markets = [
   { id: 5, pythPriceId: '0xDOGE', question: 'DOGE/USD ≥ 0.25 @ 2026-06-17 12:00 UTC [weekly]' },
 ];
 
-const idsOf = (asset, cadence) =>
-  filterMarkets(markets, { asset, cadence, priceIdToAsset }).map((market) => market.id);
+const worldCupMarkets = [
+  { id: 101, category: 'worldcup', stage: 'group', question: 'Argentina vs Mexico 1X2' },
+  { id: 102, category: 'worldcup', stage: 'group', question: 'England -1.5 vs Wales' },
+  { id: 103, category: 'worldcup', stage: 'r16', question: 'Netherlands vs United States 1X2' },
+  { id: 104, category: 'worldcup', stage: 'winner', question: 'World Cup Winner' },
+];
 
-assert.deepEqual(idsOf('all', 'all'), [1, 2, 3, 4, 5], 'asset=all cadence=all 必须返回全部市场。');
-assert.deepEqual(idsOf('BTC', 'all'), [1, 4], 'asset=BTC cadence=all 必须返回全部 BTC 市场，且包含无 cadence tag 的旧市场。');
-assert.deepEqual(idsOf('all', 'weekly'), [1, 5], 'cadence=weekly 必须仅返回 weekly 市场，且排除无 cadence tag 的旧市场。');
-assert.deepEqual(idsOf('BTC', 'weekly'), [1], 'asset=BTC cadence=weekly 必须只返回 BTC weekly 市场。');
-assert.deepEqual(idsOf('all', 'monthly'), [2], 'cadence=monthly 必须只返回 ETH monthly 市场。');
-assert.deepEqual(idsOf('SOL', 'weekly'), [], 'asset=SOL cadence=weekly 必须返回空数组。');
+const idsOfCrypto = (asset, cadence) =>
+  filterMarkets(cryptoMarkets, { asset, cadence, priceIdToAsset }).map((market) => market.id);
+
+const idsOfWorldCup = (stage) =>
+  filterMarkets(worldCupMarkets, {
+    category: 'worldcup',
+    stage,
+    asset: 'all',
+    cadence: 'all',
+    priceIdToAsset,
+  }).map((market) => market.id);
+
+assert.deepEqual(idsOfCrypto('all', 'all'), [1, 2, 3, 4, 5], 'asset=all cadence=all 必须返回全部 Crypto 市场。');
+assert.deepEqual(idsOfCrypto('BTC', 'all'), [1, 4], 'asset=BTC cadence=all 必须返回全部 BTC 市场，且包含无 cadence tag 的旧市场。');
+assert.deepEqual(idsOfCrypto('all', 'weekly'), [1, 5], 'cadence=weekly 必须仅返回 weekly 市场，且排除无 cadence tag 的旧市场。');
+assert.deepEqual(idsOfCrypto('BTC', 'weekly'), [1], 'asset=BTC cadence=weekly 必须只返回 BTC weekly 市场。');
+assert.deepEqual(idsOfCrypto('all', 'monthly'), [2], 'cadence=monthly 必须只返回 ETH monthly 市场。');
+assert.deepEqual(idsOfCrypto('SOL', 'weekly'), [], 'asset=SOL cadence=weekly 必须返回空数组。');
 assert(
-  idsOf('all', 'all').includes(5),
+  idsOfCrypto('all', 'all').includes(5),
   '未知 priceId 在 asset=all 下不能被过滤掉。',
 );
 assert(
-  !idsOf('BTC', 'all').includes(5),
+  !idsOfCrypto('BTC', 'all').includes(5),
   '未知 priceId 在指定 asset 下不应出现。',
 );
-assert.deepEqual(idsOf('SOL', 'daily'), [3], 'asset 过滤必须兼容大写 priceId 与 lowercase 映射。');
+assert.deepEqual(idsOfCrypto('SOL', 'daily'), [3], 'asset 过滤必须兼容大写 priceId 与 lowercase 映射。');
+assert.deepEqual(idsOfWorldCup('all'), [101, 102, 103, 104], 'World Cup All 必须返回全部赛事市场。');
+assert.deepEqual(idsOfWorldCup('group'), [101, 102], 'Stage=group 必须只返回小组赛。');
+assert.deepEqual(idsOfWorldCup('r16'), [103], 'Stage=r16 必须只返回十六强。');
+assert.deepEqual(idsOfWorldCup('winner'), [104], 'Stage=winner 必须只返回冠军盘。');
+assert.deepEqual(idsOfWorldCup('final'), [], '缺少对应阶段时必须返回空数组。');
 
 for (const token of [
   'border-y border-hair',
@@ -138,6 +159,14 @@ for (const token of [
   'hover:bg-paper',
   'hover:border-hair',
   'bg-ink text-paper',
+  'World Cup',
+  'Crypto',
+  'Stage',
+  'showCategoryTabs',
+  'onCategoryChange',
+  'onStageChange',
+  'R16',
+  'Winner',
 ]) {
   assert(marketFilterSource.includes(token), `MarketFilterBar.tsx 缺少 Phase16 样式: ${token}`);
 }

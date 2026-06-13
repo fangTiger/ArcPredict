@@ -1,5 +1,9 @@
 'use client';
 
+import type {
+  MarketCategory,
+  WorldCupStageFilter,
+} from '@/lib/market-kind';
 import { parseCadenceTag, type Cadence } from '../lib/cadence-tag';
 
 export type Asset = 'BTC' | 'ETH' | 'SOL';
@@ -8,24 +12,44 @@ export type CadenceFilter = Cadence | 'all';
 
 type FilterMarketInput = {
   id: number | bigint;
-  pythPriceId: string;
-  question: string;
+  pythPriceId?: string;
+  question?: string;
+  category?: MarketCategory;
+  stage?: Exclude<WorldCupStageFilter, 'all'>;
 };
 
 type FilterOptions = {
   asset: AssetFilter;
   cadence: CadenceFilter;
   priceIdToAsset: Record<string, Asset>;
+  category?: MarketCategory;
+  stage?: WorldCupStageFilter;
 };
 
 type Props = {
   asset: AssetFilter;
   cadence: CadenceFilter;
+  category?: MarketCategory;
+  stage?: WorldCupStageFilter;
+  showCategoryTabs?: boolean;
+  onCategoryChange?: (next: MarketCategory) => void;
+  onStageChange?: (next: WorldCupStageFilter) => void;
   onChange: (next: { asset: AssetFilter; cadence: CadenceFilter }) => void;
 };
 
 const assetOptions: AssetFilter[] = ['all', 'BTC', 'ETH', 'SOL'];
 const cadenceOptions: CadenceFilter[] = ['all', 'daily', 'weekly', 'monthly', 'quarterly'];
+const categoryOptions: MarketCategory[] = ['crypto', 'worldcup'];
+const stageOptions: WorldCupStageFilter[] = ['all', 'group', 'r16', 'qf', 'sf', 'final', 'winner'];
+const stageDisplayLabels: Record<WorldCupStageFilter, string> = {
+  all: 'All',
+  group: 'Group',
+  r16: 'R16',
+  qf: 'QF',
+  sf: 'SF',
+  final: 'Final',
+  winner: 'Winner',
+};
 
 const baseButtonClassName =
   'rounded-[12px] border border-transparent px-3.5 py-[7px] text-sm font-medium text-ink-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc/20';
@@ -54,16 +78,32 @@ export function filterMarkets<T extends FilterMarketInput>(
   markets: T[],
   opts: FilterOptions,
 ): T[] {
+  const category = opts.category ?? 'crypto';
+
   return markets.filter((market) => {
+    if ((market.category ?? 'crypto') !== category) {
+      return false;
+    }
+
+    if (category === 'worldcup') {
+      if (opts.stage && opts.stage !== 'all' && market.stage !== opts.stage) {
+        return false;
+      }
+
+      return true;
+    }
+
     if (opts.asset !== 'all') {
-      const asset = opts.priceIdToAsset[market.pythPriceId.toLowerCase()];
+      const asset = market.pythPriceId
+        ? opts.priceIdToAsset[market.pythPriceId.toLowerCase()]
+        : undefined;
       if (asset !== opts.asset) {
         return false;
       }
     }
 
     if (opts.cadence !== 'all') {
-      const cadence = parseCadenceTag(market.question);
+      const cadence = market.question ? parseCadenceTag(market.question) : 'unknown';
       if (cadence !== opts.cadence) {
         return false;
       }
@@ -73,44 +113,110 @@ export function filterMarkets<T extends FilterMarketInput>(
   });
 }
 
-export function MarketFilterBar({ asset, cadence, onChange }: Props) {
+function categoryLabel(value: MarketCategory): string {
+  return value === 'crypto' ? 'Crypto' : 'World Cup';
+}
+
+function stageLabel(value: WorldCupStageFilter): string {
+  return stageDisplayLabels[value];
+}
+
+export function MarketFilterBar({
+  asset,
+  cadence,
+  category = 'crypto',
+  stage = 'all',
+  showCategoryTabs = false,
+  onCategoryChange,
+  onStageChange,
+  onChange,
+}: Props) {
+  const handleCategoryChange = (next: MarketCategory) => {
+    if (onCategoryChange) {
+      onCategoryChange(next);
+    }
+  };
+
+  const handleStageChange = (next: WorldCupStageFilter) => {
+    if (onStageChange) {
+      onStageChange(next);
+    }
+  };
+
   return (
-    <div className="my-10 flex flex-wrap items-center gap-6 border-y border-hair px-2 py-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium uppercase text-ink-2">Asset</span>
-        <div className="flex flex-wrap items-center gap-2">
-          {assetOptions.map((option) => (
+    <div className="my-10 border-y border-hair px-2 py-3">
+      {showCategoryTabs ? (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          {categoryOptions.map((option) => (
             <button
               key={option}
               type="button"
-              onClick={() => onChange({ asset: option, cadence })}
-              className={buttonClassName(option === asset)}
-              aria-pressed={option === asset}
+              onClick={() => handleCategoryChange(option)}
+              className={buttonClassName(option === category)}
+              aria-pressed={option === category}
             >
-              {assetLabel(option)}
+              {categoryLabel(option)}
             </button>
           ))}
         </div>
-      </div>
+      ) : null}
 
-      <div className="w-px h-6 bg-hair" aria-hidden="true" />
-
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium uppercase text-ink-2">Cadence</span>
+      {category === 'worldcup' ? (
         <div className="flex flex-wrap items-center gap-2">
-          {cadenceOptions.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => onChange({ asset, cadence: option })}
-              className={buttonClassName(option === cadence)}
-              aria-pressed={option === cadence}
-            >
-              {cadenceLabel(option)}
-            </button>
-          ))}
+          <span className="text-xs font-medium uppercase text-ink-2">Stage</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {stageOptions.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => handleStageChange(option)}
+                className={buttonClassName(option === stage)}
+                aria-pressed={option === stage}
+              >
+                {stageLabel(option)}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium uppercase text-ink-2">Asset</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {assetOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => onChange({ asset: option, cadence })}
+                  className={buttonClassName(option === asset)}
+                  aria-pressed={option === asset}
+                >
+                  {assetLabel(option)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="w-px h-6 bg-hair" aria-hidden="true" />
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium uppercase text-ink-2">Cadence</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {cadenceOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => onChange({ asset, cadence: option })}
+                  className={buttonClassName(option === cadence)}
+                  aria-pressed={option === cadence}
+                >
+                  {cadenceLabel(option)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

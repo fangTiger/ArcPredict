@@ -86,12 +86,12 @@ if (homeSource) {
 
   check(() => {
     const directFilteredMapPattern =
-      /filterMarkets\([\s\S]{0,800}\)\.map\([\s\S]{0,500}<MarketCard/u;
+      /filterMarkets\([\s\S]{0,800}\)\.map\([\s\S]{0,500}<(CryptoMarketCard|WorldCupMarketCard)/u;
     const namedFilteredListMapPattern =
-      /\{\s*(?:visible|filtered|display|shown)[A-Za-z0-9_]*\.map\([\s\S]{0,500}<MarketCard/u;
+      /(?:\{\s*|:\s*)(?:visible|filtered|display|shown)[A-Za-z0-9_]*\.map\([\s\S]{0,500}<(CryptoMarketCard|WorldCupMarketCard)/u;
     assert(
       directFilteredMapPattern.test(homeSource) || namedFilteredListMapPattern.test(homeSource),
-      'MarketCard 列表必须来自过滤后的列表或 filterMarkets 结果，不能永远直接使用未过滤 activeMarkets.map。',
+      '首页卡片列表必须来自过滤后的列表或 filterMarkets 结果，不能永远直接使用未过滤 activeMarkets.map。',
     );
   });
 }

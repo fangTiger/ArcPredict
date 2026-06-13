@@ -62,6 +62,10 @@ assertIncludesAll('ArcBackground.tsx', arcBackground, [
   'viewBox="0 0 900 900"',
   'viewBox="0 0 700 700"',
   'stroke="#1652F0"',
+  'variant',
+  'pitch',
+  'data-arc-background-variant',
+  '#3D8B5B',
 ]);
 
 console.log('site chrome 检查通过');

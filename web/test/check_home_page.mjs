@@ -50,8 +50,12 @@ assertIncludesAll('page.tsx', pageSource, [
   'useReadContract',
   'useState',
   'useMemo',
+  'useRouter',
+  'useSearchParams',
   'PREDICTION_MARKET_ADDRESS',
+  'EVENT_MARKET_ADDRESS',
   'PredictionMarketAbi',
+  'EventMarketAbi',
   'PredictionMarketAbi as Abi',
   'zeroAddress',
   'arcTestnet',
@@ -59,21 +63,32 @@ assertIncludesAll('page.tsx', pageSource, [
   "functionName: 'getDashboardLatest'",
   'args: [user, 100n]',
   'query: { refetchInterval:',
+  'enabled:',
   'NetworkBanner',
   'SiteHeader',
   'SiteFooter',
   'MarketFilterBar',
-  'MarketCard',
+  'CryptoMarketCard',
+  'WorldCupMarketCard',
+  'PositionList',
   'BetModal',
   'filterMarkets',
   'PYTH_PRICE_ID_TO_ASSET',
-  'visibleActiveMarkets',
+  'WORLDCUP_ENABLED',
+  'category',
+  'stage',
+  'positions',
+  'all',
+  'router.replace',
+  'searchParams.get',
   'refetch',
   'setBetting',
   '正在读取最新市场',
   '首页数据读取失败',
   '当前没有未结算市场',
   '当前筛选条件下没有未结算市场',
+  'World Cup',
+  '<ArcBackground variant=',
 ]);
 
 assertMatches(
@@ -93,15 +108,61 @@ assertMatches(
 assertMatches(
   'page.tsx',
   pageSource,
-  /const visibleActiveMarkets = useMemo\(\s*\(\)\s*=>\s*filterMarkets\(\s*activeMarkets,\s*\{[\s\S]*asset,[\s\S]*cadence,[\s\S]*priceIdToAsset:\s*PYTH_PRICE_ID_TO_ASSET/u,
-  'visibleActiveMarkets 必须基于 activeMarkets 与 filterMarkets 计算。',
+  /filterMarkets\(\s*activeMarkets,\s*\{[\s\S]*category:\s*'crypto'[\s\S]*asset,[\s\S]*cadence,[\s\S]*priceIdToAsset:\s*PYTH_PRICE_ID_TO_ASSET/u,
+  'Crypto 可见列表必须继续基于 activeMarkets 与 filterMarkets 计算。',
 );
 
 assertMatches(
   'page.tsx',
   pageSource,
-  /\{\s*visibleActiveMarkets\.map\(\(row\)\s*=>[\s\S]{0,300}<MarketCard/u,
-  'MarketCard 列表必须来自 visibleActiveMarkets.map。',
+  /useReadContract\(\{[\s\S]*address:\s*EVENT_MARKET_ADDRESS[\s\S]*functionName:\s*'getDashboardLatest'/u,
+  '首页必须并行准备 EventMarket getDashboardLatest 读取。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /category=worldcup|['"]worldcup['"]/u,
+  '首页必须支持 World Cup URL category。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /<MarketFilterBar[\s\S]*category=\{category\}[\s\S]*stage=\{stage\}/u,
+  '首页必须把 category/stage 传给 MarketFilterBar。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /\},\s*\[\s*categoryFromQuery\s*,\s*showCategoryTabs\s*,\s*stageFromQuery\s*\]\s*\);/u,
+  'URL -> state 同步 effect 只能依赖 query 派生值，不能依赖本地 category/stage 造成点击回滚。',
+);
+
+assertExcludesAll('page.tsx', pageSource, [
+  '[category, categoryFromQuery, showCategoryTabs, stage, stageFromQuery]',
+]);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /<CryptoMarketCard|<WorldCupMarketCard/u,
+  '首页必须按品类渲染 CryptoMarketCard 或 WorldCupMarketCard。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /<SiteHeader[\s\S]*allPositionsHref=|<SiteHeader[\s\S]*allPositionsActive=/u,
+  '首页必须把“全部持仓”入口状态传给 SiteHeader。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /<PositionList[\s\S]*kindFilter=\{[^}]+\}/u,
+  '首页必须把 kindFilter 接给 PositionList。',
 );
 
 assertMatches(
@@ -121,7 +182,6 @@ assertMatches(
 assertExcludesAll('page.tsx', pageSource, [
   'ActivityBadges',
   'FaucetCard',
-  'PositionList',
   'ResolvedList',
   'SummaryCard',
   'EmptyPanel',

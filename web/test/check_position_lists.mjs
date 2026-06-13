@@ -49,6 +49,9 @@ assertUseClient('ResolvedList.tsx', resolvedList);
 
 assertIncludesAll('PositionList.tsx', positionList, [
   'DashboardRow',
+  'MarketKind',
+  'kindFilter',
+  'marketKindOf',
   'userPositionOf',
   'OUTCOMES',
   'fmtUsdc',
@@ -59,6 +62,9 @@ assertIncludesAll('PositionList.tsx', positionList, [
   "pos === 'no'",
   "pos === 'both'",
   'r.yesStake + r.noStake',
+  'userOutcomeStakes',
+  'outcomes',
+  '持仓明细',
 ]);
 
 assertExcludesAll('PositionList.tsx', positionList, [
@@ -69,6 +75,16 @@ assertExcludesAll('PositionList.tsx', positionList, [
   'tracking-',
   'letterSpacing',
 ]);
+
+assert(
+  positionList.includes("kindFilter?: MarketKind") || positionList.includes('kindFilter?: MarketKind;'),
+  'PositionList.tsx 必须声明可选 kindFilter。',
+);
+
+assert(
+  positionList.includes('marketKindOf(') || positionList.includes("=== 'event'") || positionList.includes("=== 'price'"),
+  'PositionList.tsx 必须根据 marketKind 做持仓过滤。',
+);
 
 assertIncludesAll('ResolvedList.tsx', resolvedList, [
   'OUTCOMES',

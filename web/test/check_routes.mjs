@@ -55,6 +55,7 @@ assertUseClient('connect/page.tsx', connectPage);
 
 assertIncludesAll('market/[id]/page.tsx hooks', marketPage, [
   'useParams',
+  'useSearchParams',
   'useAccount',
   'useReadContract',
   'useState',
@@ -99,12 +100,20 @@ assertIncludesAll('market/[id]/page.tsx 合约读取', marketPage, [
   'BetModal',
   'refetch',
   'setBetting',
+  'EventMarketAbi',
+  'EVENT_MARKET_ADDRESS',
+  'WORLDCUP_ENABLED',
+  'searchParams.get',
+  'kind',
+  'resolveWorldCupMarkets',
+  'WORLDCUP_SKELETON_MARKETS',
 ]);
 
 assertIncludesAll('market/[id]/page.tsx 详情页卡片隔离', marketPage, [
   "from '@/components/MarketDetailCard'",
   "ComponentProps<typeof MarketDetailCard>['row']",
   '<MarketDetailCard',
+  'marketKind=',
 ]);
 
 assertExcludesAll('market/[id]/page.tsx 禁止复用首页卡片', marketPage, [
@@ -123,8 +132,34 @@ assert(
 assertMatches(
   'market/[id]/page.tsx',
   marketPage,
-  /query:\s*\{\s*enabled:\s*idBn !== null,\s*refetchInterval:\s*5_000\s*\}/u,
-  '必须在非法 id 时禁用读取，并维持 5 秒刷新。',
+  /query:\s*\{[\s\S]*enabled:\s*(?:requestedKind !== 'event' && )?idBn !== null[\s\S]*refetchInterval:\s*5_000[\s\S]*\}/u,
+  'PRICE 读取必须在非法 id 时禁用，并维持 5 秒刷新。',
+);
+
+assertMatches(
+  'market/[id]/page.tsx',
+  marketPage,
+  /searchParams\.get\('kind'\)|searchParams\.get\("kind"\)/u,
+  '必须解析 kind 查询参数以区分 price/event 详情。',
+);
+
+assertMatches(
+  'market/[id]/page.tsx',
+  marketPage,
+  /kind\s*===\s*'event'|kind\s*===\s*"event"/u,
+  '必须显式处理 EVENT 详情分支。',
+);
+
+assertMatches(
+  'market/[id]/page.tsx',
+  marketPage,
+  /enabled:\s*hasEventMarket[\s\S]*idBn !== null|enabled:\s*requestedKind === 'event'[\s\S]*idBn !== null/u,
+  'EventMarket 读取必须受部署状态与合法 id 共同保护。',
+);
+
+assert(
+  marketPage.includes("redirect('/')") || marketPage.includes('router.replace(\'/\')') || marketPage.includes('router.replace("/")'),
+  'market/[id]/page.tsx 在 WORLDCUP_ENABLED=false 且 kind=event 时必须重定向首页或等价处理。',
 );
 
 assertMatches(
@@ -157,6 +192,13 @@ assertMatches(
   'BetModal.onClose 必须关闭 modal 并触发 refetch()。',
 );
 
+assertMatches(
+  'market/[id]/page.tsx',
+  marketPage,
+  /requestedKind !== 'event' && betting \?|marketKind !== 'event' && betting \?/u,
+  'EVENT 详情不得渲染 PRICE 专用 BetModal。',
+);
+
 assertIncludesAll('market/[id]/page.tsx 中文状态', marketPage, [
   '正在读取市场详情',
   '未找到该市场',
@@ -177,6 +219,11 @@ assertIncludesAll('market/[id]/page.tsx 业务文案', marketPage, [
   '网络与钱包排查',
 ]);
 
+assertIncludesAll('market/[id]/page.tsx event 返回链接', marketPage, [
+  "const backHref = kind === 'event' ? '/?category=worldcup' : '/';",
+  'href={backHref}',
+]);
+
 assertExcludesAll('market/[id]/page.tsx 禁止暴露实现细节', marketPage, [
   '单市场深链视图',
   'DashboardRow',
@@ -189,9 +236,12 @@ assertExcludesAll('market/[id]/page.tsx 禁止暴露实现细节', marketPage, [
 ]);
 
 assertIncludesAll('page.tsx 首页卡片', homePage, [
-  "from '@/components/MarketCard'",
+  "from '@/components/CryptoMarketCard'",
+  "from '@/components/WorldCupMarketCard'",
+  "from '@/components/PositionList'",
   '<SiteHeader />',
-  '<MarketCard',
+  '<CryptoMarketCard',
+  '<PositionList',
 ]);
 
 assertExcludesAll('page.tsx 首页禁止详情页卡片', homePage, [

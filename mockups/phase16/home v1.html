@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ArcPredict — Home v0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+<style>
+  /* ============ Design Tokens ============ */
+  :root {
+    --canvas: #FBFAF7;
+    --paper:  #FFFFFF;
+    --ink:    #0A0B0F;
+    --ink-2:  #5B6478;
+    --hair:   #E8E6DF;
+    --arc:    #1652F0;
+    --arc-deep: #0B2DB8;
+    --arc-tint: #E8EEFE;
+    --yes:    #16A34A;
+    --no:     #DC2626;
+    --heat:   #FF6B35;
+
+    --r-card: 16px;
+    --r-chip: 12px;
+    --r-pill: 999px;
+    --r-hero: 24px;
+
+    --shadow-1: 0 1px 0 rgba(10,11,15,.04);
+    --shadow-2: 0 12px 32px rgba(10,11,15,.08);
+
+    --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+    --font-sans: 'Geist', ui-sans-serif, sans-serif;
+    --font-display: 'Instrument Serif', Georgia, serif;
+    --font-mono: 'Geist Mono', ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { padding: 0; margin: 0; }
+  body {
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-wrap: pretty;
+    font-variant-numeric: tabular-nums;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; }
+
+  .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
+  .font-mono { font-family: var(--font-mono); letter-spacing: 0; }
+
+  /* ============ Background Arc motif ============ */
+  .bg-arc {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+  }
+  .bg-arc svg {
+    position: absolute;
+    top: -200px;
+    right: -200px;
+    width: 900px;
+    height: 900px;
+    opacity: 0.5;
+  }
+  .bg-arc-2 {
+    position: fixed;
+    left: -300px;
+    bottom: -300px;
+    width: 700px;
+    height: 700px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ============ Header ============ */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(251, 250, 247, 0.85);
+    backdrop-filter: saturate(160%) blur(12px);
+    -webkit-backdrop-filter: saturate(160%) blur(12px);
+    border-bottom: 1px solid var(--hair);
+  }
+  .header-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .ring {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid var(--arc);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ring::after {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--arc);
+    animation: pulse 2.4s var(--ease) infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(22, 82, 240, .35); }
+    50%      { box-shadow: 0 0 0 8px rgba(22, 82, 240, 0); }
+  }
+  .brand-name {
+    font-family: var(--font-display);
+    font-size: 22px;
+    letter-spacing: -0.01em;
+  }
+  .brand-name em { font-style: italic; color: var(--arc); }
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chain-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px 6px 8px;
+    border: 1px solid var(--hair);
+    border-radius: var(--r-pill);
+    background: var(--paper);
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .chain-badge .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--arc);
+    box-shadow: 0 0 0 3px var(--arc-tint);
+  }
+  .chain-badge .chain-id {
+    font-family: var(--font-mono);
+    color: var(--ink);
+    font-size: 12px;
+  }
+  .wallet-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: var(--r-pill);
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 14px;
+    font-weight: 500;
+    transition: transform 160ms var(--ease), background 160ms var(--ease);
+  }
+  .wallet-pill:hover {
+    background: var(--arc-deep);
+    transform: translateY(-1px);
+  }
+
+  /* ============ Main wrapper ============ */
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 32px 96px;
+  }
+
+  /* ============ Hero ============ */
+  .hero {
+    padding: 80px 0 56px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 64px;
+    align-items: end;
+  }
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(48px, 7vw, 88px);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    margin: 0;
+    color: var(--ink);
+  }
+  .hero-title .accent {
+    font-style: italic;
+    color: var(--arc);
+    position: relative;
+    display: inline-block;
+  }
+  .hero-sub {
+    margin: 24px 0 0;
+    font-size: 17px;
+    color: var(--ink-2);
+    max-width: 460px;
+    line-height: 1.55;
+  }
+
+  .hero-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    border: 1px solid var(--hair);
+    border-radius: var(--r-hero);
+    background: var(--paper);
+    padding: 4px;
+  }
+  .stat {
+    padding: 20px 22px;
+    border-radius: 18px;
+  }
+  .stat:hover { background: var(--arc-tint); }
+  .stat-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-2);
+  }
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 48px;
+    line-height: 1;
+    margin-top: 12px;
+    color: var(--ink);
+  }
+  .stat-value .unit {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--ink-2);
+    font-weight: 400;
+    margin-left: 4px;
+  }
+  .stat-value.arc-num { color: var(--arc); }
+  .stat-meta {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--ink-2);
+    font-family: var(--font-mono);
+  }
+  .stat-meta .delta-up { color: var(--yes); }
+
+  /* ============ Filter bar ============ */
+  .filterbar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin: 16px 0 32px;
+    padding: 14px 8px;
+    border-top: 1px solid var(--hair);
+    border-bottom: 1px solid var(--hair);
+    flex-wrap: wrap;
+  }
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .filter-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-2);
+    margin-right: 6px;
+  }
+  .chip {
+    padding: 7px 14px;
+    border-radius: var(--r-chip);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--ink-2);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 140ms var(--ease);
+  }
+  .chip:hover {
+    color: var(--ink);
+    background: var(--paper);
+    border-color: var(--hair);
+  }
+  .chip.active {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+  .filterbar .sep {
+    width: 1px;
+    height: 24px;
+    background: var(--hair);
+    margin: 0 8px;
+  }
+
+  /* ============ Market grid ============ */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    position: relative;
+    background: var(--paper);
+    border: 1px solid var(--hair);
+    border-radius: var(--r-card);
+    padding: 24px 24px 20px;
+    transition: transform 180ms var(--ease), box-shadow 180ms var(--ease), border-color 180ms var(--ease);
+    overflow: hidden;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-2);
+    border-color: rgba(22, 82, 240, .25);
+  }
+  .card-corner {
+    position: absolute;
+    top: 0; right: 0;
+    width: 120px; height: 120px;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .asset-glyph {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .asset-symbol {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--paper);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+  .asset-symbol.btc { background: #F7931A; }
+  .asset-symbol.eth { background: #627EEA; }
+  .asset-symbol.sol { background: linear-gradient(135deg, #9945FF 0%, #14F195 100%); }
+  .market-id {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .cadence-chip {
+    padding: 4px 10px;
+    border-radius: var(--r-chip);
+    background: var(--arc-tint);
+    color: var(--arc-deep);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .cadence-chip.heat {
+    background: rgba(255, 107, 53, .12);
+    color: var(--heat);
+  }
+
+  .question {
+    font-family: var(--font-display);
+    font-size: 26px;
+    line-height: 1.18;
+    margin: 0 0 8px;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .question .threshold {
+    color: var(--arc);
+    white-space: nowrap;
+  }
+  .question .arrow {
+    color: var(--arc);
+    margin: 0 4px;
+  }
+  .resolve-at {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-2);
+    margin-bottom: 20px;
+  }
+
+  /* odds bar */
+  .odds {
+    margin-bottom: 14px;
+  }
+  .odds-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .odds-yes, .odds-no {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-weight: 500;
+  }
+  .odds-yes { color: var(--yes); }
+  .odds-no  { color: var(--no); }
+  .odds-pct {
+    font-family: var(--font-display);
+    font-size: 28px;
+    line-height: 1;
+  }
+  .odds-side-label {
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+  .odds-bar {
+    height: 6px;
+    border-radius: var(--r-pill);
+    background: rgba(220, 38, 38, .15);
+    overflow: hidden;
+    position: relative;
+  }
+  .odds-bar-fill {
+    height: 100%;
+    border-radius: var(--r-pill);
+    background: var(--yes);
+    transition: width 320ms var(--ease);
+  }
+
+  .pools {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .pools .pool {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--canvas);
+    border-radius: var(--r-chip);
+  }
+  .pools .pool .amount { color: var(--ink); }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .bet-btn {
+    padding: 14px 18px;
+    border-radius: var(--r-pill);
+    border: 1.5px solid;
+    background: var(--paper);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0;
+    transition: transform 140ms var(--ease), background 140ms var(--ease);
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .bet-btn.yes { color: var(--yes); border-color: rgba(22, 163, 74, 0.3); }
+  .bet-btn.yes:hover { background: var(--yes); color: var(--paper); border-color: var(--yes); transform: translateY(-1px); }
+  .bet-btn.no  { color: var(--no);  border-color: rgba(220, 38, 38, 0.3); }
+  .bet-btn.no:hover  { background: var(--no);  color: var(--paper); border-color: var(--no); transform: translateY(-1px); }
+  .bet-btn .micro {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    opacity: 0.75;
+  }
+  .bet-btn:active { transform: scale(0.98); }
+
+  .card-bottom {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--hair);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .countdown {
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .countdown.heat { color: var(--heat); }
+  .seed-hint {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    color: var(--ink-2);
+  }
+
+  /* ============ Footer ============ */
+  footer {
+    margin-top: 64px;
+    padding: 24px 0;
+    border-top: 1px solid var(--hair);
+    color: var(--ink-2);
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  footer a:hover { color: var(--ink); }
+  footer .links { display: flex; gap: 20px; }
+
+  /* ============ Responsive ============ */
+  @media (max-width: 900px) {
+    .header-inner { padding: 14px 20px; }
+    main { padding: 0 20px 80px; }
+    .hero { padding: 48px 0 32px; grid-template-columns: 1fr; gap: 32px; }
+    .hero-title { font-size: 48px; }
+    .hero-stats { grid-template-columns: 1fr 1fr; }
+    .grid { grid-template-columns: 1fr; }
+    .question { font-size: 22px; }
+    .chain-id { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ====== Background Arc graphics ====== -->
+<div class="bg-arc">
+  <svg viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="450" cy="450" r="440" stroke="#1652F0" stroke-width="1" stroke-opacity="0.12"/>
+    <circle cx="450" cy="450" r="360" stroke="#1652F0" stroke-width="1" stroke-opacity="0.10"/>
+    <circle cx="450" cy="450" r="280" stroke="#1652F0" stroke-width="1" stroke-opacity="0.08"/>
+    <circle cx="450" cy="450" r="200" stroke="#1652F0" stroke-width="1" stroke-opacity="0.06"/>
+    <circle cx="450" cy="450" r="120" stroke="#1652F0" stroke-width="1" stroke-opacity="0.05"/>
+    <path d="M 50 450 A 400 400 0 0 1 450 50" stroke="#1652F0" stroke-width="1.5" stroke-opacity="0.18" fill="none"/>
+  </svg>
+</div>
+<svg class="bg-arc-2" viewBox="0 0 700 700" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="350" cy="350" r="340" stroke="#1652F0" stroke-width="1" stroke-opacity="0.08"/>
+  <circle cx="350" cy="350" r="260" stroke="#1652F0" stroke-width="1" stroke-opacity="0.06"/>
+  <circle cx="350" cy="350" r="180" stroke="#1652F0" stroke-width="1" stroke-opacity="0.05"/>
+</svg>
+
+<!-- ====== Header ====== -->
+<header class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <span class="ring"></span>
+      <span class="brand-name">Arc<em>Predict</em></span>
+    </div>
+    <div class="nav">
+      <span class="chain-badge">
+        <span class="dot"></span>
+        <span>Arc Testnet</span>
+        <span class="chain-id">·5042002</span>
+      </span>
+      <button class="wallet-pill">
+        <span>Connect Wallet</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ====== Main ====== -->
+<main>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div>
+      <h1 class="hero-title">
+        Forecast price.<br/>
+        Settled on <span class="accent">Arc</span>.
+      </h1>
+      <p class="hero-sub">
+        Binary markets on BTC, ETH, and SOL. Parimutuel pools, Pyth-resolved, no
+        middleman. Your stake is your conviction.
+      </p>
+    </div>
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="stat-label">Active markets</div>
+        <div class="stat-value arc-num">26</div>
+        <div class="stat-meta"><span class="delta-up">+3</span> this week</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Total locked</div>
+        <div class="stat-value">12,481<span class="unit">USDC</span></div>
+        <div class="stat-meta">across 26 pools</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Next resolve</div>
+        <div class="stat-value">04:12<span class="unit">h</span></div>
+        <div class="stat-meta">BTC weekly · #42</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Resolving this week</div>
+        <div class="stat-value">8</div>
+        <div class="stat-meta">5 weekly · 3 daily</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter -->
+  <section class="filterbar">
+    <div class="filter-group">
+      <span class="filter-label">Asset</span>
+      <button class="chip active">All</button>
+      <button class="chip">BTC</button>
+      <button class="chip">ETH</button>
+      <button class="chip">SOL</button>
+    </div>
+    <div class="sep"></div>
+    <div class="filter-group">
+      <span class="filter-label">Cadence</span>
+      <button class="chip active">All</button>
+      <button class="chip">Daily</button>
+      <button class="chip">Weekly</button>
+      <button class="chip">Monthly</button>
+      <button class="chip">Quarterly</button>
+    </div>
+  </section>
+
+  <!-- Market grid -->
+  <section class="grid">
+
+    <!-- Card 1 — BTC weekly -->
+    <article class="card">
+      <svg class="card-corner" viewBox="0 0 120 120" fill="none">
+        <circle cx="120" cy="0" r="110" stroke="#1652F0" stroke-opacity="0.06" stroke-width="1"/>
+        <circle cx="120" cy="0" r="80" stroke="#1652F0" stroke-opacity="0.05" stroke-width="1"/>
+        <circle cx="120" cy="0" r="50" stroke="#1652F0" stroke-opacity="0.04" stroke-width="1"/>
+      </svg>
+      <div class="card-top">
+        <div class="asset-glyph">
+          <span class="asset-symbol btc">BTC</span>
+          <span class="market-id">#42</span>
+        </div>
+        <span class="cadence-chip">Weekly</span>
+      </div>
+      <h3 class="question">
+        BTC/USD <span class="arrow">≥</span> <span class="threshold">$71,200</span> by Jun 17
+      </h3>
+      <div class="resolve-at">Resolves 2026-06-17 12:00 UTC</div>
+
+      <div class="odds">
+        <div class="odds-labels">
+          <div class="odds-yes">
+            <span class="odds-pct">64</span><span>%</span>
+            <span class="odds-side-label">YES</span>
+          </div>
+          <div class="odds-no">
+            <span class="odds-side-label">NO</span>
+            <span class="odds-pct">36</span><span>%</span>
+          </div>
+        </div>
+        <div class="odds-bar">
+          <div class="odds-bar-fill" style="width: 64%;"></div>
+        </div>
+      </div>
+
+      <div class="pools">
+        <div class="pool"><span>YES pool</span><span class="amount">487 USDC</span></div>
+        <div class="pool"><span>NO pool</span><span class="amount">273 USDC</span></div>
+      </div>
+
+      <div class="actions">
+        <button class="bet-btn yes"><span>Bet YES</span><span class="micro">×1.55</span></button>
+        <button class="bet-btn no"><span>Bet NO</span><span class="micro">×2.78</span></button>
+      </div>
+
+      <div class="card-bottom">
+        <span class="countdown">Closes in 4d 12h</span>
+        <span class="seed-hint">~30 USDC seeded</span>
+      </div>
+    </article>
+
+    <!-- Card 2 — ETH monthly, heat -->
+    <article class="card">
+      <svg class="card-corner" viewBox="0 0 120 120" fill="none">
+        <circle cx="120" cy="0" r="110" stroke="#1652F0" stroke-opacity="0.06" stroke-width="1"/>
+        <circle cx="120" cy="0" r="80" stroke="#1652F0" stroke-opacity="0.05" stroke-width="1"/>
+      </svg>
+      <div class="card-top">
+        <div class="asset-glyph">
+          <span class="asset-symbol eth">ETH</span>
+          <span class="market-id">#38</span>
+        </div>
+        <span class="cadence-chip heat">Monthly · closing</span>
+      </div>
+      <h3 class="question">
+        ETH/USD <span class="arrow">≥</span> <span class="threshold">$3,500</span> by Jul 09
+      </h3>
+      <div class="resolve-at">Resolves 2026-07-09 18:00 UTC</div>
+
+      <div class="odds">
+        <div class="odds-labels">
+          <div class="odds-yes">
+            <span class="odds-pct">42</span><span>%</span>
+            <span class="odds-side-label">YES</span>
+          </div>
+          <div class="odds-no">
+            <span class="odds-side-label">NO</span>
+            <span class="odds-pct">58</span><span>%</span>
+          </div>
+        </div>
+        <div class="odds-bar">
+          <div class="odds-bar-fill" style="width: 42%;"></div>
+        </div>
+      </div>
+
+      <div class="pools">
+        <div class="pool"><span>YES pool</span><span class="amount">812 USDC</span></div>
+        <div class="pool"><span>NO pool</span><span class="amount">1,124 USDC</span></div>
+      </div>
+
+      <div class="actions">
+        <button class="bet-btn yes"><span>Bet YES</span><span class="micro">×2.38</span></button>
+        <button class="bet-btn no"><span>Bet NO</span><span class="micro">×1.72</span></button>
+      </div>
+
+      <div class="card-bottom">
+        <span class="countdown heat">Closes in 04h 12m</span>
+        <span class="seed-hint">~22 USDC seeded</span>
+      </div>
+    </article>
+
+    <!-- Card 3 — SOL quarterly -->
+    <article class="card">
+      <svg class="card-corner" viewBox="0 0 120 120" fill="none">
+        <circle cx="120" cy="0" r="110" stroke="#1652F0" stroke-opacity="0.06" stroke-width="1"/>
+        <circle cx="120" cy="0" r="80" stroke="#1652F0" stroke-opacity="0.05" stroke-width="1"/>
+      </svg>
+      <div class="card-top">
+        <div class="asset-glyph">
+          <span class="asset-symbol sol">SOL</span>
+          <span class="market-id">#31</span>
+        </div>
+        <span class="cadence-chip">Quarterly</span>
+      </div>
+      <h3 class="question">
+        SOL/USD <span class="arrow">≥</span> <span class="threshold">$160</span> by Sep 09
+      </h3>
+      <div class="resolve-at">Resolves 2026-09-09 12:00 UTC</div>
+
+      <div class="odds">
+        <div class="odds-labels">
+          <div class="odds-yes">
+            <span class="odds-pct">71</span><span>%</span>
+            <span class="odds-side-label">YES</span>
+          </div>
+          <div class="odds-no">
+            <span class="odds-side-label">NO</span>
+            <span class="odds-pct">29</span><span>%</span>
+          </div>
+        </div>
+        <div class="odds-bar">
+          <div class="odds-bar-fill" style="width: 71%;"></div>
+        </div>
+      </div>
+
+      <div class="pools">
+        <div class="pool"><span>YES pool</span><span class="amount">1,308 USDC</span></div>
+        <div class="pool"><span>NO pool</span><span class="amount">534 USDC</span></div>
+      </div>
+
+      <div class="actions">
+        <button class="bet-btn yes"><span>Bet YES</span><span class="micro">×1.41</span></button>
+        <button class="bet-btn no"><span>Bet NO</span><span class="micro">×3.45</span></button>
+      </div>
+
+      <div class="card-bottom">
+        <span class="countdown">Closes in 89d</span>
+        <span class="seed-hint">~48 USDC seeded</span>
+      </div>
+    </article>
+
+    <!-- Card 4 — BTC daily -->
+    <article class="card">
+      <svg class="card-corner" viewBox="0 0 120 120" fill="none">
+        <circle cx="120" cy="0" r="110" stroke="#1652F0" stroke-opacity="0.06" stroke-width="1"/>
+        <circle cx="120" cy="0" r="80" stroke="#1652F0" stroke-opacity="0.05" stroke-width="1"/>
+      </svg>
+      <div class="card-top">
+        <div class="asset-glyph">
+          <span class="asset-symbol btc">BTC</span>
+          <span class="market-id">#48</span>
+        </div>
+        <span class="cadence-chip">Daily</span>
+      </div>
+      <h3 class="question">
+        BTC/USD <span class="arrow">≥</span> <span class="threshold">$68,900</span> by tomorrow
+      </h3>
+      <div class="resolve-at">Resolves 2026-06-12 06:00 UTC</div>
+
+      <div class="odds">
+        <div class="odds-labels">
+          <div class="odds-yes">
+            <span class="odds-pct">51</span><span>%</span>
+            <span class="odds-side-label">YES</span>
+          </div>
+          <div class="odds-no">
+            <span class="odds-side-label">NO</span>
+            <span class="odds-pct">49</span><span>%</span>
+          </div>
+        </div>
+        <div class="odds-bar">
+          <div class="odds-bar-fill" style="width: 51%;"></div>
+        </div>
+      </div>
+
+      <div class="pools">
+        <div class="pool"><span>YES pool</span><span class="amount">102 USDC</span></div>
+        <div class="pool"><span>NO pool</span><span class="amount">98 USDC</span></div>
+      </div>
+
+      <div class="actions">
+        <button class="bet-btn yes"><span>Bet YES</span><span class="micro">×1.96</span></button>
+        <button class="bet-btn no"><span>Bet NO</span><span class="micro">×2.04</span></button>
+      </div>
+
+      <div class="card-bottom">
+        <span class="countdown">Closes in 18h 41m</span>
+        <span class="seed-hint">~12 USDC seeded</span>
+      </div>
+    </article>
+
+  </section>
+
+  <footer>
+    <div>Built on Arc Testnet · Settled by Pyth Network · USDC parimutuel</div>
+    <div class="links">
+      <a href="#">Arcscan</a>
+      <a href="#">Contract</a>
+      <a href="#">Faucet</a>
+    </div>
+  </footer>
+
+</main>
+
+</body>
+</html>

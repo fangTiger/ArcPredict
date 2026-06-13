@@ -34,3 +34,14 @@ log/
 
 # 系统
 .DS_Store
+
+.claude
+.codex
+.opencode
+.playwright-cli
+.pnpm-store
+.graphifyignore
+.mcp.json
+AGENTS.md
+CLAUDE.md
+opencode.json
