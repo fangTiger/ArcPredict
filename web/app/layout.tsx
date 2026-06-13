@@ -6,12 +6,12 @@ import { Providers } from './providers';
 
 export const metadata: Metadata = {
   title: 'ArcPredict',
-  description: '在 Arc 上用 USDC 参与预测市场。',
+  description: 'Trade prediction markets on Arc with USDC.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="zh-CN">
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />

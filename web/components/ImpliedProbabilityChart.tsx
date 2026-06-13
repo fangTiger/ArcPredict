@@ -61,7 +61,7 @@ export function ImpliedProbabilityChart({ row }: { row: WorldCupMarketRow }) {
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <div className="text-xs uppercase text-arc">Implied Probability</div>
-          <h3 className="mt-2 text-lg font-semibold text-ink">Outcome 趋势</h3>
+          <h3 className="mt-2 text-lg font-semibold text-ink">Outcome Trend</h3>
         </div>
         <div className="text-xs text-ink-2">opening vs current pool ratio</div>
       </div>

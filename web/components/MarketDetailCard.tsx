@@ -4,10 +4,15 @@ import { useEffect, useState } from 'react';
 import type { DashboardRow } from '@/lib/derivePosition';
 import { OUTCOMES, yesPercent } from '@/lib/derivePosition';
 import { fmtUsdc } from '@/lib/format';
-import type { WorldCupMarketRow } from '@/lib/worldcup-markets';
+import { useMediaQuery } from '@/lib/use-media-query';
+import {
+  EVENT_UNRESOLVED_OUTCOME,
+  type WorldCupMarketRow,
+} from '@/lib/worldcup-markets';
 import { EventInfoPanel } from './EventInfoPanel';
 import { ImpliedProbabilityChart } from './ImpliedProbabilityChart';
 import { ResolveCountdown } from './ResolveCountdown';
+import { WorldCupOutcomePanel } from './WorldCupOutcomePanel';
 
 const nowInSeconds = () => BigInt(Math.floor(Date.now() / 1000));
 
@@ -20,12 +25,14 @@ type PriceMarketDetailCardProps = {
 type EventMarketDetailCardProps = {
   marketKind: 'event';
   row: WorldCupMarketRow;
+  onBet?: (row: WorldCupMarketRow, outcomeIndex: number) => void;
 };
 
 export function MarketDetailCard(
   props: PriceMarketDetailCardProps | EventMarketDetailCardProps,
 ) {
   const [now, setNow] = useState<bigint>(() => nowInSeconds());
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -38,7 +45,8 @@ export function MarketDetailCard(
   const marketKind = props.marketKind ?? 'price';
 
   if (marketKind === 'event') {
-    const row = props.row as WorldCupMarketRow;
+    const { row, onBet } = props as EventMarketDetailCardProps;
+    const bettingOpen = row.settledOutcome === EVENT_UNRESOLVED_OUTCOME && now < row.betDeadline;
 
     return (
       <article className="rounded-lg border border-hair bg-paper p-5 transition hover:border-arc/20">
@@ -58,17 +66,29 @@ export function MarketDetailCard(
 
         <div className="mb-5 grid gap-4 sm:grid-cols-2">
           <div className="rounded-lg border border-hair bg-canvas px-4 py-3">
-            <div className="mb-1 text-xs text-ink-2">总池</div>
+            <div className="mb-1 text-xs text-ink-2">Total Pool</div>
             <div className="font-mono text-lg text-ink">{fmtUsdc(row.liquidity)} USDC</div>
           </div>
 
           <div className="rounded-lg border border-hair bg-canvas px-4 py-3">
-            <div className="mb-1 text-xs text-ink-2">持仓</div>
+            <div className="mb-1 text-xs text-ink-2">Position</div>
             <div className="font-mono text-lg text-ink">{row.positionLabel}</div>
           </div>
         </div>
 
         <div className="space-y-5">
+          <WorldCupOutcomePanel
+            marketType={row.marketType}
+            outcomes={row.outcomes}
+            isMobile={isMobile}
+            homeTeamLabel={row.homeTeam.nameEn}
+            onSelectOutcome={
+              onBet
+                ? (outcomeIndex) => onBet(row, outcomeIndex)
+                : undefined
+            }
+            bettingOpen={bettingOpen}
+          />
           <EventInfoPanel row={row} />
           <ImpliedProbabilityChart row={row} />
         </div>
@@ -98,11 +118,11 @@ export function MarketDetailCard(
 
         <div className="mb-4 grid grid-cols-2 gap-4">
           <div>
-            <div className="mb-1 text-xs text-ink-2">总池</div>
+            <div className="mb-1 text-xs text-ink-2">Total Pool</div>
             <div className="font-mono text-lg text-ink">{fmtUsdc(totalPool)} USDC</div>
           </div>
           <div>
-            <div className="mb-1 text-xs text-ink-2">YES 比例</div>
+            <div className="mb-1 text-xs text-ink-2">YES Share</div>
             <div className="font-mono text-lg text-ink">{yesPct.toFixed(0)}%</div>
           </div>
         </div>
@@ -147,11 +167,11 @@ export function MarketDetailCard(
                 <span className="font-mono text-xs opacity-80">{noPct.toFixed(0)}%</span>
               </button>
             </div>
-          ) : (
-            <div className="rounded-lg border border-hair bg-canvas px-3 py-3 text-sm text-ink-2">
-              下注已关闭
-            </div>
-          )
+        ) : (
+          <div className="rounded-lg border border-hair bg-canvas px-3 py-3 text-sm text-ink-2">
+            Betting closed
+          </div>
+        )
         ) : (
           <div className="rounded-lg border border-hair bg-canvas px-3 py-3 text-sm text-ink-2">
             Outcome: <span className="font-mono">{outcome}</span>

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ADMIN_EVENT_ORACLE_ADDRESS } from '@/lib/addresses';
 import { useLiveScore } from '@/lib/event-source';
 import { flagIconUrlForTeam } from '@/lib/flag-icons';
 import type { WorldCupMarketRow } from '@/lib/worldcup-markets';
@@ -9,7 +8,7 @@ import type { WorldCupMarketRow } from '@/lib/worldcup-markets';
 const MATCH_DURATION_MS = 150 * 60 * 1000;
 
 function formatKickoff(kickoffTime: string): string {
-  return new Intl.DateTimeFormat('zh-CN', {
+  return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -23,7 +22,7 @@ function formatKickoff(kickoffTime: string): string {
 }
 
 function TeamBadge({
-  nameZh,
+  nameEn,
   shortCode,
   teamId,
 }: WorldCupMarketRow['homeTeam']) {
@@ -46,7 +45,7 @@ function TeamBadge({
 
         <div className="min-w-0">
           <div className="font-mono text-sm text-ink">{shortCode}</div>
-          <div className="truncate text-xs text-ink-2">{nameZh}</div>
+          <div className="truncate text-xs text-ink-2">{nameEn}</div>
         </div>
       </div>
     </div>
@@ -58,10 +57,10 @@ function statusMessage(
   liveLabel: string | null,
 ): string {
   if (row.marketType === 'winner') {
-    return '冠军盘无单场比分。';
+    return 'Winner markets do not have a single-match live score.';
   }
 
-  return liveLabel ? `比赛状态：${liveLabel}` : '比分服务暂不可用，已回退到赛程信息。';
+  return liveLabel ? `Match status: ${liveLabel}` : 'Live score is unavailable; schedule data is shown instead.';
 }
 
 export function EventInfoPanel({ row }: { row: WorldCupMarketRow }) {
@@ -86,7 +85,6 @@ export function EventInfoPanel({ row }: { row: WorldCupMarketRow }) {
     containerRef,
     matchInProgress,
   });
-  const explorerHref = `https://testnet.arcscan.app/address/${ADMIN_EVENT_ORACLE_ADDRESS}`;
 
   return (
     <section
@@ -101,18 +99,6 @@ export function EventInfoPanel({ row }: { row: WorldCupMarketRow }) {
           <h3 className="mt-2 text-lg font-semibold text-ink">{row.stageLabel}</h3>
           <p className="mt-1 text-sm text-ink-2">Kickoff · {formatKickoff(row.kickoffTime)} UTC</p>
         </div>
-
-        <div className="rounded-[14px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          <div className="font-medium">Resolution Source: AdminEventOracle (Owner + 72h Dispute Window)</div>
-          <a
-            href={explorerHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-flex items-center gap-2 font-mono text-xs text-emerald-800 underline decoration-emerald-300 underline-offset-4"
-          >
-            {ADMIN_EVENT_ORACLE_ADDRESS}
-          </a>
-        </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
@@ -124,14 +110,14 @@ export function EventInfoPanel({ row }: { row: WorldCupMarketRow }) {
           <TeamBadge {...row.awayTeam} />
         ) : (
           <div className="rounded-[14px] border border-hair bg-canvas px-4 py-3 text-sm text-ink-2">
-            该市场为多结果赛事盘，暂无单场对阵。
+            Multi-outcome market; no single matchup is attached.
           </div>
         )}
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div className="rounded-[14px] border border-hair bg-canvas px-4 py-3">
-          <div className="text-xs text-ink-2">实时比分</div>
+          <div className="text-xs text-ink-2">Live score</div>
           {matchInProgress &&
           liveScore.status === 'success' &&
           liveScore.score?.home !== null &&
@@ -142,10 +128,10 @@ export function EventInfoPanel({ row }: { row: WorldCupMarketRow }) {
           ) : (
             <div className="mt-2 text-sm text-ink">
               {row.marketType === 'winner'
-                ? '冠军盘不展示实时比分。'
+                ? 'Winner markets do not show a live score.'
                 : matchInProgress
-                  ? '正在同步比分…'
-                  : '实时比分仅在比赛进行中显示。'}
+                  ? 'Syncing live score...'
+                  : 'Live score appears only while the match is in progress.'}
             </div>
           )}
           <p className="mt-2 text-xs text-ink-2">
@@ -154,10 +140,10 @@ export function EventInfoPanel({ row }: { row: WorldCupMarketRow }) {
         </div>
 
         <div className="rounded-[14px] border border-hair bg-canvas px-4 py-3">
-          <div className="text-xs text-ink-2">市场说明</div>
+          <div className="text-xs text-ink-2">Match note</div>
           <p className="mt-2 text-sm leading-6 text-ink">{row.question}</p>
           <p className="mt-2 text-xs text-ink-2">
-            实时比分只用于前端展示，不参与链上结算；最终结果仅以 AdminEventOracle 最终化结果为准。
+            Live score is informational only. Settlement follows the finalized on-chain event result.
           </p>
         </div>
       </div>

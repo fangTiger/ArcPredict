@@ -98,8 +98,11 @@ assertIncludesAll('market/[id]/page.tsx 合约读取', marketPage, [
   'WalletPill',
   'MarketDetailCard',
   'BetModal',
+  'EventBetModal',
   'refetch',
+  'refetchEvent',
   'setBetting',
+  'setEventBetting',
   'EventMarketAbi',
   'EVENT_MARKET_ADDRESS',
   'WORLDCUP_ENABLED',
@@ -125,8 +128,12 @@ assertExcludesAll('market/[id]/page.tsx 禁止复用首页卡片', marketPage, [
 assert(
   marketPage.includes('args: [user, idBn, idBn + 1n]') ||
     (marketPage.includes('const readArgs = idBn === null ? undefined : [user, idBn, idBn + 1n];') &&
+      marketPage.includes('args: readArgs')) ||
+    (marketPage.includes('const readArgs =') &&
+      marketPage.includes('contractIdBn') &&
+      marketPage.includes('[user, contractIdBn, contractIdBn + 1n]') &&
       marketPage.includes('args: readArgs')),
-  'market/[id]/page.tsx 必须以 [user, idBn, idBn + 1n] 作为 getDashboard 参数窗口。',
+  'market/[id]/page.tsx 必须以合法市场 id 的 [user, id, id + 1n] 作为 getDashboard 参数窗口。',
 );
 
 assertMatches(
@@ -153,7 +160,7 @@ assertMatches(
 assertMatches(
   'market/[id]/page.tsx',
   marketPage,
-  /enabled:\s*hasEventMarket[\s\S]*idBn !== null|enabled:\s*requestedKind === 'event'[\s\S]*idBn !== null/u,
+  /enabled:\s*hasEventMarket[\s\S]*(?:idBn|contractIdBn) !== null|enabled:\s*requestedKind === 'event'[\s\S]*(?:idBn|contractIdBn) !== null/u,
   'EventMarket 读取必须受部署状态与合法 id 共同保护。',
 );
 
@@ -199,24 +206,30 @@ assertMatches(
   'EVENT 详情不得渲染 PRICE 专用 BetModal。',
 );
 
-assertIncludesAll('market/[id]/page.tsx 中文状态', marketPage, [
-  '正在读取市场详情',
-  '未找到该市场',
-  '市场编号无效',
+assertIncludesAll('market/[id]/page.tsx 英文状态', marketPage, [
+  'Loading market details',
+  'Market not found',
+  'Invalid market id',
 ]);
 
 assertMatches(
   'market/[id]/page.tsx',
   marketPage,
-  /isError[\s\S]*未找到该市场/u,
-  'market/[id]/page.tsx 的错误分支需要把 InvalidMarketId 显示为“未找到该市场”。',
+  /isError[\s\S]*Market not found/u,
+  'market/[id]/page.tsx 的错误分支需要把 InvalidMarketId 显示为 Market not found。',
 );
 
 assertIncludesAll('market/[id]/page.tsx 业务文案', marketPage, [
-  '市场编号',
-  '当前网络',
-  '合约浏览器',
+  'Market ID',
+  'Network',
+  'Wallet',
+]);
+
+assertExcludesAll('market/[id]/page.tsx 去除低价值详情块', marketPage, [
+  '辅助入口',
   '网络与钱包排查',
+  '合约浏览器',
+  'Resolution Source',
 ]);
 
 assertIncludesAll('market/[id]/page.tsx event 返回链接', marketPage, [

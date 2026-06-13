@@ -64,7 +64,7 @@ assertIncludesAll('PositionList.tsx', positionList, [
   'r.yesStake + r.noStake',
   'userOutcomeStakes',
   'outcomes',
-  '持仓明细',
+  'Position Details',
 ]);
 
 assertExcludesAll('PositionList.tsx', positionList, [

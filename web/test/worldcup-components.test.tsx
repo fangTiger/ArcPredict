@@ -253,21 +253,51 @@ describe('worldcup components', () => {
       await Promise.resolve();
     });
 
-    expect(host.textContent).toContain('主队 WIN');
-    expect(host.textContent).toContain('其他');
-    expect(host.textContent).toContain('展开');
+    expect(host.textContent).toContain('Home Win');
+    expect(host.textContent).toContain('Other outcomes');
+    expect(host.textContent).toContain('Expand');
 
     const button = host.querySelector('button');
-    expect(button?.textContent).toContain('展开');
+    expect(button?.textContent).toContain('Expand');
 
     await act(async () => {
       button?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       await Promise.resolve();
     });
 
-    expect(host.textContent).toContain('平局');
-    expect(host.textContent).toContain('客胜');
-    expect(host.textContent).toContain('收起');
+    expect(host.textContent).toContain('Draw');
+    expect(host.textContent).toContain('Away Win');
+    expect(host.textContent).toContain('Collapse');
+  });
+
+  test('World Cup outcome tiles can open the event betting flow directly', async () => {
+    setMatchMedia(true);
+    const row = WORLDCUP_SKELETON_MARKETS.find((market) => market.marketType === '1x2');
+    const onBet = vi.fn();
+
+    expect(row).toBeTruthy();
+
+    await act(async () => {
+      root.render(React.createElement(WorldCupMarketCard, { row: row!, onBet }));
+      await Promise.resolve();
+    });
+
+    expect(host.textContent).toContain('Bet');
+    expect(host.textContent).toContain('Home Win');
+    expect(host.textContent).toContain('Draw');
+    expect(host.textContent).toContain('Away Win');
+
+    const homeWinButton = Array.from(host.querySelectorAll('button')).find((node) =>
+      node.textContent?.includes('Home Win'),
+    );
+    expect(homeWinButton).toBeTruthy();
+
+    await act(async () => {
+      homeWinButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(onBet).toHaveBeenCalledWith(row, 0);
   });
 
   test('冠军盘默认只显示前三，移动端展开后最多显示前八并保留滚动容器', async () => {
@@ -281,12 +311,12 @@ describe('worldcup components', () => {
       await Promise.resolve();
     });
 
-    expect(host.textContent).toContain('查看前 8 队');
-    expect(host.textContent).not.toContain('查看全部 32 队');
-    expect(host.textContent).not.toContain('喀麦隆');
+    expect(host.textContent).toContain('Show top 8');
+    expect(host.textContent).not.toContain('Show all 32 teams');
+    expect(host.textContent).not.toContain('Cameroon');
 
     const button = Array.from(host.querySelectorAll('button')).find((node) =>
-      node.textContent?.includes('查看前 8 队'),
+      node.textContent?.includes('Show top 8'),
     );
     expect(button).toBeTruthy();
 
@@ -295,8 +325,8 @@ describe('worldcup components', () => {
       await Promise.resolve();
     });
 
-    expect(host.textContent).toContain('喀麦隆');
-    expect(host.textContent).not.toContain('荷兰');
+    expect(host.textContent).toContain('Cameroon');
+    expect(host.textContent).not.toContain('Netherlands');
 
     const scrollContainer = host.querySelector('[data-scrollable-outcomes="true"]');
     expect(scrollContainer).toBeTruthy();
@@ -315,7 +345,7 @@ describe('worldcup components', () => {
       await Promise.resolve();
     });
 
-    expect(host.textContent).toContain('查看全部 32 队');
+    expect(host.textContent).toContain('Show all 32 teams');
   });
 
   test('World Cup 过滤栏在赛事品类下显示阶段按钮，关闭 tabs 时只保留 Crypto 过滤', async () => {
@@ -409,8 +439,8 @@ describe('worldcup components', () => {
       await flushPromises();
     });
 
-    expect(host.textContent).toContain('比分服务暂不可用，已回退到赛程信息。');
-    expect(host.textContent).toContain('正在同步比分…');
+    expect(host.textContent).toContain('Live score is unavailable; schedule data is shown instead.');
+    expect(host.textContent).toContain('Syncing live score...');
     expect(host.textContent).not.toContain('1 - 0');
   });
 

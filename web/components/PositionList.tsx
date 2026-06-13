@@ -17,10 +17,10 @@ const positionTone: Record<UserPosition, string> = {
 };
 
 const positionLabel: Record<UserPosition, string> = {
-  none: '无仓位',
+  none: 'No position',
   yes: 'YES',
   no: 'NO',
-  both: '双边',
+  both: 'Both',
 };
 
 type PricePositionRow = DashboardRow & {
@@ -99,7 +99,7 @@ function toEventPositionItem(row: WorldCupMarketRow): PositionListItem | null {
     id: row.id,
     marketKind: 'event',
     question: row.question,
-    badgeLabel: `EVENT · ${details.length} 项`,
+    badgeLabel: `EVENT · ${details.length} picks`,
     badgeClassName: 'text-emerald-700',
     totalStake,
     details,
@@ -141,8 +141,8 @@ export function PositionList({
     <section className="mt-8 rounded-lg border border-hair bg-paper">
       <div className="flex items-center justify-between border-b border-hair px-5 py-4">
         <div>
-          <h2 className="text-sm font-semibold text-ink">我的持仓</h2>
-          <p className="mt-1 text-xs text-ink-2">仅显示你仍在等待结算的市场仓位。</p>
+          <h2 className="text-sm font-semibold text-ink">My Positions</h2>
+          <p className="mt-1 text-xs text-ink-2">Markets still waiting for settlement.</p>
         </div>
         <span className="font-mono text-sm text-ink-2">{userRows.length}</span>
       </div>
@@ -164,7 +164,7 @@ export function PositionList({
               </div>
               <div className="text-sm leading-6 text-ink">{r.question}</div>
               <div className="mt-2">
-                <div className="text-xs text-ink-2">持仓明细</div>
+                <div className="text-xs text-ink-2">Position Details</div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {r.details.map((detail) => (
                     <span
@@ -179,7 +179,7 @@ export function PositionList({
             </div>
 
             <div className="shrink-0 text-left sm:text-right">
-              <div className="text-xs text-ink-2">持仓金额</div>
+              <div className="text-xs text-ink-2">Position Value</div>
               <div className="font-mono text-sm text-ink">{fmtUsdc(r.totalStake)} USDC</div>
             </div>
           </article>

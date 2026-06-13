@@ -46,7 +46,7 @@ async function main() {
   const layoutTokens = [
     'Providers',
     '<Providers>{children}</Providers>',
-    'lang="zh-CN"',
+    'lang="en"',
     'fonts.googleapis.com/css2?family=Geist',
     'Geist+Mono',
     'Instrument+Serif',

@@ -83,10 +83,11 @@ assertIncludesAll('page.tsx', pageSource, [
   'searchParams.get',
   'refetch',
   'setBetting',
-  '正在读取最新市场',
-  '首页数据读取失败',
-  '当前没有未结算市场',
-  '当前筛选条件下没有未结算市场',
+  'Loading the latest markets...',
+  'Unable to load markets. Please try again shortly.',
+  'No unresolved markets are available yet.',
+  'No unresolved markets match these filters.',
+  'No World Cup markets match this stage.',
   'World Cup',
   '<ArcBackground variant=',
 ]);
@@ -129,6 +130,20 @@ assertMatches(
 assertMatches(
   'page.tsx',
   pageSource,
+  /const categoryParam = searchParams\.get\('category'\);/u,
+  '首页必须先读取 category 查询参数再计算默认品类。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /categoryParam === 'crypto'\s*\?\s*'crypto'\s*:\s*'worldcup'/u,
+  'World Cup 开启时首页空查询必须默认进入 World Cup，只有 category=crypto 才切回 Crypto。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
   /<MarketFilterBar[\s\S]*category=\{category\}[\s\S]*stage=\{stage\}/u,
   '首页必须把 category/stage 传给 MarketFilterBar。',
 );
@@ -142,7 +157,22 @@ assertMatches(
 
 assertExcludesAll('page.tsx', pageSource, [
   '[category, categoryFromQuery, showCategoryTabs, stage, stageFromQuery]',
+  "searchParams.get('category') === 'worldcup' && WORLDCUP_ENABLED ? 'worldcup' : 'crypto'",
 ]);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /effectiveCategory === 'crypto'[\s\S]*nextQuery\.set\('category', 'crypto'\)/u,
+  '切换到 Crypto 时必须写入 category=crypto，避免空查询又回到 World Cup。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /effectiveCategory === 'worldcup'[\s\S]*nextQuery\.delete\('category'\)/u,
+  'World Cup 是首页默认品类，Stage=all 时 URL 可保持空查询。',
+);
 
 assertMatches(
   'page.tsx',
@@ -192,10 +222,17 @@ assertExcludesAll('page.tsx', pageSource, [
   '市场总览',
   '链上入口',
   '我的持仓',
+  '正在准备',
+  '正在读取',
+  '读取失败',
+  '当前没有',
+  '当前筛选',
+  '当前阶段',
+  '仍未部署',
   '已结算市场',
 ]);
 
 const chineseCharCount = (pageSource.match(/[\u4e00-\u9fff]/gu) ?? []).length;
-assert(chineseCharCount >= 20, 'page.tsx 仍应保留必要中文状态文案。');
+assert.equal(chineseCharCount, 0, 'page.tsx 首页可见状态文案应保持英文。');
 
 console.log('home page 检查通过');

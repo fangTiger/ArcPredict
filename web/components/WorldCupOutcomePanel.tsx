@@ -22,18 +22,48 @@ function OutcomeTile({
   label,
   probability,
   odds,
+  onSelect,
+  bettingOpen = false,
 }: {
   label: string;
   probability: number;
   odds: number;
+  onSelect?: () => void;
+  bettingOpen?: boolean;
 }) {
-  return (
-    <div className="rounded-[14px] border border-hair bg-canvas px-3 py-3">
-      <div className="mb-2 text-sm font-semibold text-ink">{label}</div>
+  const content = (
+    <>
+      <div className="mb-2 flex items-start justify-between gap-3">
+        <div className="text-sm font-semibold text-ink">{label}</div>
+        {onSelect ? (
+          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-800">
+            {bettingOpen ? 'Bet' : 'Closed'}
+          </span>
+        ) : null}
+      </div>
       <div className="mb-1 font-mono text-lg text-arc">{oddsLabel(odds)}</div>
       <div className="font-mono text-[11px] uppercase text-ink-2">
         implied {probabilityLabel(probability)}
       </div>
+    </>
+  );
+
+  if (onSelect) {
+    return (
+      <button
+        type="button"
+        onClick={onSelect}
+        disabled={!bettingOpen}
+        className="rounded-[14px] border border-hair bg-canvas px-3 py-3 text-left transition hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-55"
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-[14px] border border-hair bg-canvas px-3 py-3">
+      {content}
     </div>
   );
 }
@@ -43,11 +73,15 @@ export function WorldCupOutcomePanel({
   outcomes,
   isMobile,
   homeTeamLabel,
+  onSelectOutcome,
+  bettingOpen = false,
 }: {
   marketType: WorldCupMarketType;
   outcomes: WorldCupMarketOutcome[];
   isMobile: boolean;
   homeTeamLabel: string;
+  onSelectOutcome?: (outcomeIndex: number) => void;
+  bettingOpen?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -55,10 +89,10 @@ export function WorldCupOutcomePanel({
     const visibleOutcomes = expanded ? (isMobile ? outcomes.slice(0, 8) : outcomes) : outcomes.slice(0, 3);
     const showExpandButton = outcomes.length > 3;
     const expandLabel = expanded
-      ? '收起'
+      ? 'Collapse'
       : isMobile
-        ? '查看前 8 队'
-        : `查看全部 ${outcomes.length} 队`;
+        ? 'Show top 8'
+        : `Show all ${outcomes.length} teams`;
 
     return (
       <div className="mb-5">
@@ -72,6 +106,12 @@ export function WorldCupOutcomePanel({
               label={outcome.label}
               probability={outcome.impliedProbability}
               odds={outcome.odds}
+              onSelect={
+                onSelectOutcome
+                  ? () => onSelectOutcome(outcomes.indexOf(outcome))
+                  : undefined
+              }
+              bettingOpen={bettingOpen}
             />
           ))}
         </div>
@@ -88,7 +128,7 @@ export function WorldCupOutcomePanel({
     );
   }
 
-  if (marketType === '1x2' && isMobile && !expanded) {
+  if (marketType === '1x2' && isMobile && !expanded && !onSelectOutcome) {
     const homeOutcome = outcomes[0];
     const otherProbability = outcomes.slice(1).reduce((total, outcome) => total + outcome.impliedProbability, 0);
     const otherOdds = otherProbability <= 0 ? Number.POSITIVE_INFINITY : Number((100 / otherProbability).toFixed(2));
@@ -97,24 +137,24 @@ export function WorldCupOutcomePanel({
       <div className="mb-5">
         <div className="grid grid-cols-2 gap-2">
           <OutcomeTile
-            label="主队 WIN"
+            label="Home Win"
             probability={homeOutcome?.impliedProbability ?? 0}
             odds={homeOutcome?.odds ?? Number.POSITIVE_INFINITY}
           />
           <OutcomeTile
-            label="其他"
+            label="Other outcomes"
             probability={otherProbability}
             odds={otherOdds}
           />
         </div>
         <div className="mt-3 flex items-center justify-between gap-3">
-          <span className="text-xs text-ink-2">{homeTeamLabel} 以外的结果合并展示</span>
+          <span className="text-xs text-ink-2">Non-{homeTeamLabel} outcomes are grouped for scanning.</span>
           <button
             type="button"
             onClick={() => setExpanded(true)}
             className="inline-flex rounded-full border border-hair px-4 py-2 text-sm font-medium text-ink transition hover:border-arc/30 hover:text-arc"
           >
-            展开
+            Expand
           </button>
         </div>
       </div>
@@ -126,12 +166,18 @@ export function WorldCupOutcomePanel({
   return (
     <div className="mb-5">
       <div className={`grid ${gridClassName} gap-2`}>
-        {outcomes.map((outcome) => (
+        {outcomes.map((outcome, outcomeIndex) => (
           <OutcomeTile
             key={outcome.id}
             label={outcome.label}
             probability={outcome.impliedProbability}
             odds={outcome.odds}
+            onSelect={
+              onSelectOutcome
+                ? () => onSelectOutcome(outcomeIndex)
+                : undefined
+            }
+            bettingOpen={bettingOpen}
           />
         ))}
       </div>
@@ -141,7 +187,7 @@ export function WorldCupOutcomePanel({
           onClick={() => setExpanded(false)}
           className="mt-3 inline-flex rounded-full border border-hair px-4 py-2 text-sm font-medium text-ink transition hover:border-arc/30 hover:text-arc"
         >
-          收起
+          Collapse
         </button>
       ) : null}
     </div>

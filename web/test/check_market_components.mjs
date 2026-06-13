@@ -201,6 +201,7 @@ assertIncludesAll('WorldCupMarketCard.tsx', worldCupMarketCard, [
   "import Link from 'next/link';",
   'BaseMarketCard',
   'WorldCupOutcomePanel',
+  'onBet',
   'useMediaQuery',
   'flagIconUrlForTeam',
   '⚽',
@@ -216,11 +217,13 @@ assertIncludesAll('WorldCupMarketCard.tsx', worldCupMarketCard, [
 assertExcludesAll('WorldCupMarketCard.tsx', worldCupMarketCard, ['BetModal', 'router.push']);
 
 assertIncludesAll('WorldCupOutcomePanel.tsx', worldCupOutcomePanel, [
-  '主队 WIN',
-  '其他',
-  '查看前 8 队',
-  '查看全部',
-  '收起',
+  'onSelectOutcome',
+  'Home Win',
+  'Other outcomes',
+  'Show top 8',
+  'Show all',
+  'Collapse',
+  'Bet',
   'grid-cols-3',
   'grid-cols-2',
   'implied',
@@ -239,15 +242,17 @@ assertIncludesAll('MarketDetailCard.tsx', marketDetailCard, [
   'border-hair',
   'bg-canvas',
   'm.question',
-  '总池',
-  'YES 比例',
-  '下注已关闭',
+  'Total Pool',
+  'YES Share',
+  'Betting closed',
   'Outcome:',
   'Bet YES',
   'Bet NO',
   'marketKind',
   'EventInfoPanel',
   'ImpliedProbabilityChart',
+  'WorldCupOutcomePanel',
+  'onBet',
 ]);
 
 assertExcludesAll('MarketDetailCard.tsx', marketDetailCard, [
@@ -279,7 +284,12 @@ assertIncludesAll('EventInfoPanel.tsx', eventInfoPanel, [
   'matchInProgress',
   'kickoffTime',
   'stageLabel',
-  'Resolution Source: AdminEventOracle (Owner + 72h Dispute Window)',
+  'Live score',
+  'Match note',
+]);
+
+assertExcludesAll('EventInfoPanel.tsx 精简低价值信息', eventInfoPanel, [
+  'Resolution Source',
   'ADMIN_EVENT_ORACLE_ADDRESS',
   'testnet.arcscan.app/address/',
 ]);
@@ -306,15 +316,15 @@ assertIncludesAll('SiteHeader.tsx', siteHeader, [
   'allPositionsHref',
   'allPositionsActive',
   'WalletPill',
-  '全部持仓',
-  '持仓',
+  'All Positions',
+  'Positions',
 ]);
 
 assertMatches(
   'SiteHeader.tsx',
   siteHeader,
   /allPositionsHref[\s\S]*?<Link[\s\S]*?href=\{allPositionsHref\}/u,
-  '全部持仓入口必须存在可点击 Link。',
+  'All Positions 入口必须存在可点击 Link。',
 );
 
 assertExcludesAll('SiteHeader.tsx 全部持仓入口移动端不可隐藏', siteHeader, [

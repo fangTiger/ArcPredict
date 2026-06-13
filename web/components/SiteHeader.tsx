@@ -30,8 +30,8 @@ export function SiteHeader({
                   : 'border-hair bg-paper text-ink-2 hover:border-arc/20 hover:text-ink'
               }`}
             >
-              <span className="sm:hidden">持仓</span>
-              <span className="hidden sm:inline">全部持仓</span>
+              <span className="sm:hidden">Positions</span>
+              <span className="hidden sm:inline">All Positions</span>
             </Link>
           ) : null}
         </div>

@@ -8,6 +8,7 @@ import { useAccount, useReadContract } from 'wagmi';
 import { BetModal } from '@/components/BetModal';
 import { ArcBackground } from '@/components/ArcBackground';
 import { CryptoMarketCard } from '@/components/CryptoMarketCard';
+import { EventBetModal } from '@/components/EventBetModal';
 import {
   MarketFilterBar,
   filterMarkets,
@@ -38,6 +39,7 @@ import {
 import {
   resolveWorldCupMarkets,
   type EventMarketDashboardRow,
+  type WorldCupMarketRow,
 } from '@/lib/worldcup-markets';
 
 const predictionMarketAbi = PredictionMarketAbi as Abi;
@@ -51,6 +53,11 @@ type BetSelection = {
   side: boolean;
 };
 
+type EventBetSelection = {
+  row: WorldCupMarketRow;
+  outcomeIndex: number;
+};
+
 export default function HomePage() {
   return (
     <Suspense
@@ -59,7 +66,7 @@ export default function HomePage() {
           <NetworkBanner />
           <SiteHeader />
           <main className="relative z-10 mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
-            <div className="py-20 text-sm text-ink-2">正在准备首页筛选参数，请稍候……</div>
+            <div className="py-20 text-sm text-ink-2">Preparing market filters...</div>
           </main>
           <SiteFooter />
         </>
@@ -75,14 +82,19 @@ function HomePageContent() {
   const searchParams = useSearchParams();
   const { address } = useAccount();
   const user = address ?? zeroAddress;
-  const categoryFromQuery =
-    searchParams.get('category') === 'worldcup' && WORLDCUP_ENABLED ? 'worldcup' : 'crypto';
+  const categoryParam = searchParams.get('category');
+  const categoryFromQuery: MarketCategory = WORLDCUP_ENABLED
+    ? categoryParam === 'crypto'
+      ? 'crypto'
+      : 'worldcup'
+    : 'crypto';
   const showAllPositions = searchParams.get('positions') === 'all';
   const stageFromQuery =
     categoryFromQuery === 'worldcup'
       ? normalizeWorldCupStageFilter(searchParams.get('stage'))
       : 'all';
   const [betting, setBetting] = useState<BetSelection | null>(null);
+  const [eventBetting, setEventBetting] = useState<EventBetSelection | null>(null);
   const [category, setCategory] = useState<MarketCategory>(categoryFromQuery);
   const [stage, setStage] = useState<WorldCupStageFilter>(stageFromQuery);
   const [asset, setAsset] = useState<AssetFilter>('all');
@@ -100,7 +112,7 @@ function HomePageContent() {
     chainId: arcTestnet.id,
     query: { refetchInterval: 5_000 },
   });
-  const { data: eventData } = useReadContract({
+  const { data: eventData, refetch: refetchEvent } = useReadContract({
     address: EVENT_MARKET_ADDRESS,
     abi: eventMarketAbi,
     functionName: 'getDashboardLatest',
@@ -184,11 +196,14 @@ function HomePageContent() {
     const currentQuery = searchParams.toString();
     const nextQuery = new URLSearchParams(currentQuery);
 
-    if (!showCategoryTabs || effectiveCategory === 'crypto') {
+    if (!showCategoryTabs) {
       nextQuery.delete('category');
       nextQuery.delete('stage');
+    } else if (effectiveCategory === 'crypto') {
+      nextQuery.set('category', 'crypto');
+      nextQuery.delete('stage');
     } else {
-      nextQuery.set('category', 'worldcup');
+      nextQuery.delete('category');
       if (stage === 'all') {
         nextQuery.delete('stage');
       } else {
@@ -234,24 +249,28 @@ function HomePageContent() {
         />
 
         {effectiveCategory === 'crypto' && isLoading ? (
-          <div className="py-20 text-sm text-ink-2">正在读取最新市场，请稍候……</div>
+          <div className="py-20 text-sm text-ink-2">Loading the latest markets...</div>
         ) : effectiveCategory === 'crypto' && isError ? (
-          <div className="py-20 text-sm text-heat">首页数据读取失败，请稍后重试。</div>
+          <div className="py-20 text-sm text-heat">Unable to load markets. Please try again shortly.</div>
         ) : effectiveCategory === 'crypto' && activeMarkets.length === 0 ? (
-          <div className="py-20 text-sm text-ink-2">当前没有未结算市场，等新市场发布后这里会自动出现。</div>
+          <div className="py-20 text-sm text-ink-2">No unresolved markets are available yet.</div>
         ) : effectiveCategory === 'crypto' && visibleCryptoMarkets.length === 0 ? (
           <div className="py-20 text-sm text-ink-2">
-            当前筛选条件下没有未结算市场，请切换 Asset 或 Cadence 后重试。
+            No unresolved markets match these filters. Try another asset or cadence.
           </div>
         ) : effectiveCategory === 'worldcup' && visibleWorldCupMarkets.length === 0 ? (
           <div className="py-20 text-sm text-ink-2">
-            当前阶段下没有 World Cup 市场，请切换 Stage 后重试。
+            No World Cup markets match this stage. Try another stage.
           </div>
         ) : (
           <section className="grid gap-4 lg:grid-cols-2">
             {effectiveCategory === 'worldcup'
               ? visibleWorldCupMarkets.map((row) => (
-                  <WorldCupMarketCard key={row.id.toString()} row={row} />
+                  <WorldCupMarketCard
+                    key={row.id.toString()}
+                    row={row}
+                    onBet={(nextRow, outcomeIndex) => setEventBetting({ row: nextRow, outcomeIndex })}
+                  />
                 ))
               : visibleCryptoMarkets.map((row) => (
                   <CryptoMarketCard
@@ -265,7 +284,7 @@ function HomePageContent() {
 
         {effectiveCategory === 'worldcup' && !hasEventMarket ? (
           <div className="mt-4 text-xs text-ink-2">
-            当前 EventMarket 仍未部署，先使用临时 World Cup skeleton 数据渲染列表。
+            EventMarket is not configured yet, so temporary World Cup skeleton markets are shown.
           </div>
         ) : null}
 
@@ -281,6 +300,16 @@ function HomePageContent() {
           onClose={() => {
             setBetting(null);
             void refetch();
+          }}
+        />
+      ) : null}
+      {eventBetting ? (
+        <EventBetModal
+          row={eventBetting.row}
+          outcomeIndex={eventBetting.outcomeIndex}
+          onClose={() => {
+            setEventBetting(null);
+            void refetchEvent();
           }}
         />
       ) : null}

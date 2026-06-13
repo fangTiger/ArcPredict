@@ -94,13 +94,19 @@ const assertReadingAllowanceUsesFreshApproval = (label, source) => {
 };
 
 const betModal = readRequiredText('components/BetModal.tsx');
+const eventBetModal = readRequiredText('components/EventBetModal.tsx');
 
 assertUseClient('BetModal.tsx', betModal);
+assertUseClient('EventBetModal.tsx', eventBetModal);
 assertReadHookHasChainId('BetModal.tsx', betModal, 'allowance');
 assertReadHookHasChainId('BetModal.tsx', betModal, 'balanceOf');
+assertReadHookHasChainId('EventBetModal.tsx', eventBetModal, 'allowance');
+assertReadHookHasChainId('EventBetModal.tsx', eventBetModal, 'balanceOf');
 assertSwitchChainReturns('BetModal.tsx', betModal);
 assertNeedsApproveUsesFreshApproval('BetModal.tsx', betModal);
 assertReadingAllowanceUsesFreshApproval('BetModal.tsx', betModal);
+assertNeedsApproveUsesFreshApproval('EventBetModal.tsx', eventBetModal);
+assertReadingAllowanceUsesFreshApproval('EventBetModal.tsx', eventBetModal);
 
 assertIncludesAll('BetModal.tsx hooks', betModal, [
   'useAccount',
@@ -223,6 +229,49 @@ assertExcludesAll('BetModal.tsx 不应把未就绪读数当作 0', betModal, [
   'const approveHash = approveWrite.data;',
   'const betHash = betWrite.data;',
   '正在读取 USDC 授权，请稍候。',
+]);
+
+assertIncludesAll('EventBetModal.tsx hooks', eventBetModal, [
+  'EventMarketAbi',
+  'EVENT_MARKET_ADDRESS',
+  'useAccount',
+  'useReadContract',
+  'useWriteContract',
+  'useWaitForTransactionReceipt',
+  'useSwitchChain',
+]);
+
+assertIncludesAll('EventBetModal.tsx allowance spender', eventBetModal, [
+  "functionName: 'allowance'",
+  'args: address && eventMarketConfigured ? [address, EVENT_MARKET_ADDRESS] : undefined',
+  'EVENT_MARKET_ADDRESS !== zeroAddress',
+  'refetchAllowance',
+  '!hasFreshApproval',
+]);
+
+assertIncludesAll('EventBetModal.tsx approve 写入', eventBetModal, [
+  'address: USDC_ADDRESS',
+  'abi: erc20Abi',
+  "functionName: 'approve'",
+  'args: [EVENT_MARKET_ADDRESS, maxUint256]',
+  'chainId: arcTestnet.id',
+]);
+
+assertIncludesAll('EventBetModal.tsx event bet 写入', eventBetModal, [
+  'address: EVENT_MARKET_ADDRESS',
+  'abi: eventMarketAbi',
+  "functionName: 'bet'",
+  'args: [row.id, outcomeIndex, parsedAmount]',
+  'chainId: arcTestnet.id',
+]);
+
+assertIncludesAll('EventBetModal.tsx UI 文案', eventBetModal, [
+  'World Cup bet',
+  'Selection',
+  'EventMarket address is not configured',
+  'Step 1/2: Approve USDC',
+  'Step 2/2: Place Bet',
+  'Place Bet',
 ]);
 
 console.log('bet modal 检查通过');

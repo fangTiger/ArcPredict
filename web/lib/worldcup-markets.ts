@@ -20,6 +20,7 @@ export type WorldCupDisplayTeam = {
   teamId?: WorldCupTeam['id'];
   shortCode: string;
   nameZh: string;
+  nameEn: string;
 };
 
 export type WorldCupMarketOutcome = {
@@ -96,6 +97,7 @@ const findTeam = (participant: WorldCupParticipant): WorldCupDisplayTeam => {
     return {
       shortCode: worldCupParticipantCode(participant),
       nameZh: worldCupParticipantLabel(participant),
+      nameEn: worldCupParticipantCode(participant),
     };
   }
 
@@ -103,22 +105,26 @@ const findTeam = (participant: WorldCupParticipant): WorldCupDisplayTeam => {
     teamId: team.id,
     shortCode: team.id,
     nameZh: team.shortNameZh,
+    nameEn: team.nameEn,
   };
 };
 
 const GENERIC_HOME_TEAM: WorldCupDisplayTeam = {
   shortCode: 'HOME',
   nameZh: '主队',
+  nameEn: 'Home',
 };
 
 const GENERIC_AWAY_TEAM: WorldCupDisplayTeam = {
   shortCode: 'AWAY',
   nameZh: '客队',
+  nameEn: 'Away',
 };
 
 const GENERIC_WINNER_TEAM: WorldCupDisplayTeam = {
   shortCode: 'WC',
   nameZh: '冠军盘',
+  nameEn: 'World Cup',
 };
 
 const winnerFavorites = [
@@ -207,7 +213,7 @@ const skeletonRows: WorldCupMarketRow[] = [
     stage: 'group',
     stageLabel: 'Group A',
     marketType: '1x2',
-    question: '阿根廷 vs 墨西哥 1X2',
+    question: 'Argentina vs Mexico 1X2',
     kickoffTime: '2026-06-18T19:00:00Z',
     betDeadline: toUnixSeconds('2026-06-18T18:30:00Z'),
     eventId: '0x0000000000000000000000000000000000000000000000000000000000000000',
@@ -219,12 +225,12 @@ const skeletonRows: WorldCupMarketRow[] = [
     homeTeam: findTeam('ARG'),
     awayTeam: findTeam('MEX'),
     outcomes: [
-      createOutcome('arg-win', '主胜', 48.5, 'ARG'),
-      createOutcome('draw', '平局', 27.5),
-      createOutcome('mex-win', '客胜', 24.0, 'MEX'),
+      createOutcome('arg-win', 'Home Win', 48.5, 'ARG'),
+      createOutcome('draw', 'Draw', 27.5),
+      createOutcome('mex-win', 'Away Win', 24.0, 'MEX'),
     ],
     liquidity: 182_000_000n,
-    positionLabel: '无持仓',
+    positionLabel: 'No position',
   },
   {
     id: 9002n,
@@ -234,7 +240,7 @@ const skeletonRows: WorldCupMarketRow[] = [
     stage: 'group',
     stageLabel: 'Group B',
     marketType: 'spread',
-    question: '英格兰 -1.5 vs 威尔士',
+    question: 'England -1.5 vs Wales',
     kickoffTime: '2026-06-19T15:00:00Z',
     betDeadline: toUnixSeconds('2026-06-19T14:45:00Z'),
     eventId: '0x0000000000000000000000000000000000000000000000000000000000000000',
@@ -246,11 +252,11 @@ const skeletonRows: WorldCupMarketRow[] = [
     homeTeam: findTeam('ENG'),
     awayTeam: findTeam('WAL'),
     outcomes: [
-      createOutcome('eng-cover', '英格兰 -1.5', 57.2, 'ENG'),
-      createOutcome('wal-cover', '威尔士 +1.5', 42.8, 'WAL'),
+      createOutcome('eng-cover', 'England -1.5', 57.2, 'ENG'),
+      createOutcome('wal-cover', 'Wales +1.5', 42.8, 'WAL'),
     ],
     liquidity: 126_500_000n,
-    positionLabel: '无持仓',
+    positionLabel: 'No position',
   },
   {
     id: 9003n,
@@ -260,7 +266,7 @@ const skeletonRows: WorldCupMarketRow[] = [
     stage: 'r16',
     stageLabel: 'R16',
     marketType: '1x2',
-    question: '荷兰 vs 美国 1X2',
+    question: 'Netherlands vs United States 1X2',
     kickoffTime: '2026-06-24T19:00:00Z',
     betDeadline: toUnixSeconds('2026-06-24T18:45:00Z'),
     eventId: '0x0000000000000000000000000000000000000000000000000000000000000000',
@@ -272,12 +278,12 @@ const skeletonRows: WorldCupMarketRow[] = [
     homeTeam: findTeam('NED'),
     awayTeam: findTeam('USA'),
     outcomes: [
-      createOutcome('ned-win', '主胜', 45.0, 'NED'),
-      createOutcome('r16-draw', '平局', 30.0),
-      createOutcome('usa-win', '客胜', 25.0, 'USA'),
+      createOutcome('ned-win', 'Home Win', 45.0, 'NED'),
+      createOutcome('r16-draw', 'Draw', 30.0),
+      createOutcome('usa-win', 'Away Win', 25.0, 'USA'),
     ],
     liquidity: 143_200_000n,
-    positionLabel: '无持仓',
+    positionLabel: 'No position',
   },
   {
     id: 9004n,
@@ -287,7 +293,7 @@ const skeletonRows: WorldCupMarketRow[] = [
     stage: 'qf',
     stageLabel: 'QF',
     marketType: '1x2',
-    question: '巴西 vs 克罗地亚 1X2',
+    question: 'Brazil vs Croatia 1X2',
     kickoffTime: '2026-06-28T15:00:00Z',
     betDeadline: toUnixSeconds('2026-06-28T14:40:00Z'),
     eventId: '0x0000000000000000000000000000000000000000000000000000000000000000',
@@ -299,12 +305,12 @@ const skeletonRows: WorldCupMarketRow[] = [
     homeTeam: findTeam('BRA'),
     awayTeam: findTeam('CRO'),
     outcomes: [
-      createOutcome('bra-win', '主胜', 52.0, 'BRA'),
-      createOutcome('qf-draw', '平局', 24.0),
-      createOutcome('cro-win', '客胜', 24.0, 'CRO'),
+      createOutcome('bra-win', 'Home Win', 52.0, 'BRA'),
+      createOutcome('qf-draw', 'Draw', 24.0),
+      createOutcome('cro-win', 'Away Win', 24.0, 'CRO'),
     ],
     liquidity: 210_000_000n,
-    positionLabel: '无持仓',
+    positionLabel: 'No position',
   },
   {
     id: 9005n,
@@ -314,7 +320,7 @@ const skeletonRows: WorldCupMarketRow[] = [
     stage: 'sf',
     stageLabel: 'SF',
     marketType: 'spread',
-    question: '法国 -0.5 vs 英格兰',
+    question: 'France -0.5 vs England',
     kickoffTime: '2026-07-02T19:00:00Z',
     betDeadline: toUnixSeconds('2026-07-02T18:45:00Z'),
     eventId: '0x0000000000000000000000000000000000000000000000000000000000000000',
@@ -326,11 +332,11 @@ const skeletonRows: WorldCupMarketRow[] = [
     homeTeam: findTeam('FRA'),
     awayTeam: findTeam('ENG'),
     outcomes: [
-      createOutcome('fra-cover', '法国 -0.5', 54.0, 'FRA'),
-      createOutcome('eng-cover', '英格兰 +0.5', 46.0, 'ENG'),
+      createOutcome('fra-cover', 'France -0.5', 54.0, 'FRA'),
+      createOutcome('eng-cover', 'England +0.5', 46.0, 'ENG'),
     ],
     liquidity: 198_400_000n,
-    positionLabel: '无持仓',
+    positionLabel: 'No position',
   },
   {
     id: 9006n,
@@ -340,7 +346,7 @@ const skeletonRows: WorldCupMarketRow[] = [
     stage: 'final',
     stageLabel: 'Final',
     marketType: '1x2',
-    question: '阿根廷 vs 法国 决赛 1X2',
+    question: 'Argentina vs France Final 1X2',
     kickoffTime: '2026-07-10T19:00:00Z',
     betDeadline: toUnixSeconds('2026-07-10T18:45:00Z'),
     eventId: '0x0000000000000000000000000000000000000000000000000000000000000000',
@@ -352,12 +358,12 @@ const skeletonRows: WorldCupMarketRow[] = [
     homeTeam: findTeam('ARG'),
     awayTeam: findTeam('FRA'),
     outcomes: [
-      createOutcome('final-arg', '主胜', 37.5, 'ARG'),
-      createOutcome('final-draw', '平局', 29.0),
-      createOutcome('final-fra', '客胜', 33.5, 'FRA'),
+      createOutcome('final-arg', 'Home Win', 37.5, 'ARG'),
+      createOutcome('final-draw', 'Draw', 29.0),
+      createOutcome('final-fra', 'Away Win', 33.5, 'FRA'),
     ],
     liquidity: 312_800_000n,
-    positionLabel: '无持仓',
+    positionLabel: 'No position',
   },
   {
     id: 9007n,
@@ -367,7 +373,7 @@ const skeletonRows: WorldCupMarketRow[] = [
     stage: 'winner',
     stageLabel: 'Winner',
     marketType: 'winner',
-    question: '2026 世界杯冠军盘',
+    question: '2026 World Cup Winner',
     kickoffTime: '2026-07-11T19:00:00Z',
     betDeadline: toUnixSeconds('2026-07-11T18:45:00Z'),
     eventId: '0x0000000000000000000000000000000000000000000000000000000000000000',
@@ -378,9 +384,9 @@ const skeletonRows: WorldCupMarketRow[] = [
     settledOutcome: EVENT_UNRESOLVED_OUTCOME,
     homeTeam: findTeam('ARG'),
     awayTeam: findTeam('FRA'),
-    outcomes: winnerFavorites.map((entry) => createOutcome(entry.teamId.toLowerCase(), findTeam(entry.teamId).nameZh, entry.probability, entry.teamId)),
+    outcomes: winnerFavorites.map((entry) => createOutcome(entry.teamId.toLowerCase(), findTeam(entry.teamId).nameEn, entry.probability, entry.teamId)),
     liquidity: 641_000_000n,
-    positionLabel: '无持仓',
+    positionLabel: 'No position',
   },
 ];
 
@@ -390,6 +396,39 @@ export const WORLDCUP_SKELETON_MARKETS: WorldCupMarketRow[] = skeletonRows.map((
     row.outcomePools.length > 0 ? [...row.outcomePools] : poolsFromOutcomes(row.liquidity, row.outcomes),
   userOutcomeStakes: [...row.userOutcomeStakes],
 }));
+
+const GROUP_SEEDED_MATCH_IDS = WORLDCUP_MATCHES
+  .filter((match) => match.stage === 'group')
+  .map((match) => match.matchId);
+
+export function resolveWorldCupOnchainMarketId(id: bigint): bigint {
+  const skeleton = WORLDCUP_SKELETON_MARKETS.find((market) => market.id === id);
+
+  if (!skeleton) {
+    return id;
+  }
+
+  if (skeleton.marketType === 'winner') {
+    return 97n;
+  }
+
+  if (skeleton.matchId === 'final-1' && skeleton.marketType === '1x2') {
+    return 96n;
+  }
+
+  if (!skeleton.matchId) {
+    return id;
+  }
+
+  const groupIndex = GROUP_SEEDED_MATCH_IDS.indexOf(skeleton.matchId);
+
+  if (groupIndex < 0) {
+    return id;
+  }
+
+  const marketOffset = skeleton.marketType === 'spread' ? 1 : 0;
+  return BigInt(groupIndex * 2 + marketOffset);
+}
 
 const TEAM_MATCHERS = WORLDCUP_TEAMS.map((team) => ({
   teamId: team.id,
@@ -646,7 +685,7 @@ function buildTemplateOutcomes(
     return winnerFavorites.map((entry) =>
       createOutcome(
         entry.teamId.toLowerCase(),
-        findTeam(entry.teamId).nameZh,
+        findTeam(entry.teamId).nameEn,
         entry.probability,
         entry.teamId,
       ),
@@ -655,10 +694,10 @@ function buildTemplateOutcomes(
 
   if (marketType === 'spread') {
     return [
-      createOutcome(`${homeTeam.shortCode.toLowerCase()}-cover`, `${homeTeam.nameZh} 胜出`, 50, homeTeam.teamId),
+      createOutcome(`${homeTeam.shortCode.toLowerCase()}-cover`, `${homeTeam.nameEn} covers`, 50, homeTeam.teamId),
       createOutcome(
         `${awayTeam?.shortCode.toLowerCase() ?? 'away'}-cover`,
-        `${awayTeam?.nameZh ?? '客队'} 胜出`,
+        `${awayTeam?.nameEn ?? 'Away'} covers`,
         50,
         awayTeam?.teamId,
       ),
@@ -666,11 +705,11 @@ function buildTemplateOutcomes(
   }
 
   return [
-    createOutcome(`${homeTeam.shortCode.toLowerCase()}-win`, '主胜', 33.4, homeTeam.teamId),
-    createOutcome('draw', '平局', 33.3),
+    createOutcome(`${homeTeam.shortCode.toLowerCase()}-win`, 'Home Win', 33.4, homeTeam.teamId),
+    createOutcome('draw', 'Draw', 33.3),
     createOutcome(
       `${awayTeam?.shortCode.toLowerCase() ?? 'away'}-win`,
-      '客胜',
+      'Away Win',
       33.3,
       awayTeam?.teamId,
     ),
@@ -764,7 +803,7 @@ export function resolveWorldCupMarkets(
       awayTeam,
       outcomes,
       liquidity: totalPool,
-      positionLabel: activeStake > 0n ? `持仓 ${Number(activeStake) / 1_000_000} USDC` : '无持仓',
+      positionLabel: activeStake > 0n ? `Position ${Number(activeStake) / 1_000_000} USDC` : 'No position',
     };
   });
 }
@@ -781,9 +820,10 @@ export function fallbackWinnerOutcomeTeam(
     return null;
   }
 
-  return {
-    teamId: team.id,
-    shortCode: team.id,
-    nameZh: team.shortNameZh,
-  };
-}
+    return {
+      teamId: team.id,
+      shortCode: team.id,
+      nameZh: team.shortNameZh,
+      nameEn: team.nameEn,
+    };
+  }
