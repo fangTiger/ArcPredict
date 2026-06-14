@@ -2,8 +2,11 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { ConnectChecklist } from '@/components/ConnectChecklist';
+import { LogoMark } from '@/components/LogoMark';
 import { NetworkBanner } from '@/components/NetworkBanner';
-import { WalletPill } from '@/components/WalletPill';
+import { SiteFooter } from '@/components/SiteFooter';
+import { SiteHeader } from '@/components/SiteHeader';
 import { arcTestnet } from '@/lib/chain';
 
 type WalletProvider = {
@@ -23,9 +26,9 @@ function describeWalletError(error: unknown): string {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-hair bg-canvas px-4 py-3 text-sm">
-      <span className="text-ink-2">{label}</span>
-      <span className="overflow-x-auto font-mono text-ink">{value}</span>
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-hair bg-bg-2/40 px-4 py-3 text-sm">
+      <span className="text-ink-3">{label}</span>
+      <span className="overflow-x-auto font-mono text-ink num-glow">{value}</span>
     </div>
   );
 }
@@ -33,6 +36,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 export default function ConnectPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const [showRawParams, setShowRawParams] = useState(false);
   const params = {
     chainId: `0x${arcTestnet.id.toString(16)}`,
     chainName: arcTestnet.name,
@@ -72,94 +76,45 @@ export default function ConnectPage() {
   return (
     <>
       <NetworkBanner />
-
-      <nav className="sticky top-0 z-30 border-b border-hair bg-paper/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="min-w-0">
-            <Link href="/" className="text-sm text-ink-2 transition hover:text-ink">
-              返回首页
-            </Link>
-            <h1 className="mt-2 text-xl font-semibold text-ink">连接 Arc Testnet</h1>
-          </div>
-          <WalletPill />
+      <SiteHeader />
+      <main className="relative z-10 mx-auto max-w-3xl px-4 py-16 sm:py-24">
+        <div className="mb-10 flex flex-col items-center text-center">
+          <LogoMark size={96} />
+          <h1 className="mt-6 font-display text-4xl text-ink">ArcPredict</h1>
+          <p className="mt-3 text-ink-2">欢迎进入 Arc 链上预测市场</p>
+          <p className="text-sm text-ink-3">连接钱包并切换到 Arc Testnet</p>
         </div>
-      </nav>
 
-      <main className="min-h-screen bg-canvas text-ink">
-        <div className="mx-auto grid max-w-6xl gap-6 px-4 pb-12 pt-6 sm:px-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.9fr)] lg:px-8">
-          <section className="rounded-lg border border-hair bg-paper p-5">
-            <div className="border-b border-hair pb-5">
-              <h2 className="text-lg font-semibold text-ink">一键添加网络</h2>
-              <p className="mt-2 text-sm leading-6 text-ink-2">
-                如果钱包没有 Arc Testnet，先点下面按钮请求自动添加；如果钱包拦截或不支持，再按右侧参数手动填写。
-              </p>
+        <div className="glass rounded-3xl p-6">
+          <ConnectChecklist onAddNetwork={addArcNetwork} isAddPending={isPending} />
+          {status ? (
+            <div className="mt-4 rounded-xl border border-no/30 bg-no/10 px-4 py-3 text-sm text-no">{status}</div>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={() => setShowRawParams((v) => !v)}
+            className="mt-6 text-sm text-ink-3 transition hover:text-ink-2"
+          >
+            展开网络参数 · 手动配置 {showRawParams ? '↑' : '↓'}
+          </button>
+          {showRawParams ? (
+            <div className="mt-4 space-y-2">
+              <DetailRow label="Chain ID" value={params.chainId} />
+              <DetailRow label="Chain Name" value={params.chainName} />
+              <DetailRow label="RPC URL" value={params.rpcUrls[0]} />
+              <DetailRow label="Explorer" value={params.blockExplorerUrls[0]} />
             </div>
+          ) : null}
 
-            <div className="mt-5 space-y-4">
-              <button
-                type="button"
-                onClick={() => void addArcNetwork()}
-                disabled={isPending}
-                className="inline-flex items-center justify-center rounded-lg border border-arc/20 bg-arc px-4 py-3 text-sm font-medium text-paper transition hover:bg-arc-deep disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isPending ? '正在请求钱包添加 Arc Testnet...' : '添加 Arc Testnet 到钱包'}
-              </button>
-
-              <div className="rounded-lg border border-hair bg-canvas p-4 text-sm leading-6 text-ink-2">
-                {status ?? '未检测到钱包时可直接参考右侧参数手动添加。'}
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-3 md:grid-cols-2">
-              <a
-                href="https://testnet.arcscan.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between rounded-lg border border-hair bg-canvas px-4 py-3 text-sm text-ink-2 transition hover:border-arc/20 hover:bg-paper"
-              >
-                <span>Arcscan</span>
-                <span className="font-mono text-xs text-ink-2">浏览器</span>
-              </a>
-              <a
-                href="https://faucet.circle.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between rounded-lg border border-hair bg-canvas px-4 py-3 text-sm text-ink-2 transition hover:border-arc/20 hover:bg-paper"
-              >
-                <span>Circle Faucet</span>
-                <span className="font-mono text-xs text-ink-2">USDC</span>
-              </a>
-            </div>
-          </section>
-
-          <aside className="space-y-6">
-            <section className="rounded-lg border border-hair bg-paper p-5">
-              <h2 className="text-sm font-semibold text-ink">手动参数</h2>
-              <div className="mt-4 space-y-3">
-                <DetailRow label="Chain ID" value={`${arcTestnet.id} (${params.chainId})`} />
-                <DetailRow label="Name" value={arcTestnet.name} />
-                <DetailRow label="RPC" value={params.rpcUrls[0]} />
-                <DetailRow label="Symbol" value={arcTestnet.nativeCurrency.symbol} />
-                <DetailRow
-                  label="Decimals"
-                  value={arcTestnet.nativeCurrency.decimals.toString()}
-                />
-                <DetailRow label="Explorer" value={params.blockExplorerUrls[0]} />
-              </div>
-            </section>
-
-            <section className="rounded-lg border border-hair bg-paper p-5">
-              <h2 className="text-sm font-semibold text-ink">排查建议</h2>
-              <div className="mt-4 space-y-3 text-sm leading-6 text-ink-2">
-                <p>1. 钱包里确认当前网络是否已经切到 Arc Testnet。</p>
-                <p>2. 如果钱包没有弹窗，刷新页面后重新点击添加按钮。</p>
-                <p>3. 如果自动添加失败，复制右侧参数手动新建网络。</p>
-                <p>4. 网络配置完成后，前往 Circle Faucet 领取测试 USDC。</p>
-              </div>
-            </section>
-          </aside>
+          <div className="mt-6 text-center">
+            <Link href="/" className="text-sm text-ink-2 transition hover:text-arc-glow">
+              已配置好？回首页 →
+            </Link>
+          </div>
         </div>
       </main>
+      <SiteFooter />
     </>
   );
 }
