@@ -1,0 +1,25 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>ArcPredict</title>
+  <defs>
+    <linearGradient id="g" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1652F0" />
+      <stop offset="100%" stop-color="#4DA8FF" />
+    </linearGradient>
+    <filter id="halo" x="-150%" y="-150%" width="400%" height="400%">
+      <feGaussianBlur stdDeviation="2" />
+    </filter>
+  </defs>
+  <style>
+    /* 浅色浏览器标签栏：实色避免发光丢失 */
+    @media (prefers-color-scheme: light) {
+      .stroke-line { stroke: #0B2DB8 !important; }
+      .dot-halo, .dot-mid { fill: #0B2DB8 !important; }
+      .dot-core { fill: #ffffff !important; }
+    }
+  </style>
+  <path class="stroke-line" d="M 4 18 A 14 14 0 0 1 18 4"
+        stroke="url(#g)" stroke-width="2.5" stroke-linecap="round" fill="none" />
+  <circle class="dot-halo" cx="18" cy="4" r="5" fill="#4DA8FF" opacity="0.35" filter="url(#halo)" />
+  <circle class="dot-mid"  cx="18" cy="4" r="2.5" fill="#4DA8FF" />
+  <circle class="dot-core" cx="18" cy="4" r="1" fill="#FFFFFF" />
+</svg>
