@@ -12,7 +12,10 @@ export function NetworkBanner() {
   }
 
   return (
-    <div className="relative z-[60] border-b border-heat/30 bg-heat/10 px-4 py-2 text-heat">
+    <div
+      className="relative z-[60] border-b border-no/30 px-4 py-2 text-no"
+      style={{ background: 'rgba(248,113,113,0.10)' }}
+    >
       <div className="mx-auto flex max-w-7xl items-center justify-center gap-3 text-sm">
         <span>Wrong network. Switch to Arc Testnet.</span>
         <button
