@@ -67,15 +67,6 @@ function formatUtcTimestamp(timestamp: bigint): string {
   return `${new Date(Number(timestamp) * 1000).toISOString().slice(0, 16).replace('T', ' ')} UTC`;
 }
 
-function formatOddsMultiple(sidePool: bigint, totalPool: bigint): string {
-  if (sidePool === 0n) {
-    return '∞';
-  }
-
-  const scaled = Number((totalPool * 100n) / sidePool) / 100;
-  return `×${scaled.toFixed(2)}`;
-}
-
 function deriveAssetLabel(row: DashboardRow): string {
   const mapped = PYTH_PRICE_ID_TO_ASSET[row.market.pythPriceId.toLowerCase()];
 
@@ -107,7 +98,6 @@ export function CryptoMarketCard({
   const m = row.market;
   const yesPct = yesPercent(m);
   const noPct = 100 - yesPct;
-  const totalPool = m.yesPool + m.noPool;
   const outcome = OUTCOMES[m.outcome];
   const isUnresolved = outcome === 'Unresolved';
   const bettingOpen = isUnresolved && now < m.betDeadline;
@@ -120,8 +110,6 @@ export function CryptoMarketCard({
       ? `Closes in ${fmtCountdown(m.betDeadline, now)}`
       : 'Betting closed'
     : `Settled ${outcome}`;
-  const yesMultiple = formatOddsMultiple(m.yesPool, totalPool);
-  const noMultiple = formatOddsMultiple(m.noPool, totalPool);
   const detailHref = `/market/${row.id.toString()}`;
 
   return (
@@ -144,7 +132,7 @@ export function CryptoMarketCard({
 
               <span
                 className={`rounded-[12px] px-[10px] py-1 text-[11px] font-semibold uppercase ${
-                  isClosingSoon ? 'bg-heat/10 text-heat' : 'bg-arc-tint text-arc-deep'
+                  isClosingSoon ? 'bg-heat/10 text-heat' : 'bg-arc/15 text-arc-glow'
                 }`}
               >
                 {cadenceLabel}
@@ -152,8 +140,8 @@ export function CryptoMarketCard({
             </div>
 
             <h3 className="mb-2 font-display text-[26px] leading-[1.18] text-ink">
-              {asset}/USD <span className="mx-1 text-arc">≥</span>{' '}
-              <span className="whitespace-nowrap text-arc">
+              {asset}/USD <span className="mx-1 text-arc-glow">≥</span>{' '}
+              <span className="num-glow whitespace-nowrap text-arc-glow">
                 {formatThresholdValue(m.threshold, m.thresholdExpo)}
               </span>{' '}
               by {formatShortDate(m.resolveAfter)}
@@ -170,13 +158,13 @@ export function CryptoMarketCard({
           <div className="mb-4">
             <div className="mb-2 flex items-end justify-between gap-4">
               <div className="flex items-end gap-1.5 text-yes">
-                <span className="font-display text-[28px] leading-none">{yesPct.toFixed(0)}</span>
+                <span className="num-glow font-display text-[28px] leading-none">{yesPct.toFixed(0)}</span>
                 <span>%</span>
                 <span className="pb-0.5 text-xs uppercase">YES</span>
               </div>
               <div className="flex items-end gap-1.5 text-no">
                 <span className="pb-0.5 text-xs uppercase">NO</span>
-                <span className="font-display text-[28px] leading-none">{noPct.toFixed(0)}</span>
+                <span className="num-glow font-display text-[28px] leading-none">{noPct.toFixed(0)}</span>
                 <span>%</span>
               </div>
             </div>
@@ -190,36 +178,43 @@ export function CryptoMarketCard({
           </div>
 
           <div className="mb-5 grid grid-cols-2 gap-3 font-mono text-xs text-ink-2">
-            <div className="flex items-center justify-between rounded-[12px] bg-canvas px-3 py-2">
+            <div className="flex items-center justify-between rounded-[12px] px-3 py-2">
               <span>YES pool</span>
               <span className="text-ink">{fmtUsdc(m.yesPool)} USDC</span>
             </div>
-            <div className="flex items-center justify-between rounded-[12px] bg-canvas px-3 py-2">
+            <div className="flex items-center justify-between rounded-[12px] px-3 py-2">
               <span>NO pool</span>
               <span className="text-ink">{fmtUsdc(m.noPool)} USDC</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => onBet(row.id, true)}
-              disabled={!bettingOpen}
-              className="inline-flex items-center justify-between gap-3 rounded-full border border-yes/30 bg-paper px-[18px] py-3.5 text-sm font-semibold text-yes transition duration-150 hover:-translate-y-px hover:border-yes hover:bg-yes hover:text-paper disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 disabled:hover:bg-paper disabled:hover:text-yes"
-            >
-              <span>Bet YES</span>
-              <span className="font-mono text-[11px] opacity-75">{yesMultiple}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onBet(row.id, false)}
-              disabled={!bettingOpen}
-              className="inline-flex items-center justify-between gap-3 rounded-full border border-no/30 bg-paper px-[18px] py-3.5 text-sm font-semibold text-no transition duration-150 hover:-translate-y-px hover:border-no hover:bg-no hover:text-paper disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 disabled:hover:bg-paper disabled:hover:text-no"
-            >
-              <span>Bet NO</span>
-              <span className="font-mono text-[11px] opacity-75">{noMultiple}</span>
-            </button>
-          </div>
+          {(() => {
+            const pct = yesPct;
+            const yesFlex = Math.max(20, Math.min(80, pct));
+            const noFlex = 100 - yesFlex;
+            return (
+              <div className="mt-4 flex w-full gap-2">
+                <button
+                  type="button"
+                  onClick={() => onBet(row.id, true)}
+                  disabled={!bettingOpen}
+                  style={{ flex: yesFlex }}
+                  className="rounded-2xl border border-yes/40 bg-yes/15 px-3 py-2.5 text-sm font-semibold text-yes transition hover:bg-yes/25 hover:shadow-[inset_0_0_24px_rgba(52,211,153,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yes/60 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  YES · {pct.toFixed(0)}%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onBet(row.id, false)}
+                  disabled={!bettingOpen}
+                  style={{ flex: noFlex }}
+                  className="rounded-2xl border border-no/40 bg-no/15 px-3 py-2.5 text-sm font-semibold text-no transition hover:bg-no/25 hover:shadow-[inset_0_0_24px_rgba(248,113,113,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-no/60 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  NO · {(100 - pct).toFixed(0)}%
+                </button>
+              </div>
+            );
+          })()}
         </>
       )}
       renderFooter={() => (
