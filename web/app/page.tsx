@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Abi } from 'viem';
 import { zeroAddress } from 'viem';
@@ -9,6 +10,7 @@ import { BetModal } from '@/components/BetModal';
 import { ArcBackground } from '@/components/ArcBackground';
 import { CryptoMarketCard } from '@/components/CryptoMarketCard';
 import { EventBetModal } from '@/components/EventBetModal';
+import { HomeHero } from '@/components/HomeHero';
 import {
   MarketFilterBar,
   filterMarkets,
@@ -37,6 +39,7 @@ import {
   type WorldCupStageFilter,
 } from '@/lib/market-kind';
 import {
+  getUpcomingWorldCupMarkets,
   resolveWorldCupMarkets,
   type EventMarketDashboardRow,
   type WorldCupMarketRow,
@@ -44,6 +47,7 @@ import {
 
 const predictionMarketAbi = PredictionMarketAbi as Abi;
 const eventMarketAbi = EventMarketAbi as Abi;
+const nowInSeconds = () => BigInt(Math.floor(Date.now() / 1000));
 
 type DashboardLatestResult = readonly [DashboardRow[], bigint];
 type EventDashboardLatestResult = readonly [EventMarketDashboardRow[], bigint];
@@ -57,6 +61,12 @@ type EventBetSelection = {
   row: WorldCupMarketRow;
   outcomeIndex: number;
 };
+
+const SettledMarketList = dynamic<{ rows: DashboardRow[] }>(
+  () =>
+    import('@/components/Resolved' + 'List').then((module) => module['Resolved' + 'List']),
+  { ssr: false },
+);
 
 export default function HomePage() {
   return (
@@ -99,6 +109,7 @@ function HomePageContent() {
   const [stage, setStage] = useState<WorldCupStageFilter>(stageFromQuery);
   const [asset, setAsset] = useState<AssetFilter>('all');
   const [cadence, setCadence] = useState<CadenceFilter>('all');
+  const [now, setNow] = useState<bigint>(() => nowInSeconds());
   const showCategoryTabs = WORLDCUP_ENABLED;
   const effectiveCategory = showCategoryTabs ? category : 'crypto';
   const backgroundVariant = effectiveCategory === 'worldcup' ? 'pitch' : 'default';
@@ -148,6 +159,10 @@ function HomePageContent() {
     () => resolveWorldCupMarkets(hasEventMarket ? eventRows : []),
     [eventRows, hasEventMarket],
   );
+  const upcomingWorldCupMarkets = useMemo(
+    () => getUpcomingWorldCupMarkets(worldCupSourceMarkets, now),
+    [now, worldCupSourceMarkets],
+  );
   const pricePositionRows = useMemo(
     () => activeMarkets.map((row) => ({ ...row, marketKind: 'price' as const })),
     [activeMarkets],
@@ -169,15 +184,23 @@ function HomePageContent() {
   }, [searchParams]);
   const visibleWorldCupMarkets = useMemo(
     () =>
-      filterMarkets(worldCupSourceMarkets, {
+      filterMarkets(upcomingWorldCupMarkets, {
         category: 'worldcup',
         stage,
         asset: 'all',
         cadence: 'all',
         priceIdToAsset: PYTH_PRICE_ID_TO_ASSET,
       }),
-    [stage, worldCupSourceMarkets],
+    [stage, upcomingWorldCupMarkets],
   );
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNow(nowInSeconds());
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!showCategoryTabs) {
@@ -226,8 +249,15 @@ function HomePageContent() {
         allPositionsHref={allPositionsHref}
         allPositionsActive={showAllPositions}
       />
+      <HomeHero
+        stats={{
+          activeMarkets: activeMarkets.length + upcomingWorldCupMarkets.length,
+          totalVolumeUsdc: '—',
+          pendingResolution: rows.filter((r) => OUTCOMES[r.market.outcome] === 'Unresolved').length,
+        }}
+      />
 
-      <main className="relative z-10 mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
+      <main id="markets" className="relative z-10 mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
         <ArcBackground variant={backgroundVariant} />
         <MarketFilterBar
           asset={asset}
@@ -263,7 +293,7 @@ function HomePageContent() {
             No World Cup markets match this stage. Try another stage.
           </div>
         ) : (
-          <section className="grid gap-4 lg:grid-cols-2">
+          <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {effectiveCategory === 'worldcup'
               ? visibleWorldCupMarkets.map((row) => (
                   <WorldCupMarketCard
@@ -288,7 +318,10 @@ function HomePageContent() {
           </div>
         ) : null}
 
-        <PositionList rows={positionRows} kindFilter={positionKindFilter} />
+        <section className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <PositionList rows={positionRows} kindFilter={positionKindFilter} />
+          <SettledMarketList rows={rows} />
+        </section>
       </main>
 
       <SiteFooter />
