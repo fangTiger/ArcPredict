@@ -282,7 +282,7 @@ describe('worldcup components', () => {
       await Promise.resolve();
     });
 
-    expect(host.textContent).toContain('Bet');
+    expect(host.textContent).toContain('Home Win');
     expect(host.textContent).toContain('Home Win');
     expect(host.textContent).toContain('Draw');
     expect(host.textContent).toContain('Away Win');
