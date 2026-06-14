@@ -49,7 +49,7 @@ export function MarketDetailCard(
     const bettingOpen = row.settledOutcome === EVENT_UNRESOLVED_OUTCOME && now < row.betDeadline;
 
     return (
-      <article className="rounded-lg border border-hair bg-paper p-5 transition hover:border-arc/20">
+      <article className="glass rounded-3xl p-6">
         <div className="mb-4 flex flex-col gap-3 border-b border-hair pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <span className="font-mono text-xs text-ink-2">
@@ -58,19 +58,19 @@ export function MarketDetailCard(
             <div className="mt-2 text-lg font-medium leading-7 text-ink">{row.question}</div>
           </div>
 
-          <div className="rounded-lg border border-hair bg-canvas px-4 py-3 text-sm text-ink-2">
-            <div className="text-xs uppercase text-emerald-700">EVENT</div>
-            <div className="mt-2 font-mono text-sm text-ink">{row.outcomes.length} outcomes</div>
+          <div className="rounded-2xl border border-hair px-4 py-3 text-sm text-ink-2">
+            <div className="text-xs uppercase text-arc-glow">EVENT</div>
+            <div className="mt-2 font-mono text-sm text-ink num-glow">{row.outcomes.length} outcomes</div>
           </div>
         </div>
 
         <div className="mb-5 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-lg border border-hair bg-canvas px-4 py-3">
+          <div className="rounded-2xl border border-hair px-4 py-3">
             <div className="mb-1 text-xs text-ink-2">Total Pool</div>
-            <div className="font-mono text-lg text-ink">{fmtUsdc(row.liquidity)} USDC</div>
+            <div className="font-mono text-lg text-ink num-glow">{fmtUsdc(row.liquidity)} USDC</div>
           </div>
 
-          <div className="rounded-lg border border-hair bg-canvas px-4 py-3">
+          <div className="rounded-2xl border border-hair px-4 py-3">
             <div className="mb-1 text-xs text-ink-2">Position</div>
             <div className="font-mono text-lg text-ink">{row.positionLabel}</div>
           </div>
@@ -108,7 +108,7 @@ export function MarketDetailCard(
     const bettingOpen = isUnresolved && now < m.betDeadline;
 
     return (
-      <article className="rounded-lg border border-hair bg-paper p-5 transition hover:border-arc/20">
+      <article className="glass rounded-3xl p-6">
         <div className="mb-3 flex items-center justify-between gap-3">
           <span className="font-mono text-xs text-ink-2">#{row.id.toString()}</span>
           <ResolveCountdown row={row} />
@@ -119,17 +119,17 @@ export function MarketDetailCard(
         <div className="mb-4 grid grid-cols-2 gap-4">
           <div>
             <div className="mb-1 text-xs text-ink-2">Total Pool</div>
-            <div className="font-mono text-lg text-ink">{fmtUsdc(totalPool)} USDC</div>
+            <div className="font-mono text-lg text-ink num-glow">{fmtUsdc(totalPool)} USDC</div>
           </div>
           <div>
             <div className="mb-1 text-xs text-ink-2">YES Share</div>
-            <div className="font-mono text-lg text-ink">{yesPct.toFixed(0)}%</div>
+            <div className="font-mono text-lg text-ink num-glow">{yesPct.toFixed(0)}%</div>
           </div>
         </div>
 
         <div className="mb-2 flex items-center justify-between text-xs">
-          <span className="font-mono text-yes">YES {yesPct.toFixed(0)}%</span>
-          <span className="font-mono text-no">NO {noPct.toFixed(0)}%</span>
+          <span className="font-mono text-yes num-glow">YES {yesPct.toFixed(0)}%</span>
+          <span className="font-mono text-no num-glow">NO {noPct.toFixed(0)}%</span>
         </div>
 
         <div className="mb-3 h-2 overflow-hidden rounded-full bg-no/20">
@@ -137,13 +137,13 @@ export function MarketDetailCard(
         </div>
 
         <div className="mb-5 grid grid-cols-2 gap-4 text-xs text-ink-2">
-          <div className="flex items-center justify-between rounded-lg bg-canvas px-3 py-2">
+          <div className="flex items-center justify-between rounded-2xl border border-hair px-3 py-2">
             <span className="font-medium text-yes">YES</span>
-            <span className="font-mono text-ink">{fmtUsdc(m.yesPool)} USDC</span>
+            <span className="font-mono text-ink num-glow">{fmtUsdc(m.yesPool)} USDC</span>
           </div>
-          <div className="flex items-center justify-between rounded-lg bg-canvas px-3 py-2">
+          <div className="flex items-center justify-between rounded-2xl border border-hair px-3 py-2">
             <span className="font-medium text-no">NO</span>
-            <span className="font-mono text-ink">{fmtUsdc(m.noPool)} USDC</span>
+            <span className="font-mono text-ink num-glow">{fmtUsdc(m.noPool)} USDC</span>
           </div>
         </div>
 
@@ -153,28 +153,28 @@ export function MarketDetailCard(
               <button
                 type="button"
                 onClick={() => onBet(row.id, true)}
-                className="flex items-center justify-between rounded-lg border border-yes/40 bg-yes/10 px-4 py-3 text-sm font-medium text-yes transition hover:bg-yes/20"
+                className="flex items-center justify-between rounded-2xl border border-yes/40 bg-yes/10 px-4 py-3 text-sm font-medium text-yes transition hover:bg-yes/20"
               >
                 <span>Bet YES</span>
-                <span className="font-mono text-xs opacity-80">{yesPct.toFixed(0)}%</span>
+                <span className="font-mono text-xs opacity-80 num-glow">{yesPct.toFixed(0)}%</span>
               </button>
               <button
                 type="button"
                 onClick={() => onBet(row.id, false)}
-                className="flex items-center justify-between rounded-lg border border-no/40 bg-no/10 px-4 py-3 text-sm font-medium text-no transition hover:bg-no/20"
+                className="flex items-center justify-between rounded-2xl border border-no/40 bg-no/10 px-4 py-3 text-sm font-medium text-no transition hover:bg-no/20"
               >
                 <span>Bet NO</span>
-                <span className="font-mono text-xs opacity-80">{noPct.toFixed(0)}%</span>
+                <span className="font-mono text-xs opacity-80 num-glow">{noPct.toFixed(0)}%</span>
               </button>
             </div>
         ) : (
-          <div className="rounded-lg border border-hair bg-canvas px-3 py-3 text-sm text-ink-2">
+          <div className="rounded-2xl border border-hair px-3 py-3 text-sm text-ink-2">
             Betting closed
           </div>
         )
         ) : (
-          <div className="rounded-lg border border-hair bg-canvas px-3 py-3 text-sm text-ink-2">
-            Outcome: <span className="font-mono">{outcome}</span>
+          <div className="rounded-2xl border border-hair px-3 py-3 text-sm text-ink-2">
+            Outcome: <span className="font-mono num-glow">{outcome}</span>
           </div>
         )}
       </article>

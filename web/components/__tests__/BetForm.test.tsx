@@ -86,8 +86,8 @@ const loadTsModule = (modulePath: string): Record<string, unknown> => {
     throw new Error(`TypeScript 转译失败:\n${message}`);
   }
 
-  const module = { exports: {} as Record<string, unknown> };
-  moduleCache.set(modulePath, module.exports);
+  const loadedModule = { exports: {} as Record<string, unknown> };
+  moduleCache.set(modulePath, loadedModule.exports);
 
   const localRequire = (specifier: string) => {
     if (specifier === 'wagmi') {
@@ -114,8 +114,8 @@ const loadTsModule = (modulePath: string): Record<string, unknown> => {
     outputText,
   );
 
-  wrapper(module.exports, localRequire, module, modulePath, dirname(modulePath));
-  return module.exports;
+  wrapper(loadedModule.exports, localRequire, loadedModule, modulePath, dirname(modulePath));
+  return loadedModule.exports;
 };
 
 const BetForm = loadTsModule(resolve(webRoot, 'components/BetForm.tsx')).BetForm as React.ComponentType<{

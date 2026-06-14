@@ -29,16 +29,16 @@ function TeamBadge({
   const flagUrl = teamId ? flagIconUrlForTeam(teamId) : null;
 
   return (
-    <div className="rounded-[14px] border border-hair bg-canvas px-4 py-3">
+    <div className="rounded-2xl border border-hair px-4 py-3">
       <div className="flex items-center gap-3">
         {flagUrl ? (
           <span
-            className="inline-block h-6 w-9 rounded-[6px] border border-black/5 bg-cover bg-center shadow-sm"
+            className="inline-block h-6 w-9 rounded-[6px] border border-white/10 bg-cover bg-center shadow-sm"
             style={{ backgroundImage: `url(${flagUrl})` }}
             aria-hidden="true"
           />
         ) : (
-          <span className="inline-flex h-6 min-w-9 items-center justify-center rounded-[6px] bg-paper px-2 text-[11px] font-semibold text-ink-2">
+          <span className="inline-flex h-6 min-w-9 items-center justify-center rounded-[6px] border border-hair px-2 text-[11px] font-semibold text-ink-2">
             {shortCode}
           </span>
         )}
@@ -89,11 +89,11 @@ export function EventInfoPanel({ row }: { row: WorldCupMarketRow }) {
   return (
     <section
       ref={containerRef}
-      className="rounded-[18px] border border-hair bg-paper p-5"
+      className="glass rounded-3xl p-6"
     >
       <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="text-xs uppercase text-emerald-700">
+          <div className="text-xs uppercase text-arc-glow">
             Event Info
           </div>
           <h3 className="mt-2 text-lg font-semibold text-ink">{row.stageLabel}</h3>
@@ -103,26 +103,26 @@ export function EventInfoPanel({ row }: { row: WorldCupMarketRow }) {
 
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
         <TeamBadge {...row.homeTeam} />
-        <div className="flex items-center justify-center rounded-[14px] border border-dashed border-hair px-4 py-3 font-display text-2xl text-emerald-700">
+        <div className="flex items-center justify-center rounded-2xl border border-dashed border-hair px-4 py-3 font-display text-2xl text-arc-glow num-glow">
           VS
         </div>
         {row.awayTeam ? (
           <TeamBadge {...row.awayTeam} />
         ) : (
-          <div className="rounded-[14px] border border-hair bg-canvas px-4 py-3 text-sm text-ink-2">
+          <div className="rounded-2xl border border-hair px-4 py-3 text-sm text-ink-2">
             Multi-outcome market; no single matchup is attached.
           </div>
         )}
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-[14px] border border-hair bg-canvas px-4 py-3">
+        <div className="rounded-2xl border border-hair px-4 py-3">
           <div className="text-xs text-ink-2">Live score</div>
           {matchInProgress &&
           liveScore.status === 'success' &&
           liveScore.score?.home !== null &&
           liveScore.score?.away !== null ? (
-            <div className="mt-2 font-display text-2xl text-ink">
+            <div className="mt-2 font-mono text-2xl text-ink num-glow">
               {liveScore.score.home} - {liveScore.score.away}
             </div>
           ) : (
@@ -139,7 +139,7 @@ export function EventInfoPanel({ row }: { row: WorldCupMarketRow }) {
           </p>
         </div>
 
-        <div className="rounded-[14px] border border-hair bg-canvas px-4 py-3">
+        <div className="rounded-2xl border border-hair px-4 py-3">
           <div className="text-xs text-ink-2">Match note</div>
           <p className="mt-2 text-sm leading-6 text-ink">{row.question}</p>
           <p className="mt-2 text-xs text-ink-2">
