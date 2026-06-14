@@ -6,12 +6,14 @@ import { useEffect, useMemo, useState, type ComponentProps } from 'react';
 import type { Abi } from 'viem';
 import { maxUint256, parseAbiItem, zeroAddress } from 'viem';
 import { useAccount, usePublicClient, useReadContract } from 'wagmi';
+import { BetForm } from '@/components/BetForm';
 import { BetModal } from '@/components/BetModal';
 import { EventBetModal } from '@/components/EventBetModal';
 import { MarketDetailCard } from '@/components/MarketDetailCard';
 import { NetworkBanner } from '@/components/NetworkBanner';
 import { SeedDisclosure, sumSeedContribution } from '@/components/SeedDisclosure';
-import { WalletPill } from '@/components/WalletPill';
+import { SiteFooter } from '@/components/SiteFooter';
+import { SiteHeader } from '@/components/SiteHeader';
 import EventMarketAbi from '@/lib/abis/EventMarket.json';
 import PredictionMarketAbi from '@/lib/abis/PredictionMarket.json';
 import {
@@ -22,8 +24,10 @@ import { FRONTEND_DEPLOY_BLOCK } from '@/lib/asset-price-map';
 import { fetchLogsPaged } from '@/lib/bet-event-scan';
 import { arcTestnet } from '@/lib/chain';
 import { WORLDCUP_ENABLED } from '@/lib/feature-flags';
+import { fmtUsdc } from '@/lib/format';
 import { isPhase16Enabled } from '@/lib/phase16-flag';
 import { SEED_WALLETS } from '@/lib/seed-wallets';
+import { useMediaQuery } from '@/lib/use-media-query';
 import {
   WORLDCUP_SKELETON_MARKETS,
   resolveWorldCupOnchainMarketId,
@@ -44,10 +48,6 @@ type EventRow = Extract<DetailMarketRow, WorldCupMarketRow>;
 type DashboardResult = readonly [MarketRow[], bigint];
 type EventRowsInput = Parameters<typeof resolveWorldCupMarkets>[0];
 type EventDashboardResult = readonly [EventRowsInput, bigint];
-type BetSelection = {
-  row: MarketRow;
-  side: boolean;
-};
 type EventBetSelection = {
   row: EventRow;
   outcomeIndex: number;
@@ -62,6 +62,29 @@ type SeedBetLog = {
     amount?: bigint;
   };
 };
+
+function PositionSummary({ row }: { row: MarketRow }) {
+  return (
+    <div className="grid gap-3 text-sm">
+      <div className="flex items-center justify-between rounded-2xl border border-hair px-3 py-2">
+        <span className="text-ink-2">YES 份额</span>
+        <span className="font-mono text-ink num-glow">{fmtUsdc(row.yesStake)} USDC</span>
+      </div>
+      <div className="flex items-center justify-between rounded-2xl border border-hair px-3 py-2">
+        <span className="text-ink-2">NO 份额</span>
+        <span className="font-mono text-ink num-glow">{fmtUsdc(row.noStake)} USDC</span>
+      </div>
+      <div className="flex items-center justify-between rounded-2xl border border-hair px-3 py-2">
+        <span className="text-ink-2">待领取</span>
+        <span className="font-mono text-ink num-glow">{fmtUsdc(row.pendingPayout)} USDC</span>
+      </div>
+      <div className="flex items-center justify-between rounded-2xl border border-hair px-3 py-2">
+        <span className="text-ink-2">领取状态</span>
+        <span className="font-mono text-ink">{row.claimed_ ? '已领取' : '未领取'}</span>
+      </div>
+    </div>
+  );
+}
 
 function parseMarketId(value: string | undefined): bigint | null {
   const trimmed = value?.trim() ?? '';
@@ -118,9 +141,11 @@ export default function MarketDetailPage() {
   const { address } = useAccount();
   const publicClient = usePublicClient({ chainId: arcTestnet.id });
   const user = address ?? zeroAddress;
-  const [betting, setBetting] = useState<BetSelection | null>(null);
   const [eventBetting, setEventBetting] = useState<EventBetSelection | null>(null);
+  const [selectedSide, setSelectedSide] = useState(true);
+  const [showMobileBet, setShowMobileBet] = useState(false);
   const [seedBetEvents, setSeedBetEvents] = useState<SeedBetEvent[] | undefined>(undefined);
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
   const hasEventMarket = WORLDCUP_ENABLED && EVENT_MARKET_ADDRESS !== zeroAddress;
   const contractIdBn =
     requestedKind === 'event' && idBn !== null && hasEventMarket
@@ -190,6 +215,12 @@ export default function MarketDetailPage() {
     () => sumSeedContribution(seedBetEvents ?? [], SEED_WALLETS),
     [seedBetEvents],
   );
+  const handlePriceBet = (_id: bigint, side: boolean) => {
+    setSelectedSide(side);
+    if (!isDesktop) {
+      setShowMobileBet(true);
+    }
+  };
 
   useEffect(() => {
     if (kind === 'event' && !WORLDCUP_ENABLED) {
@@ -270,11 +301,13 @@ export default function MarketDetailPage() {
     return (
       <>
         <NetworkBanner />
-        <main className="min-h-screen bg-canvas px-4 py-10 text-ink sm:px-6 lg:px-8">
-          <section className="mx-auto max-w-3xl rounded-lg border border-hair bg-paper p-5 text-sm text-ink-2">
+        <SiteHeader />
+        <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 text-ink sm:px-6 lg:px-8">
+          <section className="glass mx-auto max-w-3xl rounded-3xl p-6 text-sm text-ink-2">
             World Cup markets are disabled. Returning to the home page...
           </section>
         </main>
+        <SiteFooter />
       </>
     );
   }
@@ -282,58 +315,56 @@ export default function MarketDetailPage() {
   return (
     <>
       <NetworkBanner />
+      <SiteHeader />
 
-      <nav className="sticky top-0 z-30 border-b border-hair bg-paper/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="min-w-0">
-            <Link href={backHref} className="text-sm text-ink-2 transition hover:text-ink">
-              Back to markets
-            </Link>
-            <h1 className="mt-2 text-xl font-semibold text-ink">
-              {kind === 'event' ? 'World Cup ' : ''}Market #{routeId ?? 'unknown'}
-            </h1>
+      <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 pb-28 text-ink sm:px-6 lg:px-8 lg:pb-12">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <Link
+            href={backHref}
+            className="inline-flex items-center gap-2 text-sm text-ink-2 transition hover:text-ink"
+          >
+            <span aria-hidden>←</span> 返回
+          </Link>
+          <div className="font-mono text-xs text-ink-2">
+            {kind === 'event' ? 'World Cup ' : ''}Market #{routeId ?? 'unknown'}
           </div>
-          <WalletPill />
         </div>
-      </nav>
 
-      <main className="min-h-screen bg-canvas text-ink">
-        <div className="mx-auto max-w-6xl px-4 pb-12 pt-6 sm:px-6 lg:px-8">
           {idBn === null ? (
-            <section className="rounded-lg border border-no/35 bg-no/10 p-5 text-sm text-no">
+            <section className="rounded-3xl border border-no/35 bg-no/10 p-6 text-sm text-no">
               Invalid market id. Go back and choose another market.
             </section>
           ) : detailLoading ? (
-            <section className="rounded-lg border border-hair bg-paper p-5 text-sm text-ink-2">
+            <section className="glass rounded-3xl p-6 text-sm text-ink-2">
               Loading market details...
             </section>
           ) : detailError ? (
-            <section className="rounded-lg border border-no/35 bg-no/10 p-5 text-sm text-no">
+            <section className="rounded-3xl border border-no/35 bg-no/10 p-6 text-sm text-no">
               {marketMissing ? 'Market not found. Go back and choose another market.' : 'Could not load market details. Check the network and try again.'}
             </section>
           ) : requestedKind === 'event' && !eventRow ? (
-            <section className="rounded-lg border border-hair bg-paper p-5 text-sm text-ink-2">
+            <section className="glass rounded-3xl p-6 text-sm text-ink-2">
               Market not found. The EventMarket address may still be missing, or this skeleton market does not exist.
             </section>
           ) : requestedKind !== 'event' && !row ? (
-            <section className="rounded-lg border border-hair bg-paper p-5 text-sm text-ink-2">
+            <section className="glass rounded-3xl p-6 text-sm text-ink-2">
               Market not found. It may not be published yet or is outside the current range.
             </section>
           ) : (
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(260px,0.75fr)]">
-              <div className="space-y-6">
-                <section className="rounded-lg border border-hair bg-paper p-5">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+              <div className="space-y-6 lg:col-span-8">
+                <section className="glass rounded-3xl p-6">
                   <div className="flex flex-col gap-4 border-b border-hair pb-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="max-w-2xl">
                       <div className="font-mono text-xs text-ink-2">Market ID #{idBn.toString()}</div>
-                      <h2 className="mt-2 text-lg font-semibold text-ink">{detailTitle}</h2>
+                      <h1 className="mt-2 font-display text-2xl text-ink">{detailTitle}</h1>
                       <p className="mt-2 text-sm leading-6 text-ink-2">
                         {kind === 'event'
                           ? 'Review the market, pick an outcome, and place a World Cup bet from this page.'
                           : 'Review the question, pool state, and betting actions from a direct market link.'}
                       </p>
                     </div>
-                    <div className="rounded-lg border border-hair bg-canvas px-4 py-3 text-sm text-ink-2">
+                    <div className="rounded-2xl border border-hair px-4 py-3 text-sm text-ink-2">
                       <div className="font-medium text-ink">Network: {arcTestnet.name}</div>
                       <div className="mt-1">Wallet: {walletStatus}</div>
                     </div>
@@ -350,7 +381,7 @@ export default function MarketDetailPage() {
                       <MarketDetailCard
                         marketKind="price"
                         row={row}
-                        onBet={(_id, side) => setBetting({ row, side })}
+                        onBet={handlePriceBet}
                       />
                     ) : null}
                     {showPhase16 && row ? (
@@ -365,19 +396,60 @@ export default function MarketDetailPage() {
                 </section>
               </div>
 
-              <aside className="space-y-6">
-                <section className="rounded-lg border border-hair bg-paper p-5">
-                  <h2 className="text-sm font-semibold text-ink">Market status</h2>
-                  <div className="mt-4 space-y-3 text-sm text-ink-2">
-                    <div className="flex items-center justify-between rounded-lg border border-hair bg-canvas px-4 py-3">
-                      <span className="text-ink-2">Market ID</span>
-                      <span className="font-mono text-ink">{idBn.toString()}</span>
+              <aside className="space-y-6 lg:col-span-4">
+                {row && requestedKind !== 'event' ? (
+                  <section className="glass sticky top-24 hidden rounded-3xl p-6 lg:block">
+                    <h2 className="font-display text-xl text-ink">立即下注</h2>
+                    <div className="mt-4">
+                      <PositionSummary row={row} />
                     </div>
-                    <div className="flex items-center justify-between rounded-lg border border-hair bg-canvas px-4 py-3">
+                    <div className="my-4 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSide(true)}
+                        className={
+                          selectedSide
+                            ? 'rounded-xl border border-yes/40 bg-yes/15 py-2 text-yes'
+                            : 'rounded-xl border border-hair py-2 text-ink-2 hover:text-ink'
+                        }
+                      >
+                        YES
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSide(false)}
+                        className={
+                          !selectedSide
+                            ? 'rounded-xl border border-no/40 bg-no/15 py-2 text-no'
+                            : 'rounded-xl border border-hair py-2 text-ink-2 hover:text-ink'
+                        }
+                      >
+                        NO
+                      </button>
+                    </div>
+                    <BetForm
+                      row={row}
+                      side={selectedSide}
+                      compact
+                      onSuccess={() => {
+                        void refetch();
+                      }}
+                    />
+                  </section>
+                ) : null}
+
+                <section className="glass rounded-3xl p-6">
+                  <h2 className="font-display text-xl text-ink">Market status</h2>
+                  <div className="mt-4 space-y-3 text-sm text-ink-2">
+                    <div className="flex items-center justify-between rounded-2xl border border-hair px-4 py-3">
+                      <span className="text-ink-2">Market ID</span>
+                      <span className="font-mono text-ink num-glow">{idBn.toString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-2xl border border-hair px-4 py-3">
                       <span className="text-ink-2">Network</span>
                       <span className="font-mono text-ink">{arcTestnet.name}</span>
                     </div>
-                    <div className="flex items-center justify-between rounded-lg border border-hair bg-canvas px-4 py-3">
+                    <div className="flex items-center justify-between rounded-2xl border border-hair px-4 py-3">
                       <span className="text-ink-2">Wallet</span>
                       <span className="font-mono text-ink">{walletStatus}</span>
                     </div>
@@ -386,15 +458,53 @@ export default function MarketDetailPage() {
               </aside>
             </div>
           )}
-        </div>
+        {row && requestedKind !== 'event' ? (
+          <div
+            className="fixed inset-x-0 bottom-0 z-30 p-4 backdrop-blur-md lg:hidden"
+            style={{ background: 'rgba(5,6,20,0.85)', borderTop: '1px solid rgba(155,163,199,0.12)' }}
+          >
+            <div className="mb-2 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedSide(true)}
+                className={
+                  selectedSide
+                    ? 'rounded-xl border border-yes/40 bg-yes/15 py-2 text-yes'
+                    : 'rounded-xl border border-hair py-2 text-ink-2 hover:text-ink'
+                }
+              >
+                YES
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedSide(false)}
+                className={
+                  !selectedSide
+                    ? 'rounded-xl border border-no/40 bg-no/15 py-2 text-no'
+                    : 'rounded-xl border border-hair py-2 text-ink-2 hover:text-ink'
+                }
+              >
+                NO
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowMobileBet(true)}
+              className="w-full rounded-2xl border border-arc-glow/40 bg-arc/15 px-4 py-3 text-base font-semibold text-arc-glow transition hover:bg-arc/25"
+            >
+              立即下注 · {selectedSide ? 'YES' : 'NO'}
+            </button>
+          </div>
+        ) : null}
       </main>
+      <SiteFooter />
 
-      {requestedKind !== 'event' && betting ? (
+      {requestedKind !== 'event' && row && showMobileBet ? (
         <BetModal
-          row={betting.row}
-          side={betting.side}
+          row={row}
+          side={selectedSide}
           onClose={() => {
-            setBetting(null);
+            setShowMobileBet(false);
             void refetch();
           }}
         />
