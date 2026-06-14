@@ -25,9 +25,6 @@ const config: Config = {
         heat: '#FF8A4C',
         // 分隔
         hair: 'rgba(155,163,199,0.12)',
-        // 向后兼容：保留旧名 canvas/paper 暂指向新背景，期 B–E 中各组件会迁移走
-        canvas: '#050614',
-        paper: '#0A0B1E',
       },
       fontFamily: {
         sans: ['Geist', 'system-ui', 'sans-serif'],

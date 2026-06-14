@@ -49,7 +49,7 @@ export function ImpliedProbabilityChart({ row }: { row: WorldCupMarketRow }) {
   );
 
   return (
-    <section className="rounded-[18px] border border-hair bg-paper p-5">
+    <section className="rounded-[18px] border border-hair bg-bg-1 p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <div className="text-xs uppercase text-arc">Implied Probability</div>
@@ -65,7 +65,7 @@ export function ImpliedProbabilityChart({ row }: { row: WorldCupMarketRow }) {
           return (
             <article
               key={outcome.id}
-              className="grid gap-3 rounded-[14px] border border-hair bg-canvas px-4 py-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto]"
+              className="grid gap-3 rounded-[14px] border border-hair bg-bg-0 px-4 py-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto]"
             >
               <div className="min-w-0">
                 <div className="text-xs text-ink-2">Outcome {index + 1}</div>

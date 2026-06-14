@@ -382,13 +382,13 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
       <div
         role="dialog"
         aria-modal="true"
-        className="w-full max-w-md rounded-[16px] border border-hair bg-paper p-5 shadow-[0_24px_60px_rgba(10,11,15,0.16)]"
+        className="w-full max-w-md rounded-[16px] border border-hair bg-bg-1 p-5 shadow-[0_24px_60px_rgba(10,11,15,0.16)]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-1 text-xs uppercase text-ink-2">World Cup bet</div>
         <div className="mb-4 text-lg font-medium leading-7 text-ink">{row.question}</div>
 
-        <div className="mb-4 flex items-center justify-between rounded-[12px] border border-hair bg-canvas px-3 py-3">
+        <div className="mb-4 flex items-center justify-between rounded-[12px] border border-hair bg-bg-0 px-3 py-3">
           <div>
             <div className="mb-1 text-xs text-ink-2">Selection</div>
             <div className="text-sm font-semibold text-emerald-700">
@@ -411,7 +411,7 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
 
         <label className="mb-3 block">
           <div className="mb-2 text-sm text-ink">Stake</div>
-          <div className="rounded-[12px] border border-hair bg-canvas px-3 py-3">
+          <div className="rounded-[12px] border border-hair bg-bg-0 px-3 py-3">
             <input
               type="text"
               inputMode="decimal"
@@ -425,7 +425,7 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
           <div className="mt-2 text-xs text-ink-2">Minimum stake 0.1 USDC</div>
         </label>
 
-        <div className="mb-3 grid grid-cols-2 gap-3 rounded-[12px] border border-hair bg-canvas p-4">
+        <div className="mb-3 grid grid-cols-2 gap-3 rounded-[12px] border border-hair bg-bg-0 p-4">
           <div>
             <div className="mb-1 text-xs text-ink-2">Your Stake</div>
             <div className="font-mono text-sm text-ink">{fmtUsdc(previewAmount)} USDC</div>
@@ -443,16 +443,16 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
         </div>
 
         {readingAllowance ? (
-          <div className="mb-4 rounded-[12px] border border-hair bg-canvas px-3 py-3 text-xs text-ink-2">
+          <div className="mb-4 rounded-[12px] border border-hair bg-bg-0 px-3 py-3 text-xs text-ink-2">
             Checking USDC approval...
           </div>
         ) : needsApprove ? (
-          <div className="mb-4 rounded-[12px] border border-hair bg-canvas px-3 py-3 text-xs text-ink-2">
+          <div className="mb-4 rounded-[12px] border border-hair bg-bg-0 px-3 py-3 text-xs text-ink-2">
             <div className="mb-1">Step 1/2: Approve USDC</div>
             <div>Step 2/2: Place Bet</div>
           </div>
         ) : (
-          <div className="mb-4 rounded-[12px] border border-hair bg-canvas px-3 py-3 text-xs text-ink-2">
+          <div className="mb-4 rounded-[12px] border border-hair bg-bg-0 px-3 py-3 text-xs text-ink-2">
             Ready for Step 2/2: Place Bet
           </div>
         )}
@@ -464,7 +464,7 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
         ) : null}
 
         {readingBalance ? (
-          <div className="mb-3 rounded-[12px] border border-hair bg-canvas px-3 py-2 text-sm text-ink-2">
+          <div className="mb-3 rounded-[12px] border border-hair bg-bg-0 px-3 py-2 text-sm text-ink-2">
             Reading USDC balance. Please wait.
           </div>
         ) : null}
@@ -489,7 +489,7 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
             className={`mb-3 rounded-[12px] px-3 py-2 text-sm ${
               step === 'success'
                 ? 'border border-yes/30 bg-yes/10 text-yes'
-                : 'border border-hair bg-canvas text-ink-2'
+                : 'border border-hair bg-bg-0 text-ink-2'
             }`}
           >
             {feedback}
@@ -500,7 +500,7 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-hair px-4 py-3 text-sm text-ink transition hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
+            className="rounded-full border border-hair px-4 py-3 text-sm text-ink transition hover:bg-bg-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
           >
             Cancel
           </button>
@@ -510,7 +510,7 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
               void handleConfirm();
             }}
             disabled={confirmDisabled}
-            className="rounded-full bg-arc px-4 py-3 text-sm font-semibold text-paper transition hover:bg-arc-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full bg-arc px-4 py-3 text-sm font-semibold text-bg-1 transition hover:bg-arc-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {step === 'idle' && (needsApprove ? 'Approve USDC' : 'Place Bet')}
             {step === 'approving' && 'Waiting for approval'}

@@ -118,12 +118,12 @@ export function CryptoMarketCard({
         <>
           <Link
             href={detailHref}
-            className="block rounded-[12px] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-arc/40 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+            className="block rounded-[12px] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-arc/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
           >
             <div className="mb-[18px] flex items-center justify-between gap-3">
               <div className="inline-flex items-center gap-[10px]">
                 <span
-                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full font-mono text-[11px] font-semibold text-paper ${assetAccentClassName[asset] ?? 'bg-ink'}`}
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full font-mono text-[11px] font-semibold text-bg-1 ${assetAccentClassName[asset] ?? 'bg-ink'}`}
                 >
                   {asset}
                 </span>
