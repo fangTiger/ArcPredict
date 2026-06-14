@@ -9,12 +9,11 @@ import {
   type WorldCupMarketRow,
 } from '@/lib/worldcup-markets';
 
-const positionTone: Record<UserPosition, string> = {
-  none: 'text-ink-2',
-  yes: 'text-yes',
-  no: 'text-no',
-  both: 'text-arc',
-};
+const variants = {
+  profit: 'bg-yes/15 text-yes border border-yes/30',
+  loss: 'bg-no/15 text-no border border-no/30',
+  open: 'bg-arc/15 text-arc-glow border border-arc-glow/30',
+} as const;
 
 const positionLabel: Record<UserPosition, string> = {
   none: 'No position',
@@ -73,7 +72,7 @@ function toPricePositionItem(row: PricePositionRow): PositionListItem | null {
     marketKind: 'price',
     question: row.market.question,
     badgeLabel: positionLabel[pos],
-    badgeClassName: positionTone[pos],
+    badgeClassName: variants.open,
     totalStake: stake,
     details,
   };
@@ -100,7 +99,7 @@ function toEventPositionItem(row: WorldCupMarketRow): PositionListItem | null {
     marketKind: 'event',
     question: row.question,
     badgeLabel: `EVENT · ${details.length} picks`,
-    badgeClassName: 'text-emerald-700',
+    badgeClassName: variants.open,
     totalStake,
     details,
   };
@@ -138,38 +137,40 @@ export function PositionList({
   if (userRows.length === 0) return null;
 
   return (
-    <section className="mt-8 rounded-lg border border-hair bg-paper">
-      <div className="flex items-center justify-between border-b border-hair px-5 py-4">
+    <section className="glass rounded-3xl p-5 sm:p-6">
+      <div className="flex items-center justify-between border-b border-hair pb-4">
         <div>
-          <h2 className="text-sm font-semibold text-ink">My Positions</h2>
-          <p className="mt-1 text-xs text-ink-2">Markets still waiting for settlement.</p>
+          <h2 className="font-display text-xl text-ink">My Positions</h2>
+          <p className="mt-1 text-sm text-ink-2">Markets still waiting for settlement.</p>
         </div>
-        <span className="font-mono text-sm text-ink-2">{userRows.length}</span>
+        <span className="font-mono text-sm text-ink-2 num-glow">{userRows.length}</span>
       </div>
 
-      <div className="divide-y divide-hair">
+      <div>
         {userRows.map((r) => (
           <article
             key={r.id.toString()}
-            className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+            className="flex flex-col gap-4 border-b border-hair py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex items-center gap-3">
                 <span className="font-mono text-xs text-ink-2">#{r.id.toString()}</span>
                 <span
-                  className={`rounded-full bg-canvas px-2 py-1 text-xs font-medium ${r.badgeClassName}`}
+                  className={`rounded-full px-2 py-1 text-xs font-medium ${r.badgeClassName}`}
                 >
                   {r.badgeLabel}
                 </span>
               </div>
               <div className="text-sm leading-6 text-ink">{r.question}</div>
               <div className="mt-2">
-                <div className="text-xs text-ink-2">Position Details</div>
+                <div className="font-mono text-[11px] uppercase tracking-wider text-ink-3">
+                  Position Details
+                </div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {r.details.map((detail) => (
                     <span
                       key={`${r.id.toString()}-${detail.label}`}
-                      className="rounded-full border border-hair bg-canvas px-3 py-1 font-mono text-xs text-ink-2"
+                      className="rounded-full border border-hair px-3 py-1 font-mono text-xs text-ink-2 num-glow"
                     >
                       {detail.label} · {fmtUsdc(detail.amount)} USDC
                     </span>
@@ -179,8 +180,10 @@ export function PositionList({
             </div>
 
             <div className="shrink-0 text-left sm:text-right">
-              <div className="text-xs text-ink-2">Position Value</div>
-              <div className="font-mono text-sm text-ink">{fmtUsdc(r.totalStake)} USDC</div>
+              <div className="font-mono text-[11px] uppercase tracking-wider text-ink-3">
+                Position Value
+              </div>
+              <div className="font-mono text-sm text-ink num-glow">{fmtUsdc(r.totalStake)} USDC</div>
             </div>
           </article>
         ))}
