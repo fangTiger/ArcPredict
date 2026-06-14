@@ -2,15 +2,25 @@
 
 import type { Abi } from 'viem';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useAccount, useReadContract } from 'wagmi';
+import { useAccount, useChainId, useReadContract } from 'wagmi';
 import ERC20Abi from '@/lib/abis/ERC20.json';
 import { USDC_ADDRESS } from '@/lib/addresses';
+import { arcTestnet } from '@/lib/chain';
 import { truncateAddr } from '@/lib/format';
 
 const erc20Abi = ERC20Abi as Abi;
 
+const pillBase =
+  'inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-medium sm:px-4 sm:text-sm whitespace-nowrap transition duration-200';
+
+const pillIdle = `${pillBase} glass glass-hover text-ink hover:text-ink`;
+const pillConnected = `${pillBase} glass glass-hover text-ink font-mono`;
+const pillWrong = `${pillBase} border border-no/40 text-no`;
+
 export function WalletPill() {
   const { address } = useAccount();
+  const chainId = useChainId();
+
   useReadContract({
     address: USDC_ADDRESS,
     abi: erc20Abi,
@@ -21,30 +31,38 @@ export function WalletPill() {
 
   return (
     <ConnectButton.Custom>
-      {({ account, mounted, authenticationStatus, openAccountModal, openConnectModal }) => {
+      {({ account, mounted, authenticationStatus, openAccountModal, openConnectModal, openChainModal }) => {
         const ready = mounted && authenticationStatus !== 'loading';
         const connected = ready && !!account && !!address;
+        const wrongChain = connected && chainId !== arcTestnet.id;
+
+        if (!ready) {
+          return <div className="pointer-events-none opacity-0" aria-hidden />;
+        }
+
+        if (wrongChain) {
+          return (
+            <button type="button" onClick={openChainModal} className={pillWrong}>
+              <span className="arc-ring-pulse h-2 w-2 rounded-full bg-no" />
+              <span>切换到 Arc</span>
+            </button>
+          );
+        }
+
+        if (!connected) {
+          return (
+            <button type="button" onClick={openConnectModal} className={pillIdle}>
+              <span>连接钱包</span>
+              <span aria-hidden>→</span>
+            </button>
+          );
+        }
 
         return (
-          <div
-            aria-hidden={!ready}
-            className={!ready ? 'pointer-events-none opacity-0' : undefined}
-          >
-            <button
-              type="button"
-              onClick={connected ? openAccountModal : openConnectModal}
-              className="inline-flex items-center gap-2 bg-ink text-paper rounded-full px-3 py-2 text-xs font-medium sm:px-4 sm:text-sm whitespace-nowrap transition duration-150 hover:bg-arc-deep hover:-translate-y-px"
-            >
-              {connected ? (
-                <>
-                  <span className="h-2 w-2 rounded-full bg-arc" aria-hidden="true" />
-                  <span>{truncateAddr(address)}</span>
-                </>
-              ) : (
-                <span>Connect Wallet</span>
-              )}
-            </button>
-          </div>
+          <button type="button" onClick={openAccountModal} className={pillConnected}>
+            <span>{truncateAddr(address!)}</span>
+            <span className="arc-ring-pulse h-2 w-2 rounded-full bg-arc-glow" />
+          </button>
         );
       }}
     </ConnectButton.Custom>
