@@ -52,11 +52,12 @@ const stageDisplayLabels: Record<WorldCupStageFilter, string> = {
 };
 
 const baseButtonClassName =
-  'rounded-[12px] border border-transparent px-3.5 py-[7px] text-sm font-medium text-ink-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc/20';
+  'rounded-full border px-3.5 py-[7px] text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0';
 
-const activeButtonClassName = `${baseButtonClassName} bg-ink text-paper`;
+const activeButtonClassName =
+  `${baseButtonClassName} border-arc-glow/40 bg-arc/15 text-arc-glow shadow-[0_0_24px_-8px_rgba(77,168,255,0.6)]`;
 const inactiveButtonClassName =
-  `${baseButtonClassName} hover:border-hair hover:bg-paper hover:text-ink`;
+  `${baseButtonClassName} border-hair text-ink-2 hover:border-arc-glow/30 hover:text-ink hover:bg-arc/5`;
 
 function buttonClassName(active: boolean): string {
   return active ? activeButtonClassName : inactiveButtonClassName;
@@ -87,6 +88,10 @@ export function filterMarkets<T extends FilterMarketInput>(
 
     if (category === 'worldcup') {
       if (opts.stage && opts.stage !== 'all' && market.stage !== opts.stage) {
+        return false;
+      }
+
+      if ((!opts.stage || opts.stage === 'all') && market.stage === 'winner') {
         return false;
       }
 

@@ -145,7 +145,7 @@ assert(
   '未知 priceId 在指定 asset 下不应出现。',
 );
 assert.deepEqual(idsOfCrypto('SOL', 'daily'), [3], 'asset 过滤必须兼容大写 priceId 与 lowercase 映射。');
-assert.deepEqual(idsOfWorldCup('all'), [101, 102, 103, 104], 'World Cup All 必须返回全部赛事市场。');
+assert.deepEqual(idsOfWorldCup('all'), [101, 102, 103], 'World Cup All 必须只返回具体比赛，冠军盘放在 Winner tab。');
 assert.deepEqual(idsOfWorldCup('group'), [101, 102], 'Stage=group 必须只返回小组赛。');
 assert.deepEqual(idsOfWorldCup('r16'), [103], 'Stage=r16 必须只返回十六强。');
 assert.deepEqual(idsOfWorldCup('winner'), [104], 'Stage=winner 必须只返回冠军盘。');
@@ -156,9 +156,9 @@ for (const token of [
   'my-10',
   'w-px h-6 bg-hair',
   'text-ink-2',
-  'hover:bg-paper',
-  'hover:border-hair',
-  'bg-ink text-paper',
+  'hover:bg-arc/5',
+  'hover:border-arc-glow/30',
+  'bg-arc/15 text-arc-glow',
   'World Cup',
   'Crypto',
   'Stage',
