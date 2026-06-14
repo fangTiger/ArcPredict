@@ -27,25 +27,66 @@ function formatKickoff(iso: string): string {
     .replace(',', ' ·');
 }
 
+function formatUnixTime(seconds: bigint): string {
+  return formatKickoff(new Date(Number(seconds * 1000n)).toISOString());
+}
+
 function TeamBadge({ nameEn, shortCode, teamId }: WorldCupMarketRow['homeTeam']) {
   const flagUrl = teamId ? flagIconUrlForTeam(teamId) : null;
 
   return (
     <div className="flex items-center gap-2">
-      {flagUrl ? (
-        <span
-          className="inline-block h-4 w-6 rounded-[4px] border border-black/5 bg-cover bg-center shadow-sm"
-          style={{ backgroundImage: `url(${flagUrl})` }}
-          aria-hidden="true"
-        />
-      ) : (
-        <span className="inline-flex h-4 min-w-6 items-center justify-center rounded-[4px] bg-canvas px-1 text-[10px] font-semibold text-ink-2">
-          {shortCode}
-        </span>
-      )}
+      <span
+        className="inline-flex h-7 w-7 items-center justify-center rounded-full"
+        style={{ boxShadow: '0 0 0 1px rgba(77,168,255,0.25), 0 0 12px -2px rgba(77,168,255,0.4)' }}
+      >
+        {flagUrl ? (
+          <span
+            className="inline-block h-4 w-6 rounded-[4px] border border-white/10 bg-cover bg-center shadow-sm"
+            style={{ backgroundImage: `url(${flagUrl})` }}
+            aria-hidden="true"
+          />
+        ) : (
+          <span className="inline-flex h-4 min-w-6 items-center justify-center rounded-[4px] border border-hair px-1 text-[10px] font-semibold text-ink-2">
+            {shortCode}
+          </span>
+        )}
+      </span>
       <div>
         <div className="font-mono text-sm text-ink">{shortCode}</div>
         <div className="text-[11px] text-ink-2">{nameEn}</div>
+      </div>
+    </div>
+  );
+}
+
+function OutcomeFlexButtons({
+  row,
+  bettingOpen,
+  onBet,
+}: {
+  row: WorldCupMarketRow;
+  bettingOpen: boolean;
+  onBet: (row: WorldCupMarketRow, outcomeIndex: number) => void;
+}) {
+  return (
+    <div className="mb-5">
+      <div className="mt-4 flex w-full gap-2">
+        {row.outcomes.map((outcome, outcomeIndex) => {
+          const pct = Math.round(outcome.impliedProbability);
+          return (
+            <button
+              key={outcome.id}
+              type="button"
+              onClick={() => onBet(row, outcomeIndex)}
+              disabled={!bettingOpen}
+              style={{ flex: Math.max(15, pct) }}
+              className="rounded-2xl border border-arc-glow/30 bg-arc/10 px-3 py-2.5 text-sm font-semibold text-arc-glow transition hover:bg-arc/20 hover:shadow-[inset_0_0_24px_rgba(77,168,255,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 disabled:cursor-not-allowed disabled:opacity-55"
+            >
+              {outcome.label} · {pct}%
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -77,60 +118,76 @@ export function WorldCupMarketCard({
   const countdownLabel =
     row.betDeadline > now ? `⚽ ${fmtCountdown(row.betDeadline, now)}` : '⚽ Closed';
   const detailHref = `/market/${row.id.toString()}?kind=event`;
+  const isWinnerMarket = row.marketType === 'winner';
   const titleLabel =
-    row.marketType === 'winner'
+    isWinnerMarket
       ? 'World Cup Winner'
       : `${row.homeTeam.nameEn} VS ${row.awayTeam?.nameEn ?? ''}`;
 
   return (
     <BaseMarketCard
-      className="border-emerald-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(242,250,244,0.98)_100%)]"
       renderHeader={() => (
         <Link
           href={detailHref}
-          className="block rounded-[12px] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+          className="block rounded-[12px] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
         >
           <div className="mb-[18px] flex items-center justify-between gap-3">
             <div className="inline-flex items-center gap-[10px]">
-              <span className="inline-flex h-8 items-center justify-center rounded-full bg-emerald-100 px-3 text-[11px] font-semibold uppercase text-emerald-800">
+              <span className="inline-flex h-8 items-center justify-center rounded-full border border-arc-glow/30 bg-arc/10 px-3 text-[11px] font-semibold uppercase text-arc-glow">
                 {stageLabel}
               </span>
               <span className="font-mono text-xs text-ink-2">#{row.id.toString()}</span>
             </div>
-            <span className="rounded-[12px] bg-emerald-50 px-[10px] py-1 text-[11px] font-semibold uppercase text-emerald-700">
-              {kickoffLabel}
+            <span className="rounded-[12px] bg-arc/15 px-[10px] py-1 text-[11px] font-semibold uppercase text-arc-glow">
+              {isWinnerMarket ? `Closes ${formatUnixTime(row.betDeadline)}` : kickoffLabel}
             </span>
           </div>
 
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <TeamBadge {...row.homeTeam} />
-            <div className="text-center">
-              <div className="font-display text-[28px] leading-none text-emerald-700">VS</div>
-              <div className="mt-1 text-[11px] uppercase text-ink-2">
-                {row.marketType.toUpperCase()}
+          {isWinnerMarket ? (
+            <div className="mb-4 rounded-lg border border-arc-glow/40 bg-arc/10 px-4 py-3">
+              <div className="font-mono text-[11px] uppercase text-arc-glow">
+                Tournament outright
               </div>
+              <h3 className="mt-2 font-display text-[30px] leading-[1.12] text-ink">{titleLabel}</h3>
+              <div className="mt-2 font-mono text-xs text-ink-2">{row.question}</div>
             </div>
-            {row.awayTeam ? <TeamBadge {...row.awayTeam} /> : <div className="w-[88px]" />}
-          </div>
+          ) : (
+            <>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <TeamBadge {...row.homeTeam} />
+                <div className="text-center">
+                  <div className="font-display text-[28px] leading-none text-arc-glow num-glow">VS</div>
+                  <div className="mt-1 text-[11px] uppercase text-ink-2">
+                    {row.marketType.toUpperCase()}
+                  </div>
+                </div>
+                {row.awayTeam ? <TeamBadge {...row.awayTeam} /> : <div className="w-[88px]" />}
+              </div>
 
-          <h3 className="mb-2 font-display text-[26px] leading-[1.18] text-ink">{titleLabel}</h3>
-          <div className="mb-5 font-mono text-xs text-ink-2">{row.question}</div>
+              <h3 className="mb-2 font-display text-[26px] leading-[1.18] text-ink">{titleLabel}</h3>
+              <div className="mb-5 font-mono text-xs text-ink-2">{row.question}</div>
+            </>
+          )}
         </Link>
       )}
-      renderOutcomes={() => (
-        <WorldCupOutcomePanel
-          marketType={row.marketType}
-          outcomes={row.outcomes}
-          isMobile={isMobile}
-          homeTeamLabel={row.homeTeam.nameEn}
-          onSelectOutcome={
-            onBet
-              ? (outcomeIndex) => onBet(row, outcomeIndex)
-              : undefined
-          }
-          bettingOpen={bettingOpen}
-        />
-      )}
+      renderOutcomes={() =>
+        onBet && !isWinnerMarket ? (
+          <OutcomeFlexButtons row={row} bettingOpen={bettingOpen} onBet={onBet} />
+        ) : (
+          <WorldCupOutcomePanel
+            marketType={row.marketType}
+            outcomes={row.outcomes}
+            isMobile={isMobile}
+            homeTeamLabel={row.homeTeam.nameEn}
+            onSelectOutcome={
+              onBet
+                ? (outcomeIndex) => onBet(row, outcomeIndex)
+                : undefined
+            }
+            bettingOpen={bettingOpen}
+          />
+        )
+      }
       renderFooter={() => (
         <div className="mt-[18px] grid grid-cols-1 gap-3 border-t border-dashed border-hair pt-[14px] font-mono text-xs text-ink-2 sm:grid-cols-[repeat(3,minmax(0,1fr))_auto]">
           <div>
@@ -148,7 +205,7 @@ export function WorldCupMarketCard({
           <div className="flex items-end sm:justify-end">
             <Link
               href={detailHref}
-              className="font-sans text-[11px] text-ink-2 transition hover:text-ink"
+              className="font-sans text-[11px] text-ink-2 transition hover:text-arc-glow"
             >
               View details
             </Link>
