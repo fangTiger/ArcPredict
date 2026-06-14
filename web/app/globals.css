@@ -111,3 +111,11 @@ body {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
 }
+
+@keyframes countdown-shift {
+  0%, 100% { color: #4DA8FF; text-shadow: 0 0 24px rgba(77,168,255,0.4); }
+  50%      { color: #FF8A4C; text-shadow: 0 0 24px rgba(255,138,76,0.5); }
+}
+.countdown-urgent {
+  animation: countdown-shift 3s ease-in-out infinite;
+}

@@ -23,14 +23,19 @@ export function ResolveCountdown({ row }: { row: DashboardRow }) {
   if (status === 'active') {
     const countdown = fmtCountdown(row.market.resolveAfter, now);
     const countdownText = countdown === 'Closed' ? '已到达' : countdown;
+    const secondsLeft =
+      row.market.resolveAfter > now ? Number(row.market.resolveAfter - now) : 0;
+    const urgent = secondsLeft < 3600 && secondsLeft > 0;
 
     return (
-      <span className="font-mono text-xs text-heat">距结算窗口 {countdownText}</span>
+      <span className={`font-mono text-xs num-glow ${urgent ? 'countdown-urgent' : 'text-ink'}`}>
+        距结算窗口 {countdownText}
+      </span>
     );
   }
 
   if (status === 'resolving') {
-    return <span className="font-mono text-xs text-heat">结算窗口开启</span>;
+    return <span className="font-mono text-xs text-ink num-glow">结算窗口开启</span>;
   }
 
   if (status === 'awaiting') {
