@@ -500,7 +500,7 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-hair px-4 py-3 text-sm text-ink transition hover:bg-canvas"
+            className="rounded-full border border-hair px-4 py-3 text-sm text-ink transition hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
           >
             Cancel
           </button>
@@ -510,7 +510,7 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
               void handleConfirm();
             }}
             disabled={confirmDisabled}
-            className="rounded-full bg-arc px-4 py-3 text-sm font-semibold text-paper transition hover:bg-arc-deep disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full bg-arc px-4 py-3 text-sm font-semibold text-paper transition hover:bg-arc-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {step === 'idle' && (needsApprove ? 'Approve USDC' : 'Place Bet')}
             {step === 'approving' && 'Waiting for approval'}

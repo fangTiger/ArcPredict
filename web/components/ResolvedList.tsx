@@ -277,7 +277,7 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
                   type="button"
                   onClick={() => claim(r.id)}
                   disabled={isClaiming || isSubmitted}
-                  className="w-full rounded-2xl border border-arc-glow/40 bg-arc/15 px-3 py-2 text-sm font-medium text-arc-glow transition hover:bg-arc/25 hover:shadow-[inset_0_0_24px_rgba(77,168,255,0.35)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-2xl border border-arc-glow/40 bg-arc/15 px-3 py-2 text-sm font-medium text-arc-glow transition hover:bg-arc/25 hover:shadow-[inset_0_0_24px_rgba(77,168,255,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isClaiming
                     ? '领取提交中...'

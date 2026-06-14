@@ -489,7 +489,7 @@ export function BetForm({ row, side, onSuccess, compact = false }: Props) {
           void handleConfirm();
         }}
         disabled={confirmDisabled}
-        className={`w-full rounded-2xl border px-4 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+        className={`w-full rounded-2xl border px-4 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-50 ${
           side
             ? 'border-yes/40 bg-yes/15 text-yes hover:bg-yes/25 hover:shadow-[inset_0_0_24px_rgba(52,211,153,0.25),0_0_40px_-12px_rgba(52,211,153,0.5)] focus-visible:ring-yes/60'
             : 'border-no/40 bg-no/15 text-no hover:bg-no/25 hover:shadow-[inset_0_0_24px_rgba(248,113,113,0.25),0_0_40px_-12px_rgba(248,113,113,0.5)] focus-visible:ring-no/60'

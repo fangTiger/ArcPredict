@@ -199,7 +199,7 @@ export function CryptoMarketCard({
                   onClick={() => onBet(row.id, true)}
                   disabled={!bettingOpen}
                   style={{ flex: yesFlex }}
-                  className="rounded-2xl border border-yes/40 bg-yes/15 px-3 py-2.5 text-sm font-semibold text-yes transition hover:bg-yes/25 hover:shadow-[inset_0_0_24px_rgba(52,211,153,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yes/60 disabled:cursor-not-allowed disabled:opacity-45"
+                  className="rounded-2xl border border-yes/40 bg-yes/15 px-3 py-2.5 text-sm font-semibold text-yes transition hover:bg-yes/25 hover:shadow-[inset_0_0_24px_rgba(52,211,153,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   YES · {pct.toFixed(0)}%
                 </button>
@@ -208,7 +208,7 @@ export function CryptoMarketCard({
                   onClick={() => onBet(row.id, false)}
                   disabled={!bettingOpen}
                   style={{ flex: noFlex }}
-                  className="rounded-2xl border border-no/40 bg-no/15 px-3 py-2.5 text-sm font-semibold text-no transition hover:bg-no/25 hover:shadow-[inset_0_0_24px_rgba(248,113,113,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-no/60 disabled:cursor-not-allowed disabled:opacity-45"
+                  className="rounded-2xl border border-no/40 bg-no/15 px-3 py-2.5 text-sm font-semibold text-no transition hover:bg-no/25 hover:shadow-[inset_0_0_24px_rgba(248,113,113,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   NO · {(100 - pct).toFixed(0)}%
                 </button>

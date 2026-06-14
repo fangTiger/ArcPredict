@@ -54,7 +54,7 @@ function OutcomeTile({
         type="button"
         onClick={onSelect}
         disabled={!bettingOpen}
-        className="rounded-2xl border border-hair px-3 py-3 text-left transition hover:border-arc-glow/30 hover:bg-arc/10 disabled:cursor-not-allowed disabled:opacity-55"
+        className="rounded-2xl border border-hair px-3 py-3 text-left transition hover:border-arc-glow/30 hover:bg-arc/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-55"
       >
         {content}
       </button>
@@ -119,7 +119,7 @@ export function WorldCupOutcomePanel({
           <button
             type="button"
             onClick={() => setExpanded((current) => !current)}
-            className="mt-3 inline-flex rounded-full border border-hair px-4 py-2 text-sm font-medium text-ink transition hover:border-arc-glow/30 hover:text-arc-glow"
+            className="mt-3 inline-flex rounded-full border border-hair px-4 py-2 text-sm font-medium text-ink transition hover:border-arc-glow/30 hover:text-arc-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
           >
             {expandLabel}
           </button>
@@ -152,7 +152,7 @@ export function WorldCupOutcomePanel({
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="inline-flex rounded-full border border-hair px-4 py-2 text-sm font-medium text-ink transition hover:border-arc-glow/30 hover:text-arc-glow"
+            className="inline-flex rounded-full border border-hair px-4 py-2 text-sm font-medium text-ink transition hover:border-arc-glow/30 hover:text-arc-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
           >
             Expand
           </button>
@@ -185,7 +185,7 @@ export function WorldCupOutcomePanel({
         <button
           type="button"
           onClick={() => setExpanded(false)}
-          className="mt-3 inline-flex rounded-full border border-hair px-4 py-2 text-sm font-medium text-ink transition hover:border-arc-glow/30 hover:text-arc-glow"
+          className="mt-3 inline-flex rounded-full border border-hair px-4 py-2 text-sm font-medium text-ink transition hover:border-arc-glow/30 hover:text-arc-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
         >
           Collapse
         </button>

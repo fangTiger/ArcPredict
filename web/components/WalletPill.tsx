@@ -11,7 +11,7 @@ import { truncateAddr } from '@/lib/format';
 const erc20Abi = ERC20Abi as Abi;
 
 const pillBase =
-  'inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-medium sm:px-4 sm:text-sm whitespace-nowrap transition duration-200';
+  'inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-medium sm:px-4 sm:text-sm whitespace-nowrap transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0';
 
 const pillIdle = `${pillBase} glass glass-hover text-ink hover:text-ink`;
 const pillConnected = `${pillBase} glass glass-hover text-ink font-mono`;

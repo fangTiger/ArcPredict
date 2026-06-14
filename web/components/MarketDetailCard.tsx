@@ -153,7 +153,7 @@ export function MarketDetailCard(
               <button
                 type="button"
                 onClick={() => onBet(row.id, true)}
-                className="flex items-center justify-between rounded-2xl border border-yes/40 bg-yes/10 px-4 py-3 text-sm font-medium text-yes transition hover:bg-yes/20"
+                className="flex items-center justify-between rounded-2xl border border-yes/40 bg-yes/10 px-4 py-3 text-sm font-medium text-yes transition hover:bg-yes/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
               >
                 <span>Bet YES</span>
                 <span className="font-mono text-xs opacity-80 num-glow">{yesPct.toFixed(0)}%</span>
@@ -161,7 +161,7 @@ export function MarketDetailCard(
               <button
                 type="button"
                 onClick={() => onBet(row.id, false)}
-                className="flex items-center justify-between rounded-2xl border border-no/40 bg-no/10 px-4 py-3 text-sm font-medium text-no transition hover:bg-no/20"
+                className="flex items-center justify-between rounded-2xl border border-no/40 bg-no/10 px-4 py-3 text-sm font-medium text-no transition hover:bg-no/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
               >
                 <span>Bet NO</span>
                 <span className="font-mono text-xs opacity-80 num-glow">{noPct.toFixed(0)}%</span>

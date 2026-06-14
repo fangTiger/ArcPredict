@@ -21,7 +21,7 @@ export function NetworkBanner() {
         <button
           type="button"
           onClick={() => switchChain({ chainId: arcTestnet.id })}
-          className="inline-flex items-center font-medium underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-70"
+          className="inline-flex items-center font-medium underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-70"
           disabled={isPending}
         >
           {isPending ? 'Switching...' : 'Switch'}

@@ -65,7 +65,7 @@ export function BetModal({ row, side, onClose }: BetModalProps) {
             type="button"
             onClick={onClose}
             aria-label="关闭"
-            className="rounded-full p-1 text-ink-2 transition hover:bg-bg-2/60 hover:text-ink"
+            className="rounded-full p-1 text-ink-2 transition hover:bg-bg-2/60 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
           >
             ✕
           </button>

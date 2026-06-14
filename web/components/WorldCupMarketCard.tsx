@@ -81,7 +81,7 @@ function OutcomeFlexButtons({
               onClick={() => onBet(row, outcomeIndex)}
               disabled={!bettingOpen}
               style={{ flex: Math.max(15, pct) }}
-              className="rounded-2xl border border-arc-glow/30 bg-arc/10 px-3 py-2.5 text-sm font-semibold text-arc-glow transition hover:bg-arc/20 hover:shadow-[inset_0_0_24px_rgba(77,168,255,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 disabled:cursor-not-allowed disabled:opacity-55"
+              className="rounded-2xl border border-arc-glow/30 bg-arc/10 px-3 py-2.5 text-sm font-semibold text-arc-glow transition hover:bg-arc/20 hover:shadow-[inset_0_0_24px_rgba(77,168,255,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-55"
             >
               {outcome.label} · {pct}%
             </button>

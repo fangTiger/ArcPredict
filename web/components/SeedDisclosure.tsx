@@ -47,7 +47,7 @@ export function SeedDisclosure({ seedContribution, loading }: Props) {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-ink-2 transition hover:text-ink"
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-ink-2 transition hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
       >
         <span>{title}</span>
         <svg

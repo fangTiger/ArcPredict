@@ -63,6 +63,9 @@ type SeedBetLog = {
   };
 };
 
+const focusRingClassName =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0';
+
 function PositionSummary({ row }: { row: MarketRow }) {
   return (
     <div className="grid gap-3 text-sm">
@@ -409,8 +412,8 @@ export default function MarketDetailPage() {
                         onClick={() => setSelectedSide(true)}
                         className={
                           selectedSide
-                            ? 'rounded-xl border border-yes/40 bg-yes/15 py-2 text-yes'
-                            : 'rounded-xl border border-hair py-2 text-ink-2 hover:text-ink'
+                            ? `rounded-xl border border-yes/40 bg-yes/15 py-2 text-yes ${focusRingClassName}`
+                            : `rounded-xl border border-hair py-2 text-ink-2 hover:text-ink ${focusRingClassName}`
                         }
                       >
                         YES
@@ -420,8 +423,8 @@ export default function MarketDetailPage() {
                         onClick={() => setSelectedSide(false)}
                         className={
                           !selectedSide
-                            ? 'rounded-xl border border-no/40 bg-no/15 py-2 text-no'
-                            : 'rounded-xl border border-hair py-2 text-ink-2 hover:text-ink'
+                            ? `rounded-xl border border-no/40 bg-no/15 py-2 text-no ${focusRingClassName}`
+                            : `rounded-xl border border-hair py-2 text-ink-2 hover:text-ink ${focusRingClassName}`
                         }
                       >
                         NO
@@ -469,8 +472,8 @@ export default function MarketDetailPage() {
                 onClick={() => setSelectedSide(true)}
                 className={
                   selectedSide
-                    ? 'rounded-xl border border-yes/40 bg-yes/15 py-2 text-yes'
-                    : 'rounded-xl border border-hair py-2 text-ink-2 hover:text-ink'
+                    ? `rounded-xl border border-yes/40 bg-yes/15 py-2 text-yes ${focusRingClassName}`
+                    : `rounded-xl border border-hair py-2 text-ink-2 hover:text-ink ${focusRingClassName}`
                 }
               >
                 YES
@@ -480,8 +483,8 @@ export default function MarketDetailPage() {
                 onClick={() => setSelectedSide(false)}
                 className={
                   !selectedSide
-                    ? 'rounded-xl border border-no/40 bg-no/15 py-2 text-no'
-                    : 'rounded-xl border border-hair py-2 text-ink-2 hover:text-ink'
+                    ? `rounded-xl border border-no/40 bg-no/15 py-2 text-no ${focusRingClassName}`
+                    : `rounded-xl border border-hair py-2 text-ink-2 hover:text-ink ${focusRingClassName}`
                 }
               >
                 NO
@@ -490,7 +493,7 @@ export default function MarketDetailPage() {
             <button
               type="button"
               onClick={() => setShowMobileBet(true)}
-              className="w-full rounded-2xl border border-arc-glow/40 bg-arc/15 px-4 py-3 text-base font-semibold text-arc-glow transition hover:bg-arc/25"
+              className={`w-full rounded-2xl border border-arc-glow/40 bg-arc/15 px-4 py-3 text-base font-semibold text-arc-glow transition hover:bg-arc/25 ${focusRingClassName}`}
             >
               立即下注 · {selectedSide ? 'YES' : 'NO'}
             </button>

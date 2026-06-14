@@ -94,7 +94,7 @@ export default function ConnectPage() {
           <button
             type="button"
             onClick={() => setShowRawParams((v) => !v)}
-            className="mt-6 text-sm text-ink-3 transition hover:text-ink-2"
+            className="mt-6 text-sm text-ink-3 transition hover:text-ink-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
           >
             展开网络参数 · 手动配置 {showRawParams ? '↑' : '↓'}
           </button>

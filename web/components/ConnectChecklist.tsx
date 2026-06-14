@@ -37,7 +37,7 @@ export function ConnectChecklist({ onAddNetwork, isAddPending, faucetHref = '/fa
             type="button"
             onClick={onAddNetwork}
             disabled={isAddPending || !step1Done}
-            className="rounded-xl border border-arc-glow/40 bg-arc/15 px-4 py-2 text-sm font-semibold text-arc-glow transition hover:bg-arc/25 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-xl border border-arc-glow/40 bg-arc/15 px-4 py-2 text-sm font-semibold text-arc-glow transition hover:bg-arc/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isAddPending ? '处理中…' : '一键添加'}
           </button>
@@ -51,7 +51,7 @@ export function ConnectChecklist({ onAddNetwork, isAddPending, faucetHref = '/fa
         action={
           <a
             href={faucetHref}
-            className="rounded-xl border border-hair px-4 py-2 text-sm text-ink-2 transition hover:border-arc-glow/30 hover:text-ink"
+            className="rounded-xl border border-hair px-4 py-2 text-sm text-ink-2 transition hover:border-arc-glow/30 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
           >
             前往领水
           </a>
