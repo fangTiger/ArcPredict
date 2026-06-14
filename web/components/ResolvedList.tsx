@@ -208,18 +208,18 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
   };
 
   return (
-    <section className="mt-8 rounded-lg border border-hair bg-paper">
-      <div className="border-b border-hair px-5 py-4">
+    <section className="glass rounded-3xl p-5 sm:p-6">
+      <div className="border-b border-hair pb-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-ink">已结算市场</h2>
-            <p className="mt-1 text-xs text-ink-2">已结算结果与待领取金额会在这里汇总显示。</p>
+            <h2 className="font-display text-xl text-ink">已结算市场</h2>
+            <p className="mt-1 text-sm text-ink-2">已结算结果与待领取金额会在这里汇总显示。</p>
           </div>
-          <span className="font-mono text-sm text-ink-2">{resolved.length}</span>
+          <span className="font-mono text-sm text-ink-2 num-glow">{resolved.length}</span>
         </div>
       </div>
 
-      <div className="grid gap-4 px-5 py-4 md:grid-cols-2">
+      <div>
         {resolved.map((r) => {
           const outcome = OUTCOMES[r.market.outcome];
           const rowStatus = statusById[r.id.toString()];
@@ -227,29 +227,35 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
           const isClaimableByOutcome = !r.claimed_ && userIsWinner(r) && r.pendingPayout > 0n;
           const canClaim = isClaimableByOutcome && !submittedIds.has(r.id.toString());
           const isClaiming = pendingId === r.id && isPending;
-          const outcomeTone =
+          const outcomeBadgeClassName =
             outcome === 'Yes'
-              ? 'text-yes'
+              ? 'bg-yes/15 text-yes border border-yes/30'
               : outcome === 'No'
-                ? 'text-no'
-                : 'text-ink-2';
+                ? 'bg-no/15 text-no border border-no/30'
+                : 'bg-ink-3/15 text-ink-3 border border-ink-3/30';
 
           return (
-            <article key={r.id.toString()} className="rounded-lg border border-hair bg-canvas p-4">
+            <article key={r.id.toString()} className="border-b border-hair py-4 last:border-b-0">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <span className="font-mono text-xs text-ink-2">#{r.id.toString()}</span>
-                <span className={`text-xs font-medium ${outcomeTone}`}>{outcome}</span>
+                <span className={`rounded-full px-2 py-1 text-xs font-medium ${outcomeBadgeClassName}`}>
+                  {outcome}
+                </span>
               </div>
 
               <div className="mb-4 text-sm leading-6 text-ink">{r.market.question}</div>
 
               <div className="mb-4 space-y-1 text-xs text-ink-2">
                 <div className="flex items-center justify-between gap-3">
-                  <span>待领取</span>
-                  <span className="font-mono text-ink">{fmtUsdc(r.pendingPayout)} USDC</span>
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-ink-3">
+                    待领取
+                  </span>
+                  <span className="font-mono text-ink num-glow">{fmtUsdc(r.pendingPayout)} USDC</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span>领取状态</span>
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-ink-3">
+                    领取状态
+                  </span>
                   <span className="text-ink">
                     {rowStatus
                       ? rowStatus
@@ -271,7 +277,7 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
                   type="button"
                   onClick={() => claim(r.id)}
                   disabled={isClaiming || isSubmitted}
-                  className="w-full rounded-lg border border-arc/20 bg-arc/10 px-3 py-2 text-sm font-medium text-arc-deep transition hover:bg-arc/15 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-2xl border border-arc-glow/40 bg-arc/15 px-3 py-2 text-sm font-medium text-arc-glow transition hover:bg-arc/25 hover:shadow-[inset_0_0_24px_rgba(77,168,255,0.35)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isClaiming
                     ? '领取提交中...'
@@ -280,7 +286,7 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
                       : `Claim ${fmtUsdc(r.pendingPayout)} USDC`}
                 </button>
               ) : (
-                <div className="rounded-lg border border-hair bg-paper px-3 py-2 text-xs text-ink-2">
+                <div className="rounded-2xl border border-hair px-3 py-2 text-xs text-ink-2">
                   {rowStatus
                     ? rowStatus
                     : r.pendingPayout > 0n
