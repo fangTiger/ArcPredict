@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { fmtUsdc } from '@/lib/format';
 
 export type DisclosureBetEvent = {
@@ -33,16 +34,41 @@ export function sumSeedContribution(
 }
 
 export function SeedDisclosure({ seedContribution, loading }: Props) {
+  const [open, setOpen] = useState(false);
+
   if (loading || seedContribution === 0n) {
     return null;
   }
 
+  const title = `~${fmtUsdc(seedContribution)} USDC from project seed liquidity`;
+
   return (
-    <div className="inline-flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
-      <span className="whitespace-nowrap rounded-full bg-slate-50 px-2 py-0.5">
-        <span className="font-semibold text-blue-600">~{fmtUsdc(seedContribution)} USDC</span>
-      </span>
-      <span className="whitespace-nowrap">from project seed liquidity</span>
+    <div className="glass rounded-2xl">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-ink-2 transition hover:text-ink"
+      >
+        <span>{title}</span>
+        <svg
+          className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open ? (
+        <div className="space-y-2 border-t border-hair px-4 py-3 text-sm text-ink-2">
+          <div>
+            Seed liquidity contributed{' '}
+            <span className="font-mono text-ink num-glow">~{fmtUsdc(seedContribution)} USDC</span>{' '}
+            to bootstrap this market.
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
