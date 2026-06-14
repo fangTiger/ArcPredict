@@ -4,14 +4,6 @@ import type { WorldCupMarketOutcome, WorldCupMarketRow } from '@/lib/worldcup-ma
 
 const CHART_WIDTH = 120;
 const CHART_HEIGHT = 36;
-const OUTCOME_COLORS = [
-  '#1652F0',
-  '#0F9D58',
-  '#E37400',
-  '#A142F4',
-  '#C5221F',
-  '#00897B',
-] as const;
 
 function clampProbability(value: number): number {
   return Math.max(0, Math.min(100, value));
@@ -68,7 +60,6 @@ export function ImpliedProbabilityChart({ row }: { row: WorldCupMarketRow }) {
 
       <div className="space-y-3">
         {rankedOutcomes.map((outcome, index) => {
-          const accent = OUTCOME_COLORS[index % OUTCOME_COLORS.length];
           const polyline = buildCurvePoints(outcome);
 
           return (
@@ -88,27 +79,34 @@ export function ImpliedProbabilityChart({ row }: { row: WorldCupMarketRow }) {
                   aria-label={`${outcome.label} implied probability curve`}
                   role="img"
                 >
+                  <defs>
+                    <linearGradient id="ipc-stroke" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#1652F0" />
+                      <stop offset="100%" stopColor="#4DA8FF" />
+                    </linearGradient>
+                  </defs>
                   <line
                     x1="0"
                     y1={CHART_HEIGHT}
                     x2={CHART_WIDTH}
                     y2={CHART_HEIGHT}
-                    stroke="#D5D7DE"
+                    stroke="rgba(155,163,199,0.12)"
                     strokeDasharray="3 3"
                   />
                   <polyline
                     fill="none"
-                    stroke={accent}
+                    stroke="url(#ipc-stroke)"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth="3"
                     points={polyline}
+                    style={{ filter: 'drop-shadow(0 0 6px rgba(77,168,255,0.6))' }}
                   />
                 </svg>
               </div>
 
               <div className="text-left md:text-right">
-                <div className="font-mono text-sm text-ink">
+                <div className="font-mono text-sm text-ink num-glow">
                   {formatProbability(outcome.impliedProbability)}
                 </div>
                 <div className="text-xs text-ink-2">
