@@ -13,17 +13,24 @@ export function BaseMarketCard({
 }) {
   return (
     <article
-      className={`group relative overflow-hidden rounded-[16px] border border-hair bg-paper p-6 shadow-[0_1px_0_rgba(10,11,15,0.04)] transition duration-200 hover:-translate-y-0.5 hover:border-arc/25 hover:shadow-[0_12px_32px_rgba(10,11,15,0.08)] ${className}`.trim()}
+      className={`group relative overflow-hidden rounded-3xl glass glass-hover p-6 hover:-translate-y-0.5 ${className}`.trim()}
     >
+      {/* 右上装饰渐变同心圆（代替旧蓝色描边） */}
       <svg
-        className="pointer-events-none absolute right-0 top-0 h-[120px] w-[120px] opacity-60"
+        className="pointer-events-none absolute right-0 top-0 h-[120px] w-[120px] opacity-70"
         viewBox="0 0 120 120"
         fill="none"
         aria-hidden="true"
       >
-        <circle cx="120" cy="0" r="110" stroke="#1652F0" strokeOpacity="0.06" strokeWidth="1" />
-        <circle cx="120" cy="0" r="80" stroke="#1652F0" strokeOpacity="0.05" strokeWidth="1" />
-        <circle cx="120" cy="0" r="50" stroke="#1652F0" strokeOpacity="0.04" strokeWidth="1" />
+        <defs>
+          <linearGradient id="bmc-gradient" x1="1" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#4DA8FF" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="#6D5BFF" stopOpacity="0.05" />
+          </linearGradient>
+        </defs>
+        <circle cx="120" cy="0" r="110" stroke="url(#bmc-gradient)" strokeWidth="1" />
+        <circle cx="120" cy="0" r="80" stroke="url(#bmc-gradient)" strokeWidth="1" />
+        <circle cx="120" cy="0" r="50" stroke="url(#bmc-gradient)" strokeWidth="1" />
       </svg>
 
       <div className="relative z-10">
