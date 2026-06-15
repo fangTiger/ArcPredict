@@ -77,7 +77,7 @@ drift chip 配色复用 Synthra 调色板：
 | 输出 schema 校验失败 | 不写缓存；回退 idle，console.warn |
 | 日预算上限触达 | 按钮置灰；hover tooltip `Daily AI budget reached — try again tomorrow` |
 | 用户网络断开 | 客户端 catch；提示重试 |
-| 价格在缓存窗口内漂移 > 5% | 后端主动失效缓存，下次访问按 idle 处理 |
+| 价格在缓存窗口内漂移 > 5% | 因 inputHash 含价格快照，下次访问自然命中 miss，按 idle 处理 |
 
 ### 1.4 共享缓存红利
 
@@ -190,13 +190,24 @@ web/
 {
   summary: string,                 // ≤ 280 字符
   factors: string[],               // 3–5 项，每项 ≤ 120 字符
-  fair_range: [number, number],    // [low, high]，均 ∈ [0,1]，low ≤ high
+
+  // 二元市场用 fair_range；多结果市场用 outcome_fair_probabilities；
+  // 二者必填其一，根据 market.type 决定（schema 用 discriminated union）
+  fair_range?: [number, number],   // crypto-binary 专用：[low, high] ∈ [0,1]，low ≤ high
+  outcome_fair_probabilities?: {   // event-multi 专用：每个结果项的概率区间
+    [outcome: string]: [number, number]  // 各区间 low/high ∈ [0,1]；区间中点之和应 ≈ 1
+  },
+
   confidence: 'low' | 'med' | 'high',
   reasoning: string,               // ≤ 800 字符
   sources: { name: string, ref: string, ts: number }[],
   caveats: string[]                // ≤ 3 项，AI 自评的不确定性条款
 }
 ```
+
+对应的 `<AILensGauge>` 也分两种渲染：
+- 二元：水平条 + 双层 marker / 区间带（如 §1.2 所述）
+- 多结果：垂直堆叠条形图，每个结果项一行，市场隐含 vs AI 区间并列
 
 输出由 `web/lib/lens/schema.ts` Zod 强校验；任何字段缺失 / 越界 / 含禁止词（见 §3.3）→ 整次结果作废。
 
@@ -206,8 +217,8 @@ web/
 | --- | --- |
 | Cache Key | `lens:${marketId}:${inputHash}` |
 | inputHash | sha1(JSON.stringify(market) + JSON.stringify(context))，截 8 字符 |
-| TTL（crypto） | `LENS_CRYPTO_TTL_HOURS=6` 兜底；价格漂移 > 5% 时主动失效 |
-| TTL（event） | `LENS_EVENT_TTL_HOURS=24` 兜底；事实表 mtime 变更时主动失效 |
+| TTL（crypto） | `LENS_CRYPTO_TTL_HOURS=6` 兜底；价格快照纳入 `inputHash`，价格漂移 > 5% 时下次读取自动 miss（lazy 失效，无后台扫描） |
+| TTL（event） | `LENS_EVENT_TTL_HOURS=24` 兜底；事实表文件 mtime / 哈希纳入 `inputHash`，admin 改了表 → 下次读自动 miss |
 | 存储后端 v1 | 进程内 Map + 进程退出前 dump JSON 文件 `cache/lens.json`（够 demo） |
 | 存储后端 v2（不在 v1） | Vercel KV / Redis；通过 `cache.ts` 抽象层切换 |
 | Concurrent dedup | 同 key 的 in-flight 请求合并（Promise 复用） |
