@@ -1,7 +1,8 @@
-import Link from 'next/link';
-import { LogoMark } from './LogoMark';
+import type { MarketCategory } from '@/lib/market-kind';
+import { HeroParticleCanvas } from './HeroParticleCanvas';
 
 type Props = {
+  category: MarketCategory;
   stats?: {
     activeMarkets: number;
     totalVolumeUsdc: string;
@@ -9,57 +10,61 @@ type Props = {
   };
 };
 
-export function HomeHero({ stats }: Props) {
+export function HomeHero({ category, stats }: Props) {
+  const activeMarkets = stats?.activeMarkets.toString() ?? '--';
+  const pendingResolution = stats?.pendingResolution.toString() ?? '--';
+  const totalVolume = stats?.totalVolumeUsdc ?? '--';
+  const isWorldCup = category === 'worldcup';
+  const copy = isWorldCup
+    ? {
+        eyebrow: 'World Cup board',
+        title: 'Pick the next winner.',
+        description: '1X2 / spreads / winner markets · USDC-settled on Arc.',
+      }
+    : {
+        eyebrow: 'Crypto board',
+        title: 'Predict the next tick.',
+        description: 'Arc USDC pools · Pyth-backed deadlines · open positions.',
+      };
+
   return (
-    <section className="relative overflow-hidden px-4 pt-16 pb-12 sm:px-6 sm:pt-24 lg:px-8">
-      <div className="pointer-events-none absolute -right-20 -top-10 opacity-15" aria-hidden="true">
-        <LogoMark size={480} animate={false} style={{ filter: 'blur(2px)' }} />
-      </div>
+    <section
+      className={`hero-arc-band ${isWorldCup ? 'hero-arc-worldcup' : 'hero-arc-crypto'} relative mb-5 overflow-hidden rounded-xl border border-hair`}
+    >
+      <HeroParticleCanvas variant={isWorldCup ? 'worldcup' : 'crypto'} />
+      <div className="hero-gradient-mask" aria-hidden="true" />
 
-      <div className="relative mx-auto max-w-7xl">
-        <h1 className="max-w-3xl font-display text-[44px] leading-[1.05] text-ink sm:text-[64px] lg:text-[84px]">
-          <span className="bg-aurora-text bg-clip-text text-transparent">链上预测</span>
-          <br />
-          <span className="text-ink">看见概率</span>
-        </h1>
-        <p className="mt-6 max-w-xl text-base text-ink-2 sm:text-lg">
-          在 Arc 上用 USDC 参与加密价格与世界杯双轨预测市场。完全链上、无中介、零信任。
-        </p>
-
-        <div className="mt-8 flex flex-wrap items-center gap-3">
-          <Link
-            href="#markets"
-            className="inline-flex items-center gap-2 rounded-2xl border border-arc-glow/40 bg-arc/15 px-5 py-3 text-base font-semibold text-arc-glow transition hover:bg-arc/25 hover:shadow-[inset_0_0_24px_rgba(77,168,255,0.35),0_0_40px_-12px_rgba(77,168,255,0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60"
-          >
-            立即参与 <span aria-hidden>→</span>
-          </Link>
-          <Link
-            href="/connect"
-            className="inline-flex items-center gap-2 rounded-2xl border border-hair px-5 py-3 text-base text-ink-2 transition hover:border-arc-glow/30 hover:text-ink"
-          >
-            了解 Arc 网络
-          </Link>
+      <div className="hero-content relative grid gap-5 px-5 py-6 sm:px-7 sm:py-7 lg:grid-cols-12 lg:items-end">
+        <div className="min-w-0 lg:col-span-7">
+          <div className="flex items-center gap-2.5">
+            <span className="live-dot" aria-hidden="true" />
+            <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-2">
+              Live
+            </span>
+            <span className="text-ink-3">·</span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-arc-glow">
+              {copy.eyebrow}
+            </span>
+          </div>
+          <h1 className="hero-title mt-3 text-ink">{copy.title}</h1>
+          <p className="mt-2 max-w-xl text-sm leading-5 text-ink-2">{copy.description}</p>
         </div>
 
-        {stats ? (
-          <div className="mt-12 grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-3">
-            <Stat label="24h 活跃合约" value={stats.activeMarkets.toString()} />
-            <Stat label="总投注金额" value={stats.totalVolumeUsdc} unit="USDC" />
-            <Stat label="待结算" value={stats.pendingResolution.toString()} />
-          </div>
-        ) : null}
+        <div className="grid grid-cols-3 gap-2.5 lg:col-span-5">
+          <Stat label="Open" value={activeMarkets} />
+          <Stat label="Volume" value={totalVolume} />
+          <Stat label="Pending" value={pendingResolution} />
+        </div>
       </div>
     </section>
   );
 }
 
-function Stat({ label, value, unit }: { label: string; value: string; unit?: string }) {
+function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-hair px-4 py-3">
-      <div className="text-xs uppercase tracking-wider text-ink-3">{label}</div>
-      <div className="mt-1 font-mono text-2xl text-ink num-glow">
-        {value}{unit ? <span className="ml-1 text-sm text-ink-2">{unit}</span> : null}
-      </div>
+    <div className="hero-stat rounded-lg border border-hair bg-bg-1/55 px-3 py-2.5 backdrop-blur">
+      <div className="font-mono text-[9px] uppercase tracking-[0.22em] text-ink-3">{label}</div>
+      <div className="mt-1 font-mono text-lg leading-none text-ink num-glow">{value}</div>
     </div>
   );
 }

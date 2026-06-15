@@ -132,6 +132,10 @@ const WORLDCUP_SKELETON_MARKETS = worldCupMarketsModule.WORLDCUP_SKELETON_MARKET
 const resolveWorldCupMarkets = worldCupMarketsModule.resolveWorldCupMarkets as (
   rows: Array<Record<string, unknown>>,
 ) => LoadedWorldCupRow[];
+const getUpcomingWorldCupMarkets = worldCupMarketsModule.getUpcomingWorldCupMarkets as (
+  rows: Array<Record<string, unknown>>,
+  now: bigint,
+) => Array<Record<string, unknown>>;
 
 const MATCH_LENGTH_SECONDS = 150 * 60;
 
@@ -300,6 +304,45 @@ describe('worldcup components', () => {
     expect(onBet).toHaveBeenCalledWith(row, 0);
   });
 
+  test('World Cup 1X2 action buttons keep equal width with fixed English labels', async () => {
+    setMatchMedia(false);
+    const row = WORLDCUP_SKELETON_MARKETS.find((market) => market.marketType === '1x2');
+    const onBet = vi.fn();
+
+    expect(row).toBeTruthy();
+
+    const stressedRow = {
+      ...row!,
+      outcomes: (row!.outcomes as Array<Record<string, unknown>>).map((outcome, outcomeIndex) => ({
+        ...outcome,
+        label: ['Argentina match win', 'Draw', 'Mexico match win'][outcomeIndex],
+        impliedProbability: [100, 0, 0][outcomeIndex],
+      })),
+    };
+
+    await act(async () => {
+      root.render(React.createElement(WorldCupMarketCard, { row: stressedRow, onBet }));
+      await Promise.resolve();
+    });
+
+    const outcomeButtons = Array.from(host.querySelectorAll('button'));
+    expect(outcomeButtons).toHaveLength(3);
+    expect(outcomeButtons[0].parentElement?.className).toContain('grid-cols-3');
+
+    const buttonText = outcomeButtons.map((node) => node.textContent?.replace(/\s+/gu, ' ').trim() ?? '');
+    expect(buttonText[0]).toContain('Home Win');
+    expect(buttonText[0]).toContain('100%');
+    expect(buttonText[1]).toContain('Draw');
+    expect(buttonText[1]).toContain('0%');
+    expect(buttonText[2]).toContain('Away Win');
+    expect(buttonText[2]).toContain('0%');
+    expect(host.textContent).not.toContain('Argentina match win');
+    expect(host.textContent).not.toContain('Mexico match win');
+    for (const button of outcomeButtons) {
+      expect(button.getAttribute('style') ?? '').not.toContain('flex');
+    }
+  });
+
   test('冠军盘默认只显示前三，移动端展开后最多显示前八并保留滚动容器', async () => {
     setMatchMedia(true);
     const row = WORLDCUP_SKELETON_MARKETS.find((market) => market.marketType === 'winner');
@@ -346,6 +389,53 @@ describe('worldcup components', () => {
     });
 
     expect(host.textContent).toContain('Show all 32 teams');
+  });
+
+  test('冠军盘卡片不应复用双方比赛 VS 布局', async () => {
+    setMatchMedia(false);
+    const row = WORLDCUP_SKELETON_MARKETS.find((market) => market.marketType === 'winner');
+
+    expect(row).toBeTruthy();
+
+    await act(async () => {
+      root.render(React.createElement(WorldCupMarketCard, { row: row! }));
+      await Promise.resolve();
+    });
+
+    expect(host.textContent).toContain('World Cup Winner');
+    expect(host.textContent).not.toContain('VS');
+    expect(host.textContent).not.toContain('World CupVSWINNER');
+  });
+
+  test('首页世界杯列表只展示未截止市场，并按截止时间从近到远排序', () => {
+    const rows = [
+      {
+        id: 97n,
+        category: 'worldcup',
+        settledOutcome: 255,
+        betDeadline: 2_000n,
+      },
+      {
+        id: 96n,
+        category: 'worldcup',
+        settledOutcome: 255,
+        betDeadline: 900n,
+      },
+      {
+        id: 0n,
+        category: 'worldcup',
+        settledOutcome: 255,
+        betDeadline: 2_000n,
+      },
+      {
+        id: 3n,
+        category: 'worldcup',
+        settledOutcome: 0,
+        betDeadline: 2_500n,
+      },
+    ];
+
+    expect(getUpcomingWorldCupMarkets(rows, 1_000n).map((row) => row.id)).toEqual([0n, 97n]);
   });
 
   test('World Cup 过滤栏在赛事品类下显示阶段按钮，关闭 tabs 时只保留 Crypto 过滤', async () => {
@@ -445,8 +535,8 @@ describe('worldcup components', () => {
   });
 
   test('ASCII bytes32 eventId 会映射到 seed match，而不是按 skeleton 下标套数据', () => {
-    const kickoffTime = '2022-11-26T19:00:00Z';
-    const resolveAfter = secondsForIso(kickoffTime) + BigInt(MATCH_LENGTH_SECONDS);
+    const shiftedKickoffTime = '2026-06-19T19:00:00Z';
+    const resolveAfter = secondsForIso(shiftedKickoffTime) + BigInt(MATCH_LENGTH_SECONDS);
     const [row] = resolveWorldCupMarkets([
       makeEventRow({
         eventId: toAsciiBytes32('worldcup:group-c-4:1x2'),
@@ -461,7 +551,7 @@ describe('worldcup components', () => {
     expect(row.marketKind).toBe('event');
     expect(row.matchId).toBe('group-c-4');
     expect(row.stageLabel).toBe('Group C');
-    expect(row.kickoffTime).toBe(kickoffTime);
+    expect(row.kickoffTime).toBe(shiftedKickoffTime);
     expect(row.homeTeam.shortCode).toBe('ARG');
     expect(row.awayTeam?.shortCode).toBe('MEX');
     expect(row.outcomes).toHaveLength(3);
@@ -490,7 +580,11 @@ describe('worldcup components', () => {
     expect(row.awayTeam?.shortCode).not.toBe('MEX');
     expect(row.homeTeam.teamId).toBeUndefined();
     expect(row.awayTeam?.teamId).toBeUndefined();
-    expect(row.kickoffTime).toBe(new Date(Number((resolveAfter - BigInt(MATCH_LENGTH_SECONDS)) * 1000n)).toISOString());
+    expect(row.kickoffTime).toBe(
+      new Date(Number((resolveAfter - BigInt(MATCH_LENGTH_SECONDS)) * 1000n))
+        .toISOString()
+        .replace('.000Z', 'Z'),
+    );
   });
 
   test('readable knockout eventId 命中 placeholder seed 时，会优先使用 question 中的真实球队', () => {

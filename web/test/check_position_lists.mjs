@@ -43,36 +43,44 @@ const assertExcludesAll = (label, source, tokens) => {
 
 const positionList = readRequiredText('components/PositionList.tsx');
 const resolvedList = readRequiredText('components/ResolvedList.tsx');
+const positionItems = readRequiredText('lib/position-items.ts');
 
 assertUseClient('PositionList.tsx', positionList);
 assertUseClient('ResolvedList.tsx', resolvedList);
 
 assertIncludesAll('PositionList.tsx', positionList, [
-  'DashboardRow',
+  'PositionListRow',
   'MarketKind',
   'kindFilter',
+  'filterPositionRows',
+  'toPositionItems',
+  'fmtUsdc',
+  'No active positions in this view.',
+  'Position Details',
+]);
+
+assertIncludesAll('position-items.ts', positionItems, [
+  'DashboardRow',
+  'MarketKind',
   'marketKindOf',
   'userPositionOf',
   'OUTCOMES',
-  'fmtUsdc',
   "userPositionOf(r) !== 'none'",
   "OUTCOMES[r.market.outcome] === 'Unresolved'",
-  'if (userRows.length === 0) return null;',
   "pos === 'yes'",
   "pos === 'no'",
   "pos === 'both'",
   'r.yesStake + r.noStake',
   'userOutcomeStakes',
   'outcomes',
-  'Position Details',
+  'filterPositionRows',
+  'toPositionItems',
+  'getActivePositionCount',
 ]);
 
 assertExcludesAll('PositionList.tsx', positionList, [
   'claimedFlag',
   'useWriteContract',
-  'rounded-2xl',
-  'rounded-xl',
-  'tracking-',
   'letterSpacing',
 ]);
 
@@ -82,7 +90,7 @@ assert(
 );
 
 assert(
-  positionList.includes('marketKindOf(') || positionList.includes("=== 'event'") || positionList.includes("=== 'price'"),
+  positionItems.includes('marketKindOf(') || positionItems.includes("=== 'event'") || positionItems.includes("=== 'price'"),
   'PositionList.tsx 必须根据 marketKind 做持仓过滤。',
 );
 
@@ -128,9 +136,6 @@ assertIncludesAll('ResolvedList.tsx', resolvedList, [
 
 assertExcludesAll('ResolvedList.tsx', resolvedList, [
   'claimedFlag',
-  'rounded-2xl',
-  'rounded-xl',
-  'tracking-',
   'letterSpacing',
   'isReceiptTrackingActive',
   '!isReceiptTrackingActive',

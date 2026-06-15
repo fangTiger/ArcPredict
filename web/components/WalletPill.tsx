@@ -44,7 +44,7 @@ export function WalletPill() {
           return (
             <button type="button" onClick={openChainModal} className={pillWrong}>
               <span className="arc-ring-pulse h-2 w-2 rounded-full bg-no" />
-              <span>切换到 Arc</span>
+              <span>Switch to Arc</span>
             </button>
           );
         }
@@ -52,7 +52,7 @@ export function WalletPill() {
         if (!connected) {
           return (
             <button type="button" onClick={openConnectModal} className={pillIdle}>
-              <span>连接钱包</span>
+              <span>Connect Wallet</span>
               <span aria-hidden>→</span>
             </button>
           );

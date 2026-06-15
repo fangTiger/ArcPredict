@@ -25,6 +25,7 @@ const layout = readRequiredText('app/layout.tsx');
 const siteHeader = readRequiredText('components/SiteHeader.tsx');
 const siteFooter = readRequiredText('components/SiteFooter.tsx');
 const arcBackground = readRequiredText('components/ArcBackground.tsx');
+const walletPill = readRequiredText('components/WalletPill.tsx');
 
 assertIncludesAll('layout.tsx', layout, [
   'ArcBackground',
@@ -37,7 +38,7 @@ assertIncludesAll('SiteHeader.tsx', siteHeader, [
   'ArcPredict',
   'Arc Testnet',
   '5042002',
-  '@keyframes pulse',
+  'arc-ring-pulse',
   'sticky top-0 z-50',
   'border-b border-hair',
   'px-5 sm:px-8',
@@ -45,7 +46,23 @@ assertIncludesAll('SiteHeader.tsx', siteHeader, [
   'hidden md:inline',
   'shrink-0',
   'px-2 sm:px-3',
+  'All Positions',
+  'Positions',
 ]);
+
+assertIncludesAll('WalletPill.tsx', walletPill, [
+  'Connect Wallet',
+  'Switch to Arc',
+]);
+
+for (const [label, source] of [
+  ['SiteHeader.tsx', siteHeader],
+  ['WalletPill.tsx', walletPill],
+]) {
+  for (const token of ['全部持仓', '持仓', '连接钱包', '切换到 Arc']) {
+    assert(!source.includes(token), `${label} 不应再显示中文顶部文案: ${token}`);
+  }
+}
 
 assertIncludesAll('SiteFooter.tsx', siteFooter, [
   'Built on Arc Testnet',
@@ -61,11 +78,12 @@ assertIncludesAll('ArcBackground.tsx', arcBackground, [
   'fixed inset-0',
   'viewBox="0 0 900 900"',
   'viewBox="0 0 700 700"',
-  'stroke="#1652F0"',
+  'arc-stroke-tr',
+  'arc-stroke-bl',
   'variant',
   'pitch',
   'data-arc-background-variant',
-  '#3D8B5B',
+  'rgba(155,163,199,0.04)',
 ]);
 
 console.log('site chrome 检查通过');

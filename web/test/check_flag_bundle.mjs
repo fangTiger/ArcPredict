@@ -8,7 +8,7 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
-import { relative, resolve, sep } from 'node:path';
+import { basename, relative, resolve, sep } from 'node:path';
 
 const cwd = process.cwd();
 const repoRoot = cwd.endsWith('/web') ? resolve(cwd, '..') : cwd;
@@ -18,18 +18,57 @@ const helperPath = resolve(webRoot, 'lib/flag-icons.ts');
 const cardPath = resolve(webRoot, 'components/WorldCupMarketCard.tsx');
 const buildIdPath = resolve(webRoot, '.next/BUILD_ID');
 const mediaDir = resolve(webRoot, '.next/static/media');
+const flagAssetDir = resolve(webRoot, 'node_modules/flag-icons/flags/4x3');
 const analyzeDir = resolve(webRoot, '.next/analyze');
 const analyzeJsonPath = resolve(analyzeDir, 'worldcup-flag-bundle.json');
 const analyzeMarkdownPath = resolve(analyzeDir, 'worldcup-flag-bundle.md');
 const requireBuildArtifacts = process.env.CHECK_FLAG_BUNDLE_REQUIRE_BUILD === '1';
-const gzipBudgetBytes =
-  Number.parseInt(process.env.CHECK_FLAG_BUNDLE_GZIP_BUDGET_BYTES ?? '', 10) ||
-  80 * 1024;
 
 const layoutSource = readFileSync(layoutPath, 'utf8');
 const helperSource = readFileSync(helperPath, 'utf8');
 const cardSource = readFileSync(cardPath, 'utf8');
 const helperGzipBytes = gzipSync(helperSource).length;
+const requiredFlagCodes = [
+  'qa',
+  'ec',
+  'sn',
+  'nl',
+  'gb-eng',
+  'ir',
+  'us',
+  'gb-wls',
+  'ar',
+  'sa',
+  'mx',
+  'pl',
+  'fr',
+  'au',
+  'dk',
+  'tn',
+  'es',
+  'de',
+  'jp',
+  'cr',
+  'be',
+  'hr',
+  'ma',
+  'ca',
+  'br',
+  'rs',
+  'ch',
+  'cm',
+  'pt',
+  'gh',
+  'uy',
+  'kr',
+];
+const expectedFlagAssetBuffers = requiredFlagCodes.map((code) =>
+  Buffer.from(readFileSync(resolve(flagAssetDir, `${code}.svg`))),
+);
+const expectedFlagSvgGzipBytes = gzipSync(Buffer.concat(expectedFlagAssetBuffers)).length;
+const gzipBudgetBytes =
+  Number.parseInt(process.env.CHECK_FLAG_BUNDLE_GZIP_BUDGET_BYTES ?? '', 10) ||
+  expectedFlagSvgGzipBytes + 8 * 1024;
 const toWebRelativePath = (targetPath) => relative(webRoot, targetPath).split(sep).join('/');
 const writeAnalyzeReport = ({
   helperBytes,
@@ -95,18 +134,9 @@ assert(
   !helperSource.includes('flagIconClassName'),
   'flag-icons.ts 不应再暴露 fi class helper。',
 );
-assert(
-  helperSource.includes("'ar'") &&
-    helperSource.includes("'mx'") &&
-    helperSource.includes("'gb-eng'") &&
-    helperSource.includes("'gb-wls'") &&
-    helperSource.includes("'nl'") &&
-    helperSource.includes("'us'") &&
-    helperSource.includes("'br'") &&
-    helperSource.includes("'hr'") &&
-    helperSource.includes("'fr'"),
-  'allowlist 必须覆盖首屏 9 面国旗。',
-);
+for (const code of requiredFlagCodes) {
+  assert(helperSource.includes(`'${code}'`), `allowlist 必须覆盖世界杯队伍国旗: ${code}`);
+}
 assert(
   !helperSource.includes('<svg'),
   'flag helper 不应把 SVG 直接内联进源码。',
@@ -163,11 +193,21 @@ const walk = (dir) => {
 walk(mediaDir);
 
 const svgRelativePaths = svgFiles.map((filePath) => toWebRelativePath(filePath)).sort();
+const svgAssetCodes = svgFiles
+  .map((filePath) => basename(filePath).replace(/\.[^.]+\.svg$/, ''))
+  .sort();
+const requiredFlagCodeSet = new Set(requiredFlagCodes);
+const missingSvgAssetCodes = requiredFlagCodes.filter((code) => !svgAssetCodes.includes(code));
+const unexpectedSvgAssetCodes = svgAssetCodes.filter((code) => !requiredFlagCodeSet.has(code));
 const svgGzipBytes = gzipSync(
   Buffer.concat(svgFiles.map((filePath) => Buffer.from(readFileSync(filePath)))),
 ).length;
 const buildResult =
-  helperGzipBytes <= gzipBudgetBytes && svgFiles.length <= 20 && svgGzipBytes <= gzipBudgetBytes
+  helperGzipBytes <= gzipBudgetBytes &&
+  svgFiles.length === requiredFlagCodes.length &&
+  missingSvgAssetCodes.length === 0 &&
+  unexpectedSvgAssetCodes.length === 0 &&
+  svgGzipBytes <= gzipBudgetBytes
     ? 'pass'
     : 'fail';
 
@@ -185,8 +225,16 @@ assert(
   `flag helper 源码本身也不应膨胀，当前 ${helperGzipBytes} bytes gzip`,
 );
 assert(
-  svgFiles.length <= 20,
-  `构建产物 SVG 数量异常: ${svgFiles.length}，疑似又把整包 flag-icons 收进来了。`,
+  missingSvgAssetCodes.length === 0,
+  `构建产物缺少世界杯队伍国旗: ${missingSvgAssetCodes.join(', ')}`,
+);
+assert(
+  unexpectedSvgAssetCodes.length === 0,
+  `构建产物出现非世界杯队伍国旗: ${unexpectedSvgAssetCodes.join(', ')}`,
+);
+assert(
+  svgFiles.length === requiredFlagCodes.length,
+  `构建产物 SVG 数量异常: ${svgFiles.length}，预期 ${requiredFlagCodes.length} 个世界杯队伍国旗。`,
 );
 assert(
   svgGzipBytes <= gzipBudgetBytes,

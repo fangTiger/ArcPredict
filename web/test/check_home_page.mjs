@@ -67,7 +67,9 @@ assertIncludesAll('page.tsx', pageSource, [
   'NetworkBanner',
   'SiteHeader',
   'SiteFooter',
+  'HomeHero',
   'MarketFilterBar',
+  'PositionStripe',
   'CryptoMarketCard',
   'WorldCupMarketCard',
   'PositionList',
@@ -79,6 +81,16 @@ assertIncludesAll('page.tsx', pageSource, [
   'stage',
   'positions',
   'all',
+  '#positions',
+  'MARKET_PAGE_SIZE',
+  'sliceVisibleMarketRows',
+  'nextVisibleMarketCount',
+  'loadMoreRef',
+  'positionsRef',
+  'IntersectionObserver',
+  'visibleMarketCount',
+  'window.scrollTo',
+  '加载更多',
   'router.replace',
   'searchParams.get',
   'refetch',
@@ -90,6 +102,7 @@ assertIncludesAll('page.tsx', pageSource, [
   'No World Cup markets match this stage.',
   'World Cup',
   '<ArcBackground variant=',
+  'category={effectiveCategory}',
 ]);
 
 assertMatches(
@@ -191,15 +204,71 @@ assertMatches(
 assertMatches(
   'page.tsx',
   pageSource,
-  /<PositionList[\s\S]*kindFilter=\{[^}]+\}/u,
+  /<section[\s\S]*id="positions"[\s\S]*<PositionList[\s\S]*kindFilter=\{[^}]+\}/u,
   '首页必须把 kindFilter 接给 PositionList。',
 );
 
 assertMatches(
   'page.tsx',
   pageSource,
-  /<>\s*<NetworkBanner \/>\s*<SiteHeader \/>\s*<main[\s\S]*<SiteFooter \/>\s*\{betting \?/u,
-  '首页顺序必须是 NetworkBanner -> SiteHeader -> main -> SiteFooter -> BetModal。',
+  /const allPositionsHref[\s\S]*#positions/u,
+  '全部持仓入口必须带 #positions，把用户带到持仓区而不是只改 query。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /showAllPositions[\s\S]*positionsRef\.current[\s\S]*window\.scrollTo/u,
+  'positions=all 必须主动滚动到持仓区，不能只依赖 hash 默认行为。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /showAllPositions\s*\|\|\s*!canLoadMoreMarkets/u,
+  'positions=all 时必须暂停市场无限加载，避免卡片追加把持仓区推走。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /IntersectionObserver[\s\S]*\[\s*canLoadMoreMarkets\s*,\s*effectiveCategory\s*,\s*showAllPositions\s*,\s*visibleMarketCount\s*,\s*visibleMarketTotal\s*\]/u,
+  '无限加载 observer effect 必须依赖 visibleMarketCount，扩页后重新绑定 sentinel。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /canLoadMoreMarkets[\s\S]*<button[\s\S]*setVisibleMarketCount\(\(currentCount\)\s*=>\s*nextVisibleMarketCount\(visibleMarketTotal,\s*currentCount\)\)[\s\S]*加载更多/u,
+  'sentinel 区必须提供“加载更多”按钮作为 IntersectionObserver 的兜底入口。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /<MarketFilterBar[\s\S]*\/>\s*\{!showAllPositions\s*\?\s*\([\s\S]*<PositionStripe[\s\S]*rows=\{positionRows\}[\s\S]*kindFilter=\{positionKindFilter\}[\s\S]*allPositionsHref=\{allPositionsHref\}/u,
+  'PositionStripe 必须位于 MarketFilterBar 下方、市场卡片网格上方，并在全部持仓模式隐藏。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /sliceVisibleMarketRows\(\s*visibleWorldCupMarkets,\s*visibleMarketCount\s*\)[\s\S]*WorldCupMarketCard/u,
+  'World Cup 市场必须按 visibleMarketCount 分批渲染。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /sliceVisibleMarketRows\(\s*visibleCryptoMarkets,\s*visibleMarketCount\s*\)[\s\S]*CryptoMarketCard/u,
+  'Crypto 市场必须按 visibleMarketCount 分批渲染。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /<main id="markets"[\s\S]*<ArcBackground variant=\{backgroundVariant\} \/>[\s\S]*<HomeHero[\s\S]*category=\{effectiveCategory\}[\s\S]*<MarketFilterBar/u,
+  'HomeHero 必须作为 markets 内的低高度上下文条，贴近筛选区，而不是独立大首屏。',
 );
 
 assertMatches(
@@ -232,7 +301,7 @@ assertExcludesAll('page.tsx', pageSource, [
   '已结算市场',
 ]);
 
-const chineseCharCount = (pageSource.match(/[\u4e00-\u9fff]/gu) ?? []).length;
-assert.equal(chineseCharCount, 0, 'page.tsx 首页可见状态文案应保持英文。');
+const nonLoadMoreChinese = pageSource.replaceAll('加载更多', '').match(/[\u4e00-\u9fff]/gu) ?? [];
+assert.equal(nonLoadMoreChinese.length, 0, 'page.tsx 除“加载更多”按钮外，可见状态文案应保持英文。');
 
 console.log('home page 检查通过');

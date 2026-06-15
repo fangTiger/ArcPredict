@@ -20,7 +20,7 @@ export function SiteHeader({
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-5 sm:px-8 py-3.5 sm:gap-3">
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <Link href="/" className="inline-flex items-center" aria-label="ArcPredict 首页">
+          <Link href="/" className="inline-flex items-center" aria-label="ArcPredict home">
             <Logo size="md" />
           </Link>
           {allPositionsHref ? (
@@ -32,8 +32,8 @@ export function SiteHeader({
                   : 'border-hair text-ink-2 hover:border-arc-glow/30 hover:text-ink'
               }`}
             >
-              <span className="sm:hidden">持仓</span>
-              <span className="hidden sm:inline">全部持仓</span>
+              <span className="sm:hidden">Positions</span>
+              <span className="hidden sm:inline">All Positions</span>
             </Link>
           ) : null}
         </div>

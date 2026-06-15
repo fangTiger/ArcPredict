@@ -13,6 +13,7 @@ import {
 import { WorldCupOutcomePanel } from './WorldCupOutcomePanel';
 
 const nowInSeconds = () => BigInt(Math.floor(Date.now() / 1000));
+const fixedOneXTwoLabels = ['Home Win', 'Draw', 'Away Win'] as const;
 
 function formatKickoff(iso: string): string {
   return new Intl.DateTimeFormat('en-US', {
@@ -69,21 +70,30 @@ function OutcomeFlexButtons({
   bettingOpen: boolean;
   onBet: (row: WorldCupMarketRow, outcomeIndex: number) => void;
 }) {
+  const gridClassName = row.outcomes.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
+
   return (
     <div className="mb-5">
-      <div className="mt-4 flex w-full gap-2">
+      <div className={`mt-4 grid w-full ${gridClassName} gap-2`}>
         {row.outcomes.map((outcome, outcomeIndex) => {
           const pct = Math.round(outcome.impliedProbability);
+          const label =
+            row.marketType === '1x2'
+              ? fixedOneXTwoLabels[outcomeIndex] ?? `Outcome ${outcomeIndex + 1}`
+              : outcome.label;
           return (
             <button
               key={outcome.id}
               type="button"
               onClick={() => onBet(row, outcomeIndex)}
               disabled={!bettingOpen}
-              style={{ flex: Math.max(15, pct) }}
-              className="rounded-2xl border border-arc-glow/30 bg-arc/10 px-3 py-2.5 text-sm font-semibold text-arc-glow transition hover:bg-arc/20 hover:shadow-[inset_0_0_24px_rgba(77,168,255,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-55"
+              aria-label={`${label} ${pct}%`}
+              className="min-w-0 rounded-[14px] border border-arc-glow/30 bg-arc/10 px-2 py-2.5 text-center font-semibold text-arc-glow transition hover:bg-arc/20 hover:shadow-[inset_0_0_24px_rgba(77,168,255,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-55 sm:px-3"
             >
-              {outcome.label} · {pct}%
+              <span className="block truncate text-[11px] leading-4 sm:text-xs">{label}</span>
+              <span className="mt-0.5 block font-mono text-[13px] leading-4 sm:text-sm">
+                {pct}%
+              </span>
             </button>
           );
         })}

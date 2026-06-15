@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Abi } from 'viem';
@@ -19,6 +19,7 @@ import {
 } from '@/components/MarketFilterBar';
 import { NetworkBanner } from '@/components/NetworkBanner';
 import { PositionList } from '@/components/PositionList';
+import { PositionStripe } from '@/components/PositionStripe';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SiteHeader } from '@/components/SiteHeader';
 import { WorldCupMarketCard } from '@/components/WorldCupMarketCard';
@@ -33,6 +34,11 @@ import { arcTestnet } from '@/lib/chain';
 import type { DashboardRow } from '@/lib/derivePosition';
 import { OUTCOMES } from '@/lib/derivePosition';
 import { WORLDCUP_ENABLED } from '@/lib/feature-flags';
+import {
+  MARKET_PAGE_SIZE,
+  nextVisibleMarketCount,
+  sliceVisibleMarketRows,
+} from '@/lib/market-pagination';
 import {
   normalizeWorldCupStageFilter,
   type MarketCategory,
@@ -110,6 +116,9 @@ function HomePageContent() {
   const [asset, setAsset] = useState<AssetFilter>('all');
   const [cadence, setCadence] = useState<CadenceFilter>('all');
   const [now, setNow] = useState<bigint>(() => nowInSeconds());
+  const [visibleMarketCount, setVisibleMarketCount] = useState(MARKET_PAGE_SIZE);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const positionsRef = useRef<HTMLElement | null>(null);
   const showCategoryTabs = WORLDCUP_ENABLED;
   const effectiveCategory = showCategoryTabs ? category : 'crypto';
   const backgroundVariant = effectiveCategory === 'worldcup' ? 'pitch' : 'default';
@@ -180,7 +189,7 @@ function HomePageContent() {
     const nextQuery = new URLSearchParams(searchParams.toString());
     nextQuery.set('positions', 'all');
     const query = nextQuery.toString();
-    return query ? `/?${query}` : '/';
+    return query ? `/?${query}#positions` : '/#positions';
   }, [searchParams]);
   const visibleWorldCupMarkets = useMemo(
     () =>
@@ -193,6 +202,66 @@ function HomePageContent() {
       }),
     [stage, upcomingWorldCupMarkets],
   );
+  const visibleMarketTotal =
+    effectiveCategory === 'worldcup' ? visibleWorldCupMarkets.length : visibleCryptoMarkets.length;
+  const renderedWorldCupMarkets = useMemo(
+    () => sliceVisibleMarketRows(visibleWorldCupMarkets, visibleMarketCount),
+    [visibleMarketCount, visibleWorldCupMarkets],
+  );
+  const renderedCryptoMarkets = useMemo(
+    () => sliceVisibleMarketRows(visibleCryptoMarkets, visibleMarketCount),
+    [visibleCryptoMarkets, visibleMarketCount],
+  );
+  const canLoadMoreMarkets = visibleMarketCount < visibleMarketTotal;
+
+  useEffect(() => {
+    setVisibleMarketCount(MARKET_PAGE_SIZE);
+  }, [asset, cadence, effectiveCategory, stage]);
+
+  useEffect(() => {
+    if (showAllPositions || !canLoadMoreMarkets || !loadMoreRef.current) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) {
+          return;
+        }
+
+        setVisibleMarketCount((currentCount) =>
+          nextVisibleMarketCount(visibleMarketTotal, currentCount),
+        );
+      },
+      { rootMargin: '260px 0px' },
+    );
+
+    observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+  }, [
+    canLoadMoreMarkets,
+    effectiveCategory,
+    showAllPositions,
+    visibleMarketCount,
+    visibleMarketTotal
+  ]);
+
+  useEffect(() => {
+    if (!showAllPositions) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      if (!positionsRef.current) {
+        return;
+      }
+
+      const targetTop = positionsRef.current.getBoundingClientRect().top + window.scrollY - 96;
+      window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [showAllPositions]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -249,16 +318,17 @@ function HomePageContent() {
         allPositionsHref={allPositionsHref}
         allPositionsActive={showAllPositions}
       />
-      <HomeHero
-        stats={{
-          activeMarkets: activeMarkets.length + upcomingWorldCupMarkets.length,
-          totalVolumeUsdc: '—',
-          pendingResolution: rows.filter((r) => OUTCOMES[r.market.outcome] === 'Unresolved').length,
-        }}
-      />
 
       <main id="markets" className="relative z-10 mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
         <ArcBackground variant={backgroundVariant} />
+        <HomeHero
+          category={effectiveCategory}
+          stats={{
+            activeMarkets: activeMarkets.length + upcomingWorldCupMarkets.length,
+            totalVolumeUsdc: '—',
+            pendingResolution: rows.filter((r) => OUTCOMES[r.market.outcome] === 'Unresolved').length,
+          }}
+        />
         <MarketFilterBar
           asset={asset}
           cadence={cadence}
@@ -278,6 +348,14 @@ function HomePageContent() {
           }}
         />
 
+        {!showAllPositions ? (
+          <PositionStripe
+            rows={positionRows}
+            kindFilter={positionKindFilter}
+            allPositionsHref={allPositionsHref}
+          />
+        ) : null}
+
         {effectiveCategory === 'crypto' && isLoading ? (
           <div className="py-20 text-sm text-ink-2">Loading the latest markets...</div>
         ) : effectiveCategory === 'crypto' && isError ? (
@@ -295,14 +373,14 @@ function HomePageContent() {
         ) : (
           <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {effectiveCategory === 'worldcup'
-              ? visibleWorldCupMarkets.map((row) => (
+              ? renderedWorldCupMarkets.map((row) => (
                   <WorldCupMarketCard
                     key={row.id.toString()}
                     row={row}
                     onBet={(nextRow, outcomeIndex) => setEventBetting({ row: nextRow, outcomeIndex })}
                   />
                 ))
-              : visibleCryptoMarkets.map((row) => (
+              : renderedCryptoMarkets.map((row) => (
                   <CryptoMarketCard
                     key={row.id.toString()}
                     row={row}
@@ -312,13 +390,39 @@ function HomePageContent() {
           </section>
         )}
 
+        {visibleMarketTotal > MARKET_PAGE_SIZE ? (
+          <div
+            ref={loadMoreRef}
+            className="mt-8 flex flex-col items-center gap-3"
+            aria-live="polite"
+          >
+            {canLoadMoreMarkets ? (
+              <button
+                type="button"
+                onClick={() => setVisibleMarketCount((currentCount) => nextVisibleMarketCount(visibleMarketTotal, currentCount))}
+                className="inline-flex items-center gap-2 rounded-full border border-hair bg-bg-1/55 px-4 py-2 text-xs uppercase tracking-[0.22em] text-ink-2 backdrop-blur transition hover:border-arc-glow/40 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
+              >
+                加载更多
+                <span aria-hidden="true">↓</span>
+              </button>
+            ) : null}
+            <div className="font-mono text-xs uppercase tracking-[0.22em] text-ink-3">
+              {Math.min(visibleMarketCount, visibleMarketTotal)} / {visibleMarketTotal} markets
+            </div>
+          </div>
+        ) : null}
+
         {effectiveCategory === 'worldcup' && !hasEventMarket ? (
           <div className="mt-4 text-xs text-ink-2">
             EventMarket is not configured yet, so temporary World Cup skeleton markets are shown.
           </div>
         ) : null}
 
-        <section className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <section
+          id="positions"
+          ref={positionsRef}
+          className="mt-8 grid scroll-mt-28 grid-cols-1 gap-5 lg:grid-cols-2"
+        >
           <PositionList rows={positionRows} kindFilter={positionKindFilter} />
           <SettledMarketList rows={rows} />
         </section>

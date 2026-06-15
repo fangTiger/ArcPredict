@@ -430,6 +430,25 @@ export function resolveWorldCupOnchainMarketId(id: bigint): bigint {
   return BigInt(groupIndex * 2 + marketOffset);
 }
 
+export function getUpcomingWorldCupMarkets<T extends Pick<WorldCupMarketRow, 'id' | 'betDeadline' | 'settledOutcome'>>(
+  markets: readonly T[],
+  now: bigint = BigInt(Math.floor(Date.now() / 1000)),
+): T[] {
+  return markets
+    .filter((market) => market.settledOutcome === EVENT_UNRESOLVED_OUTCOME && market.betDeadline > now)
+    .sort((left, right) => {
+      if (left.betDeadline !== right.betDeadline) {
+        return left.betDeadline < right.betDeadline ? -1 : 1;
+      }
+
+      if (left.id === right.id) {
+        return 0;
+      }
+
+      return left.id < right.id ? -1 : 1;
+    });
+}
+
 const TEAM_MATCHERS = WORLDCUP_TEAMS.map((team) => ({
   teamId: team.id,
   chineseAliases: [team.shortNameZh],
@@ -623,7 +642,7 @@ function inferGenericStage(
 
 function fallbackKickoffTime(resolveAfter: bigint): string {
   const kickoffTime = resolveAfter > MATCH_DURATION_SECONDS ? resolveAfter - MATCH_DURATION_SECONDS : resolveAfter;
-  return new Date(Number(kickoffTime) * 1000).toISOString();
+  return new Date(Number(kickoffTime) * 1000).toISOString().replace('.000Z', 'Z');
 }
 
 function resolveTeamsFromQuestion(
@@ -791,7 +810,7 @@ export function resolveWorldCupMarkets(
       stageLabel: stageLabelForMatch(stage, match),
       marketType,
       question: row.market.question,
-      kickoffTime: match?.kickoffTime ?? fallbackKickoffTime(row.market.resolveAfter),
+      kickoffTime: fallbackKickoffTime(row.market.resolveAfter),
       betDeadline: row.market.betDeadline,
       eventId: row.market.eventId,
       outcomePools: pools,
