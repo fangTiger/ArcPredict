@@ -225,4 +225,33 @@ describe('AILensCompact', () => {
     const status = container.querySelector('div[role="status"][aria-live="polite"]');
     expect(status?.textContent).toContain('近一周波动率上升');
   });
+
+  test('cached result 显示缓存更新时间', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(120_000);
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          status: 'ok',
+          cached: true,
+          output: fakeOutput,
+          meta: { last_updated_ms: 0, input_hash: 'h' },
+        }),
+        { status: 200 },
+      ),
+    );
+
+    act(() => {
+      root.render(
+        React.createElement(AILensCompact, { input: baseInput, fetchImpl: fetchMock as typeof fetch }),
+      );
+    });
+
+    const btn = container.querySelector('button');
+    await act(async () => {
+      btn?.click();
+      await flushPromises();
+    });
+
+    expect(container.textContent).toContain('Cached · 2m ago');
+  });
 });
