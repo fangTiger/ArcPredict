@@ -4,11 +4,13 @@ export function BaseMarketCard({
   renderHeader,
   renderOutcomes,
   renderFooter,
+  footerSlot,
   className = '',
 }: {
   renderHeader: () => ReactNode;
   renderOutcomes: () => ReactNode;
   renderFooter: () => ReactNode;
+  footerSlot?: ReactNode;
   className?: string;
 }) {
   return (
@@ -37,6 +39,7 @@ export function BaseMarketCard({
         {renderHeader()}
         {renderOutcomes()}
         {renderFooter()}
+        {footerSlot ? <div className="-mx-6 mt-3">{footerSlot}</div> : null}
       </div>
     </article>
   );

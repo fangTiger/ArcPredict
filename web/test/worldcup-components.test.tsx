@@ -20,6 +20,7 @@ type LoadedWorldCupRow = {
   matchId: string | null;
   stage: string;
   stageLabel: string;
+  marketType: string;
   kickoffTime: string;
   userOutcomeStakes: bigint[];
   homeTeam: {
@@ -32,6 +33,7 @@ type LoadedWorldCupRow = {
   } | null;
   outcomes: Array<{
     id: string;
+    label: string;
     openingProbability: number;
     impliedProbability: number;
     teamId?: string;
@@ -121,11 +123,13 @@ const loadTsModule = (modulePath: string): Record<string, unknown> => {
 };
 
 const marketFilterModule = loadTsModule(resolve(webRoot, 'components/MarketFilterBar.tsx'));
+const cryptoCardModule = loadTsModule(resolve(webRoot, 'components/CryptoMarketCard.tsx'));
 const eventInfoPanelModule = loadTsModule(resolve(webRoot, 'components/EventInfoPanel.tsx'));
 const worldCupCardModule = loadTsModule(resolve(webRoot, 'components/WorldCupMarketCard.tsx'));
 const worldCupMarketsModule = loadTsModule(resolve(webRoot, 'lib/worldcup-markets.ts'));
 
 const MarketFilterBar = marketFilterModule.MarketFilterBar as React.ComponentType<Record<string, unknown>>;
+const CryptoMarketCard = cryptoCardModule.CryptoMarketCard as React.ComponentType<Record<string, unknown>>;
 const EventInfoPanel = eventInfoPanelModule.EventInfoPanel as React.ComponentType<Record<string, unknown>>;
 const WorldCupMarketCard = worldCupCardModule.WorldCupMarketCard as React.ComponentType<Record<string, unknown>>;
 const WORLDCUP_SKELETON_MARKETS = worldCupMarketsModule.WORLDCUP_SKELETON_MARKETS as Array<Record<string, unknown>>;
@@ -177,6 +181,31 @@ const makeEventRow = ({
   pendingPayout: 0n,
 });
 
+const makeCryptoRow = () => ({
+  id: 42n,
+  market: {
+    pythPriceId: '0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43',
+    threshold: 100000n,
+    thresholdExpo: 0,
+    betDeadline: 9_999_999_999n,
+    resolveAfter: 10_000_000_000n,
+    yesPool: 25_000_000n,
+    noPool: 75_000_000n,
+    winnerPool: 0n,
+    protocolFee: 0n,
+    feeBpsSnapshot: 0,
+    feeRecipientSnapshot: '0x0000000000000000000000000000000000000000',
+    outcome: 0,
+    settlePrice: 0n,
+    settleTime: 0n,
+    question: 'BTC/USD ≥ $100000 by 2026',
+  },
+  yesStake: 0n,
+  noStake: 0n,
+  claimed_: false,
+  pendingPayout: 0n,
+});
+
 const setMatchMedia = (matches: boolean) => {
   vi.stubGlobal(
     'matchMedia',
@@ -221,6 +250,11 @@ const flushPromises = async () => {
   await Promise.resolve();
   await Promise.resolve();
 };
+
+const findAskAiButton = (host: HTMLElement) =>
+  Array.from(host.querySelectorAll('button')).find((node) =>
+    node.textContent?.includes('Ask AI'),
+  );
 
 describe('worldcup components', () => {
   let root: Root;
@@ -304,6 +338,68 @@ describe('worldcup components', () => {
     expect(onBet).toHaveBeenCalledWith(row, 0);
   });
 
+  test('Crypto 卡片底部 Ask AI 发送 crypto-binary LensInput', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ status: 'error', message: 'stub' }), { status: 502 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await act(async () => {
+      root.render(React.createElement(CryptoMarketCard, { row: makeCryptoRow(), onBet: vi.fn() }));
+      await Promise.resolve();
+    });
+
+    const button = findAskAiButton(host);
+    expect(button).toBeTruthy();
+
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flushPromises();
+    });
+
+    const body = JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string);
+    expect(body.market).toMatchObject({
+      id: '42',
+      question: 'BTC/USD ≥ $100000 by 2026',
+      type: 'crypto-binary',
+      end_time: 10_000_000_000,
+      implied_probability: 0.25,
+    });
+  });
+
+  test('World Cup 卡片底部 Ask AI 发送 event-multi LensInput 与逐 outcome 隐含概率', async () => {
+    setMatchMedia(false);
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ status: 'error', message: 'stub' }), { status: 502 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const row = WORLDCUP_SKELETON_MARKETS.find((market) => market.marketType === '1x2');
+
+    expect(row).toBeTruthy();
+
+    await act(async () => {
+      root.render(React.createElement(WorldCupMarketCard, { row: row! }));
+      await Promise.resolve();
+    });
+
+    const button = findAskAiButton(host);
+    expect(button).toBeTruthy();
+
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flushPromises();
+    });
+
+    const body = JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string);
+    expect(body.market.type).toBe('event-multi');
+    expect(body.market.outcome_options).toEqual(['Home Win', 'Draw', 'Away Win']);
+    expect(body.market.outcome_implied_probabilities).toEqual({
+      'Home Win': 0.485,
+      Draw: 0.275,
+      'Away Win': 0.24,
+    });
+  });
+
   test('World Cup 1X2 action buttons keep equal width with fixed English labels', async () => {
     setMatchMedia(false);
     const row = WORLDCUP_SKELETON_MARKETS.find((market) => market.marketType === '1x2');
@@ -325,7 +421,9 @@ describe('worldcup components', () => {
       await Promise.resolve();
     });
 
-    const outcomeButtons = Array.from(host.querySelectorAll('button'));
+    const outcomeButtons = Array.from(host.querySelectorAll('button')).filter((button) =>
+      button.getAttribute('aria-label')?.endsWith('%'),
+    );
     expect(outcomeButtons).toHaveLength(3);
     expect(outcomeButtons[0].parentElement?.className).toContain('grid-cols-3');
 
@@ -407,25 +505,25 @@ describe('worldcup components', () => {
     expect(host.textContent).not.toContain('World CupVSWINNER');
   });
 
-  test('首页世界杯列表只展示未截止市场，并按截止时间从近到远排序', () => {
+  test('首页世界杯列表只展示未截止市场，并按最新比赛日期优先排序', () => {
     const rows = [
       {
         id: 97n,
         category: 'worldcup',
         settledOutcome: 255,
-        betDeadline: 2_000n,
+        betDeadline: 3_000n,
       },
       {
         id: 96n,
         category: 'worldcup',
         settledOutcome: 255,
-        betDeadline: 900n,
+        betDeadline: 2_000n,
       },
       {
         id: 0n,
         category: 'worldcup',
         settledOutcome: 255,
-        betDeadline: 2_000n,
+        betDeadline: 3_000n,
       },
       {
         id: 3n,
@@ -435,7 +533,7 @@ describe('worldcup components', () => {
       },
     ];
 
-    expect(getUpcomingWorldCupMarkets(rows, 1_000n).map((row) => row.id)).toEqual([0n, 97n]);
+    expect(getUpcomingWorldCupMarkets(rows, 1_000n).map((row) => row.id)).toEqual([0n, 97n, 96n]);
   });
 
   test('World Cup 过滤栏在赛事品类下显示阶段按钮，关闭 tabs 时只保留 Crypto 过滤', async () => {
@@ -650,5 +748,35 @@ describe('worldcup components', () => {
     expect(row.outcomes.map((outcome) => outcome.id)).toEqual(['arg-win', 'draw', 'fra-win']);
     expect(row.outcomes[0]?.teamId).toBe('ARG');
     expect(row.outcomes[2]?.teamId).toBe('FRA');
+  });
+
+  test('总进球盘口不会显示成让分盘，并使用 Over/Under outcome', async () => {
+    setMatchMedia(false);
+    const kickoffTime = '2026-06-15T16:36:00Z';
+    const resolveAfter = secondsForIso(kickoffTime) + BigInt(MATCH_LENGTH_SECONDS);
+    const [row] = resolveWorldCupMarkets([
+      makeEventRow({
+        eventId: toAsciiBytes32('worldcup:goals-25:group-a-2'),
+        outcomeCount: 2,
+        question: 'SEN vs NED total goals over 2.5',
+        resolveAfter,
+        outcomePools: [41_000_000n, 59_000_000n],
+      }),
+    ]);
+
+    expect(row.marketType).toBe('totals');
+    expect(row.matchId).toBe('group-a-2');
+    expect(row.outcomes.map((outcome) => outcome.label)).toEqual(['Over 2.5', 'Under 2.5']);
+
+    await act(async () => {
+      root.render(React.createElement(WorldCupMarketCard, { row, onBet: vi.fn() }));
+      await Promise.resolve();
+    });
+
+    expect(host.textContent).toContain('TOTALS');
+    expect(host.textContent).toContain('Over 2.5');
+    expect(host.textContent).toContain('Under 2.5');
+    expect(host.textContent).not.toContain('SPREAD');
+    expect(host.textContent).not.toContain('covers');
   });
 });

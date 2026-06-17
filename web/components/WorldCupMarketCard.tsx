@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { AILensCompact } from '@/components/AILensCompact';
 import { BaseMarketCard } from '@/components/BaseMarketCard';
 import { flagIconUrlForTeam } from '@/lib/flag-icons';
 import { fmtCountdown, fmtUsdc } from '@/lib/format';
+import type { LensInput } from '@/lib/lens/schema';
 import { useMediaQuery } from '@/lib/use-media-query';
 import {
   EVENT_UNRESOLVED_OUTCOME,
@@ -14,6 +16,7 @@ import { WorldCupOutcomePanel } from './WorldCupOutcomePanel';
 
 const nowInSeconds = () => BigInt(Math.floor(Date.now() / 1000));
 const fixedOneXTwoLabels = ['Home Win', 'Draw', 'Away Win'] as const;
+const toLensProbability = (value: number) => Math.max(0, Math.min(1, value / 100));
 
 function formatKickoff(iso: string): string {
   return new Intl.DateTimeFormat('en-US', {
@@ -30,6 +33,10 @@ function formatKickoff(iso: string): string {
 
 function formatUnixTime(seconds: bigint): string {
   return formatKickoff(new Date(Number(seconds * 1000n)).toISOString());
+}
+
+function marketTypeLabel(marketType: WorldCupMarketRow['marketType']): string {
+  return marketType === 'totals' ? 'TOTALS' : marketType.toUpperCase();
 }
 
 function TeamBadge({ nameEn, shortCode, teamId }: WorldCupMarketRow['homeTeam']) {
@@ -111,6 +118,7 @@ export function WorldCupMarketCard({
 }) {
   const isMobile = useMediaQuery('(max-width: 767px)');
   const [now, setNow] = useState<bigint>(() => nowInSeconds());
+  const [lensGeneratedAt] = useState(() => Math.floor(Date.now() / 1000));
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -133,6 +141,25 @@ export function WorldCupMarketCard({
     isWinnerMarket
       ? 'World Cup Winner'
       : `${row.homeTeam.nameEn} VS ${row.awayTeam?.nameEn ?? ''}`;
+  const lensOutcomeOptions = row.outcomes.map((outcome) => outcome.label);
+  const lensInput: LensInput = {
+    market: {
+      id: row.id.toString(),
+      question: row.question,
+      type: 'event-multi',
+      end_time: Number(row.betDeadline),
+      implied_probability: toLensProbability(row.outcomes[0]?.impliedProbability ?? 0),
+      outcome_options: lensOutcomeOptions,
+      outcome_implied_probabilities: Object.fromEntries(
+        row.outcomes.map((outcome) => [
+          outcome.label,
+          toLensProbability(outcome.impliedProbability),
+        ]),
+      ),
+    },
+    context: { facts: [] },
+    generated_at: lensGeneratedAt,
+  };
 
   return (
     <BaseMarketCard
@@ -168,7 +195,7 @@ export function WorldCupMarketCard({
                 <div className="text-center">
                   <div className="font-display text-[28px] leading-none text-arc-glow num-glow">VS</div>
                   <div className="mt-1 text-[11px] uppercase text-ink-2">
-                    {row.marketType.toUpperCase()}
+                    {marketTypeLabel(row.marketType)}
                   </div>
                 </div>
                 {row.awayTeam ? <TeamBadge {...row.awayTeam} /> : <div className="w-[88px]" />}
@@ -222,6 +249,7 @@ export function WorldCupMarketCard({
           </div>
         </div>
       )}
+      footerSlot={<AILensCompact input={lensInput} />}
     />
   );
 }

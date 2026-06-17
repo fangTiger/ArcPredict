@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { AILensCompact } from '@/components/AILensCompact';
 import { BaseMarketCard } from '@/components/BaseMarketCard';
 import { PYTH_PRICE_ID_TO_ASSET } from '@/lib/asset-price-map';
 import { parseCadenceTag } from '@/lib/cadence-tag';
 import type { DashboardRow } from '@/lib/derivePosition';
 import { OUTCOMES, yesPercent } from '@/lib/derivePosition';
 import { fmtCountdown, fmtUsdc } from '@/lib/format';
+import type { LensInput } from '@/lib/lens/schema';
 
 const nowInSeconds = () => BigInt(Math.floor(Date.now() / 1000));
 
@@ -86,6 +88,7 @@ export function CryptoMarketCard({
   onBet: (id: bigint, yes: boolean) => void;
 }) {
   const [now, setNow] = useState<bigint>(() => nowInSeconds());
+  const [lensGeneratedAt] = useState(() => Math.floor(Date.now() / 1000));
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -111,6 +114,17 @@ export function CryptoMarketCard({
       : 'Betting closed'
     : `Settled ${outcome}`;
   const detailHref = `/market/${row.id.toString()}`;
+  const lensInput: LensInput = {
+    market: {
+      id: row.id.toString(),
+      question: m.question,
+      type: 'crypto-binary',
+      end_time: Number(m.resolveAfter),
+      implied_probability: yesPct / 100,
+    },
+    context: {},
+    generated_at: lensGeneratedAt,
+  };
 
   return (
     <BaseMarketCard
@@ -230,6 +244,7 @@ export function CryptoMarketCard({
           </Link>
         </div>
       )}
+      footerSlot={<AILensCompact input={lensInput} />}
     />
   );
 }
