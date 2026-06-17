@@ -197,6 +197,26 @@ describe('AILensCompact', () => {
     expect(status?.textContent).toContain('AI 正在分析…');
   });
 
+  test('error 状态显示错误文案与重试按钮', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error('network down'));
+
+    act(() => {
+      root.render(
+        React.createElement(AILensCompact, { input: baseInput, fetchImpl: fetchMock as typeof fetch }),
+      );
+    });
+
+    const btn = container.querySelector('button');
+    await act(async () => {
+      btn?.click();
+      await flushPromises();
+    });
+
+    expect(container.textContent).toContain('AI Lens 暂不可用');
+    expect(container.textContent).toContain('重试');
+    expect(container.querySelector('button[aria-label="重试 AI Lens"]')).toBeTruthy();
+  });
+
   test('result 状态用 polite status 宣告', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
