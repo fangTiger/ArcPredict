@@ -138,6 +138,8 @@ describe('AILensCompact', () => {
     });
 
     expect(container.textContent).toContain('Ask AI');
+    expect(container.textContent).not.toContain('缓存');
+    expect(container.textContent).not.toMatch(/cache/i);
   });
 
   test('点击触发：成功后显示 summary 与 drift chip', async () => {
@@ -246,7 +248,7 @@ describe('AILensCompact', () => {
     expect(status?.textContent).toContain('近一周波动率上升');
   });
 
-  test('cached result 显示缓存更新时间', async () => {
+  test('cached result 不暴露缓存实现术语', async () => {
     vi.spyOn(Date, 'now').mockReturnValue(120_000);
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
@@ -272,6 +274,8 @@ describe('AILensCompact', () => {
       await flushPromises();
     });
 
-    expect(container.textContent).toContain('Cached · 2m ago');
+    expect(container.textContent).not.toContain('Cached');
+    expect(container.textContent).not.toMatch(/cache/i);
+    expect(container.textContent).not.toContain('Fresh');
   });
 });

@@ -19,9 +19,6 @@ type State =
 const focusRingClassName =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0';
 
-const cachedAgeLabel = (lastUpdatedMs: number) =>
-  `${Math.max(0, Math.round((Date.now() - lastUpdatedMs) / 60000))}m ago`;
-
 export function AILensCompact({ input, fetchImpl }: Props) {
   const [state, setState] = useState<State>({ kind: 'idle' });
   const f = fetchImpl ?? fetch;
@@ -63,7 +60,7 @@ export function AILensCompact({ input, fetchImpl }: Props) {
         >
           Ask AI
         </button>
-        <span className="text-ink-3">AI 概率分析 · 24h 缓存共享</span>
+        <span className="text-ink-3">AI 概率分析</span>
       </div>
     );
   }
@@ -102,9 +99,6 @@ export function AILensCompact({ input, fetchImpl }: Props) {
       >
         <span className="min-w-0 truncate text-ink-2">{state.output.summary}</span>
         <span className="flex shrink-0 items-center gap-2">
-          {state.cached ? (
-            <span className="text-[10px] text-ink-3">Cached · {cachedAgeLabel(state.lastUpdatedMs)}</span>
-          ) : null}
           <AILensDriftChip
             impliedProb={input.market.implied_probability}
             fairLow={state.output.fair_range[0]}
@@ -119,9 +113,6 @@ export function AILensCompact({ input, fetchImpl }: Props) {
     <div className="border-t border-hair px-3 py-2 text-xs text-ink-2" role="status" aria-live="polite">
       <span className="flex items-center justify-between gap-3">
         <span className="line-clamp-1">{state.output.summary}</span>
-        {state.cached ? (
-          <span className="shrink-0 text-[10px] text-ink-3">Cached · {cachedAgeLabel(state.lastUpdatedMs)}</span>
-        ) : null}
       </span>
     </div>
   );

@@ -171,6 +171,8 @@ describe('AILensPanel', () => {
 
     expect(container.textContent).toContain('Generate AI Lens');
     expect(container.textContent).toContain('非投顾建议');
+    expect(container.textContent).not.toContain('缓存');
+    expect(container.textContent).not.toMatch(/cache/i);
   });
 
   test('点击后进入 loading 状态', async () => {
@@ -228,14 +230,15 @@ describe('AILensPanel', () => {
     expect(status?.textContent).toContain('BTC 估算偏低');
   });
 
-  test('event-multi 结果显示多 outcome gauge', async () => {
+  test('event-multi 结果显示多 outcome gauge 且不暴露缓存实现术语', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(240_000);
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
           status: 'ok',
           cached: true,
           output: multiOutput,
-          meta: { last_updated_ms: Date.now(), input_hash: 'h2' },
+          meta: { last_updated_ms: 0, input_hash: 'h2' },
         }),
         { status: 200 },
       ),
@@ -256,7 +259,10 @@ describe('AILensPanel', () => {
     expect(container.textContent).toContain('AI 24%–32%');
     expect(container.textContent).toContain('France');
     expect(container.textContent).toContain('市场 28% · AI 18%–26%');
-    expect(container.textContent).toContain('Cached');
+    expect(container.textContent).toContain('Updated 4m ago');
+    expect(container.textContent).not.toContain('Cached');
+    expect(container.textContent).not.toContain('Fresh');
+    expect(container.textContent).not.toMatch(/cache/i);
   });
 
   test('错误状态显示重试按钮', async () => {

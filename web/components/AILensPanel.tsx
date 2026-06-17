@@ -22,6 +22,9 @@ const DISCLAIMER =
 const focusRingClassName =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0';
 
+const minutesAgo = (lastUpdatedMs: number) =>
+  Math.max(0, Math.round((Date.now() - lastUpdatedMs) / 60000));
+
 export function AILensPanel({ input, fetchImpl }: Props) {
   const [state, setState] = useState<State>({ kind: 'idle' });
   const [whyOpen, setWhyOpen] = useState(false);
@@ -84,7 +87,7 @@ export function AILensPanel({ input, fetchImpl }: Props) {
       <section className="glass rounded-xl p-6" role="alert">
         <p className="text-sm text-no">AI Lens 暂不可用</p>
         <p className="mt-1 text-xs text-ink-3">
-          {state.message ? '请稍后重试，或等待缓存刷新。' : '请稍后重试。'}
+          请稍后重试。
         </p>
         <button
           type="button"
@@ -105,8 +108,7 @@ export function AILensPanel({ input, fetchImpl }: Props) {
       <header className="space-y-2">
         <p className="text-sm leading-6 text-ink">{out.summary}</p>
         <p className="text-[11px] text-ink-3">
-          信心 {out.confidence} · {state.cached ? 'Cached' : 'Fresh'} ·{' '}
-          {new Date(state.lastUpdatedMs).toLocaleString()}
+          Confidence {out.confidence} · Updated {minutesAgo(state.lastUpdatedMs)}m ago
         </p>
       </header>
 
