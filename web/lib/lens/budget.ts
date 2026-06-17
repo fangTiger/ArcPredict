@@ -1,3 +1,8 @@
+/**
+ * 注：默认价格按 DeepSeek V3 cache-miss 取值；V4 正式上线后，
+ * 请在 .env 用 LENS_INPUT_PRICE_PER_M_TOKENS / LENS_OUTPUT_PRICE_PER_M_TOKENS 覆盖。
+ * 参考：https://api-docs.deepseek.com/quick_start/pricing
+ */
 export type BudgetOptions = {
   dailyLimitUsd: number;
   inputPricePerMTokens?: number;
