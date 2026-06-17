@@ -21,7 +21,8 @@ export type DeepSeekResult = {
 class NonRetryableDeepSeekError extends Error {}
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const nonRetryableHttpStatuses = new Set([400, 401, 403]);
+const isNonRetryableClientError = (status: number) =>
+  status >= 400 && status < 500 && status !== 408 && status !== 429;
 
 export async function callDeepSeek(params: DeepSeekCallParams): Promise<DeepSeekResult> {
   const { config, systemPrompt, userMessage } = params;
@@ -54,7 +55,7 @@ export async function callDeepSeek(params: DeepSeekCallParams): Promise<DeepSeek
       clearTimeout(timer);
       if (!res.ok) {
         const message = `DeepSeek HTTP ${res.status}`;
-        if (nonRetryableHttpStatuses.has(res.status)) {
+        if (isNonRetryableClientError(res.status)) {
           throw new NonRetryableDeepSeekError(message);
         }
         throw new Error(message);

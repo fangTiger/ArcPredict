@@ -75,6 +75,65 @@ describe('lens.llm.callDeepSeek', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  test('404 客户端错误不重试', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 404 }));
+    await expect(
+      callDeepSeek({
+        config: baseConfig,
+        systemPrompt: 'sys',
+        userMessage: 'usr',
+        fetchImpl: fetchMock as any,
+      }),
+    ).rejects.toThrow(/404/);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('408 timeout 响应会重试', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('', { status: 408 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            choices: [{ message: { content: JSON.stringify({ retried: true }) } }],
+            usage: { prompt_tokens: 10, completion_tokens: 5 },
+          }),
+          { status: 200 },
+        ),
+      );
+    const result = await callDeepSeek({
+      config: baseConfig,
+      systemPrompt: 'sys',
+      userMessage: 'usr',
+      fetchImpl: fetchMock as any,
+    });
+    expect(result.contentJson).toEqual({ retried: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  test('429 rate limit 响应会重试', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('', { status: 429 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            choices: [{ message: { content: JSON.stringify({ retried: true }) } }],
+            usage: { prompt_tokens: 10, completion_tokens: 5 },
+          }),
+          { status: 200 },
+        ),
+      );
+    const result = await callDeepSeek({
+      config: baseConfig,
+      systemPrompt: 'sys',
+      userMessage: 'usr',
+      fetchImpl: fetchMock as any,
+    });
+    expect(result.contentJson).toEqual({ retried: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   test('非 JSON content 抛错', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
