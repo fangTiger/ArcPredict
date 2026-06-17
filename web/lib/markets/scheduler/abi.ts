@@ -2,6 +2,7 @@ import { parseAbi } from 'viem';
 
 export const eventMarketAbi = parseAbi([
   'function createMarket(bytes32 eventId, uint8 outcomeCount, uint64 betDeadline, uint64 resolveAfter, string question) returns (uint256 id)',
+  'function bet(uint256 id, uint8 outcomeIndex, uint128 amount)',
   'function resolve(uint256 id)',
   'event MarketCreated(uint256 indexed id, bytes32 indexed eventId, uint8 outcomeCount, uint64 betDeadline, uint64 resolveAfter, uint16 feeBpsSnapshot, address feeRecipientSnapshot, string question)',
   'event Resolved(uint256 indexed id, uint8 settledOutcome, uint64 settleTime, uint128 winnerPool, uint128 protocolFee)',
