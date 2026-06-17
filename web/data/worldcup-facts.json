@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "updated_at": "2026-06-16",
+  "facts": {
+    "global": [
+      { "key": "tournament", "value": "2026 FIFA World Cup", "source": "FIFA" },
+      { "key": "hosts", "value": "USA / Canada / Mexico", "source": "FIFA" },
+      { "key": "format", "value": "48 队 / 12 小组 / 32 强淘汰", "source": "FIFA" }
+    ],
+    "by_team": {
+      "ARG": [
+        { "key": "form", "value": "卫冕冠军，南美预选第 1", "source": "CONMEBOL" }
+      ],
+      "BRA": [
+        { "key": "form", "value": "南美预选第 2，主力健康", "source": "CONMEBOL" }
+      ]
+    },
+    "by_match": {}
+  }
+}
