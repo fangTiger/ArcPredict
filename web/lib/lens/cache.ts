@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import type { LensInput, LensOutput } from './schema';
 
 export type CacheEntry = {
@@ -13,6 +15,21 @@ export type CacheOptions = {
   nowMs?: () => number;
   seed?: CacheDump;
 };
+
+export function loadCacheDumpFromFile(filePath: string): CacheDump | undefined {
+  if (!existsSync(filePath)) return undefined;
+  try {
+    const raw = readFileSync(filePath, 'utf-8');
+    return JSON.parse(raw) as CacheDump;
+  } catch {
+    return undefined;
+  }
+}
+
+export function saveCacheDumpToFile(filePath: string, dump: CacheDump): void {
+  mkdirSync(dirname(filePath), { recursive: true });
+  writeFileSync(filePath, JSON.stringify(dump, null, 2), 'utf-8');
+}
 
 function stableStringify(value: unknown): string {
   if (Array.isArray(value)) {

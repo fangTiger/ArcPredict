@@ -1,6 +1,13 @@
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { beforeEach, describe, expect, test } from 'vitest';
 
-import { createMemoryCache, computeInputHash } from '../lib/lens/cache';
+import {
+  createMemoryCache,
+  computeInputHash,
+  loadCacheDumpFromFile,
+  saveCacheDumpToFile,
+} from '../lib/lens/cache';
 import type { LensInput, LensOutput } from '../lib/lens/schema';
 
 const baseInput: LensInput = {
@@ -58,5 +65,21 @@ describe('lens.cache', () => {
 
   test('同样输入哈希稳定', () => {
     expect(computeInputHash(baseInput)).toBe(computeInputHash(baseInput));
+  });
+
+  test('save 后 load 能拿到同样 dump', () => {
+    const hash = computeInputHash(baseInput);
+    cache.set('m1', hash, sampleOutput, 6 * 60 * 60 * 1000);
+    const dump = cache.dump();
+    const filePath = join(tmpdir(), `lens-test-${Date.now()}-${Math.random()}.json`);
+
+    saveCacheDumpToFile(filePath, dump);
+
+    expect(loadCacheDumpFromFile(filePath)).toEqual(dump);
+  });
+
+  test('load 不存在的文件返回 undefined', () => {
+    const filePath = join(tmpdir(), `lens-missing-${Date.now()}-${Math.random()}.json`);
+    expect(loadCacheDumpFromFile(filePath)).toBeUndefined();
   });
 });
