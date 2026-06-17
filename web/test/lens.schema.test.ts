@@ -42,6 +42,43 @@ describe('lens.schema', () => {
     expect(bad.success).toBe(false);
   });
 
+  test('LensInput 接受带 outcome 隐含概率的 event-multi 输入', () => {
+    const ok = LensInputSchema.safeParse({
+      market: {
+        id: 'arg-bra',
+        question: 'Argentina vs Brazil winner',
+        type: 'event-multi',
+        end_time: 1893456000,
+        implied_probability: 0.45,
+        outcome_options: ['ARG', 'BRA', 'DRAW'],
+        outcome_implied_probabilities: { ARG: 0.45, BRA: 0.35, DRAW: 0.2 },
+      },
+      context: {
+        facts: [{ key: 'stage', value: 'final', source: 'seed' }],
+      },
+      generated_at: 1718524800,
+    });
+
+    expect(ok.success).toBe(true);
+  });
+
+  test('LensInput 拒绝缺失 outcome 隐含概率的 event-multi 输入', () => {
+    const bad = LensInputSchema.safeParse({
+      market: {
+        id: 'arg-bra',
+        question: 'Argentina vs Brazil winner',
+        type: 'event-multi',
+        end_time: 1893456000,
+        implied_probability: 0.45,
+        outcome_options: ['ARG', 'BRA', 'DRAW'],
+      },
+      context: {},
+      generated_at: 1718524800,
+    });
+
+    expect(bad.success).toBe(false);
+  });
+
   test('LensOutput binary：fair_range 必须按 [low, high] 升序', () => {
     const ok = LensOutputSchema.safeParse({
       summary: 'BTC 距阈值 1.8σ，AI 估算偏低于市场。',

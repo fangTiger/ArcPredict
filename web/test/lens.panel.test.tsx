@@ -105,6 +105,11 @@ const multiInput: LensInput = {
     end_time: 9_999_999_999,
     implied_probability: 0.4,
     outcome_options: ['Brazil', 'France', 'Other'],
+    outcome_implied_probabilities: {
+      Brazil: 0.12,
+      France: 0.28,
+      Other: 0.6,
+    },
   },
   context: {},
   generated_at: 1,
@@ -243,8 +248,10 @@ describe('AILensPanel', () => {
     });
 
     expect(container.textContent).toContain('Brazil');
+    expect(container.textContent).toContain('市场 12% · AI 24%–32%');
     expect(container.textContent).toContain('AI 24%–32%');
     expect(container.textContent).toContain('France');
+    expect(container.textContent).toContain('市场 28% · AI 18%–26%');
     expect(container.textContent).toContain('Cached');
   });
 

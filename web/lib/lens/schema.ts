@@ -36,13 +36,14 @@ const MarketMetaBinary = z.object({
   implied_probability: probability,
 });
 
-const MarketMetaMulti = z.object({
+export const MarketMetaMulti = z.object({
   id: z.string(),
   question: z.string(),
   type: z.literal('event-multi'),
   end_time: z.number().int().positive(),
   implied_probability: probability,
   outcome_options: z.array(z.string()).min(2),
+  outcome_implied_probabilities: z.record(z.string(), probability),
 });
 
 const CryptoContext = z.object({

@@ -124,7 +124,10 @@ export function AILensPanel({ input, fetchImpl }: Props) {
             variant="multi"
             rows={Object.entries(out.outcome_fair_probabilities).map(([outcome, range]) => ({
               outcome,
-              impliedProb: input.market.implied_probability,
+              impliedProb:
+                input.market.type === 'event-multi'
+                  ? input.market.outcome_implied_probabilities[outcome] ?? 0
+                  : 0,
               fairLow: range[0],
               fairHigh: range[1],
             }))}

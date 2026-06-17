@@ -33,6 +33,7 @@ const eventInput: LensInput = {
     end_time: 9_999_999_999,
     implied_probability: 0.4,
     outcome_options: ['ARG', 'DRAW', 'BRA'],
+    outcome_implied_probabilities: { ARG: 0.45, DRAW: 0.2, BRA: 0.35 },
   },
   context: { facts: [{ key: 'tournament', value: '2026 FIFA World Cup', source: 'FIFA' }] },
   generated_at: 1718524800,
