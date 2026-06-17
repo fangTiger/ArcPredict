@@ -171,4 +171,58 @@ describe('AILensCompact', () => {
     expect(container.textContent).toContain('近一周波动率上升');
     expect(container.textContent).toContain('市场 30%');
   });
+
+  test('loading 状态用 polite status 宣告', async () => {
+    const fetchMock = vi.fn(
+      () =>
+        new Promise<Response>(() => {
+          // 保持 pending，便于断言 loading UI。
+        }),
+    );
+
+    act(() => {
+      root.render(
+        React.createElement(AILensCompact, { input: baseInput, fetchImpl: fetchMock as typeof fetch }),
+      );
+    });
+
+    const btn = container.querySelector('button');
+    await act(async () => {
+      btn?.click();
+      await Promise.resolve();
+    });
+
+    const status = container.querySelector('div[role="status"][aria-live="polite"]');
+    expect(status?.textContent).toContain('Analyzing…');
+    expect(status?.textContent).toContain('AI 正在分析…');
+  });
+
+  test('result 状态用 polite status 宣告', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          status: 'ok',
+          cached: false,
+          output: fakeOutput,
+          meta: { last_updated_ms: 0, input_hash: 'h' },
+        }),
+        { status: 200 },
+      ),
+    );
+
+    act(() => {
+      root.render(
+        React.createElement(AILensCompact, { input: baseInput, fetchImpl: fetchMock as typeof fetch }),
+      );
+    });
+
+    const btn = container.querySelector('button');
+    await act(async () => {
+      btn?.click();
+      await flushPromises();
+    });
+
+    const status = container.querySelector('div[role="status"][aria-live="polite"]');
+    expect(status?.textContent).toContain('近一周波动率上升');
+  });
 });

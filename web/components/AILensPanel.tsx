@@ -73,7 +73,7 @@ export function AILensPanel({ input, fetchImpl }: Props) {
 
   if (state.kind === 'loading') {
     return (
-      <section className="glass rounded-xl p-6" role="status">
+      <section className="glass rounded-xl p-6" role="status" aria-live="polite">
         <p className="text-sm text-ink-2">AI 正在分析…</p>
       </section>
     );
@@ -101,7 +101,7 @@ export function AILensPanel({ input, fetchImpl }: Props) {
   const out = state.output;
 
   return (
-    <section className="glass space-y-5 rounded-xl p-6">
+    <section className="glass space-y-5 rounded-xl p-6" role="status" aria-live="polite">
       <header className="space-y-2">
         <p className="text-sm leading-6 text-ink">{out.summary}</p>
         <p className="text-[11px] text-ink-3">

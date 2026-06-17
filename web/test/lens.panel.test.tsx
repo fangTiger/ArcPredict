@@ -192,6 +192,8 @@ describe('AILensPanel', () => {
     });
 
     expect(container.textContent).toContain('AI 正在分析');
+    const status = container.querySelector('section[role="status"][aria-live="polite"]');
+    expect(status?.textContent).toContain('AI 正在分析');
   });
 
   test('成功后显示 summary / factors / sources / 免责脚标', async () => {
@@ -222,6 +224,8 @@ describe('AILensPanel', () => {
     expect(container.textContent).toContain('Pyth · BTC/USD');
     expect(container.textContent).toContain('AI 10%–22%');
     expect(container.textContent).toContain('Not financial advice');
+    const status = container.querySelector('section[role="status"][aria-live="polite"]');
+    expect(status?.textContent).toContain('BTC 估算偏低');
   });
 
   test('event-multi 结果显示多 outcome gauge', async () => {

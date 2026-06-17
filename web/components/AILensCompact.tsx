@@ -67,8 +67,9 @@ export function AILensCompact({ input, fetchImpl }: Props) {
 
   if (state.kind === 'loading') {
     return (
-      <div className="border-t border-hair px-3 py-2 text-xs text-ink-2" role="status">
+      <div className="border-t border-hair px-3 py-2 text-xs text-ink-2" role="status" aria-live="polite">
         Analyzing…
+        <span className="sr-only">AI 正在分析…</span>
       </div>
     );
   }
@@ -91,7 +92,11 @@ export function AILensCompact({ input, fetchImpl }: Props) {
 
   if (state.output.fair_range) {
     return (
-      <div className="flex items-center justify-between gap-3 border-t border-hair px-3 py-2 text-xs">
+      <div
+        className="flex items-center justify-between gap-3 border-t border-hair px-3 py-2 text-xs"
+        role="status"
+        aria-live="polite"
+      >
         <span className="min-w-0 truncate text-ink-2">{state.output.summary}</span>
         <AILensDriftChip
           impliedProb={input.market.implied_probability}
@@ -103,7 +108,7 @@ export function AILensCompact({ input, fetchImpl }: Props) {
   }
 
   return (
-    <div className="border-t border-hair px-3 py-2 text-xs text-ink-2">
+    <div className="border-t border-hair px-3 py-2 text-xs text-ink-2" role="status" aria-live="polite">
       <span className="line-clamp-1">{state.output.summary}</span>
     </div>
   );
