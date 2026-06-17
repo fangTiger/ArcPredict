@@ -17,12 +17,24 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-const cache = createMemoryCache();
-const budget = createBudgetTracker({
-  dailyLimitUsd: Number(process.env.LENS_DAILY_BUDGET_USD ?? 1.0),
-  inputPricePerMTokens: Number(process.env.LENS_INPUT_PRICE_PER_M_TOKENS ?? 0.07),
-  outputPricePerMTokens: Number(process.env.LENS_OUTPUT_PRICE_PER_M_TOKENS ?? 1.10),
-});
+let _cache: ReturnType<typeof createMemoryCache> | undefined;
+let _budget: ReturnType<typeof createBudgetTracker> | undefined;
+
+function getCache() {
+  if (!_cache) _cache = createMemoryCache();
+  return _cache;
+}
+
+function getBudget() {
+  if (!_budget) {
+    _budget = createBudgetTracker({
+      dailyLimitUsd: Number(process.env.LENS_DAILY_BUDGET_USD ?? 1.0),
+      inputPricePerMTokens: Number(process.env.LENS_INPUT_PRICE_PER_M_TOKENS ?? 0.07),
+      outputPricePerMTokens: Number(process.env.LENS_OUTPUT_PRICE_PER_M_TOKENS ?? 1.10),
+    });
+  }
+  return _budget;
+}
 
 export type HandleLensParams = {
   input: LensInput;
@@ -163,7 +175,8 @@ export async function POST(req: NextRequest, { params }: { params: { marketId: s
 
   const input = parsedInput.data;
   const inputHash = computeInputHash(input);
-  const hit = cache.get(input.market.id, inputHash);
+  const lensCache = getCache();
+  const hit = lensCache.get(input.market.id, inputHash);
   const apiKey = process.env.DEEPSEEK_API_KEY ?? '';
   const baseUrl = process.env.DEEPSEEK_BASE_URL ?? 'https://api.deepseek.com';
   const model = process.env.DEEPSEEK_MODEL ?? 'deepseek-v4';
@@ -177,12 +190,12 @@ export async function POST(req: NextRequest, { params }: { params: { marketId: s
         systemPrompt,
         userMessage,
       }),
-    budget,
+    budget: getBudget(),
     ttlMs: ttlMsForMarketType(input.market.type),
   });
 
   if (result.status === 'ok' && result._newOutput) {
-    cache.set(
+    lensCache.set(
       input.market.id,
       result._newOutput.inputHash,
       result._newOutput.output,
