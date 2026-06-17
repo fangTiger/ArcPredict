@@ -1,5 +1,5 @@
 export type MarketKind = 'price' | 'event';
-export type MarketCategory = 'crypto' | 'worldcup';
+export type MarketCategory = 'crypto' | 'worldcup' | 'macro' | 'chain';
 
 export type WorldCupStage =
   | 'group'
@@ -11,7 +11,7 @@ export type WorldCupStage =
 export type WorldCupStageFilter = 'all' | WorldCupStage;
 
 export const MARKET_KINDS: MarketKind[] = ['price', 'event'];
-export const MARKET_CATEGORIES: MarketCategory[] = ['crypto', 'worldcup'];
+export const MARKET_CATEGORIES: MarketCategory[] = ['crypto', 'worldcup', 'macro', 'chain'];
 export const WORLD_CUP_STAGE_FILTERS: WorldCupStageFilter[] = [
   'all',
   'group',
