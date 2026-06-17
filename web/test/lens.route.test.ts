@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
-import { handleLensRequest } from '../app/api/lens/[marketId]/route';
+import { handleLensRequest } from '../lib/lens/route-handler';
 import type { LensInput } from '../lib/lens/schema';
 
 const fakeInput: LensInput = {
