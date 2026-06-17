@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import type { LensInput, LensOutput } from '@/lib/lens/schema';
-import { AILensDriftChip } from './AILensDriftChip';
+import { AILensGauge } from './AILensGauge';
 
 type Props = {
   input: LensInput;
@@ -18,6 +18,9 @@ type State =
 
 const focusRingClassName =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0';
+
+const minutesAgo = (lastUpdatedMs: number) =>
+  Math.max(0, Math.round((Date.now() - lastUpdatedMs) / 60000));
 
 export function AILensCompact({ input, fetchImpl }: Props) {
   const [state, setState] = useState<State>({ kind: 'idle' });
@@ -90,30 +93,66 @@ export function AILensCompact({ input, fetchImpl }: Props) {
     );
   }
 
-  if (state.output.fair_range) {
-    return (
-      <div
-        className="flex items-center justify-between gap-3 border-t border-hair px-3 py-2 text-xs"
-        role="status"
-        aria-live="polite"
-      >
-        <span className="min-w-0 truncate text-ink-2">{state.output.summary}</span>
-        <span className="flex shrink-0 items-center gap-2">
-          <AILensDriftChip
-            impliedProb={input.market.implied_probability}
-            fairLow={state.output.fair_range[0]}
-            fairHigh={state.output.fair_range[1]}
-          />
-        </span>
-      </div>
-    );
-  }
+  const out = state.output;
+  const updatedMinutesAgo = minutesAgo(state.lastUpdatedMs);
 
   return (
-    <div className="border-t border-hair px-3 py-2 text-xs text-ink-2" role="status" aria-live="polite">
-      <span className="flex items-center justify-between gap-3">
-        <span className="line-clamp-1">{state.output.summary}</span>
-      </span>
+    <div
+      className="flex flex-col gap-3 border-t border-hair px-4 py-3"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[11px] uppercase tracking-wider text-ink-3">AI Lens</span>
+        <button
+          type="button"
+          onClick={() => setState({ kind: 'idle' })}
+          className={`text-xs text-arc-glow underline underline-offset-4 ${focusRingClassName}`}
+        >
+          Hide
+        </button>
+      </div>
+
+      <p className="text-sm leading-snug text-ink">{out.summary}</p>
+
+      {out.fair_range ? (
+        <div className="my-1" data-ai-lens-gauge="binary">
+          <AILensGauge
+            variant="binary"
+            impliedProb={input.market.implied_probability}
+            fairLow={out.fair_range[0]}
+            fairHigh={out.fair_range[1]}
+          />
+        </div>
+      ) : null}
+
+      {out.outcome_fair_probabilities ? (
+        <div className="my-1" data-ai-lens-gauge="multi">
+          <AILensGauge
+            variant="multi"
+            rows={Object.entries(out.outcome_fair_probabilities).map(([outcome, range]) => ({
+              outcome,
+              impliedProb:
+                input.market.type === 'event-multi'
+                  ? input.market.outcome_implied_probabilities[outcome] ?? 0
+                  : 0,
+              fairLow: range[0],
+              fairHigh: range[1],
+            }))}
+          />
+        </div>
+      ) : null}
+
+      <ul className="list-inside list-disc space-y-1 text-xs text-ink-2">
+        {out.factors.slice(0, 3).map((factor, index) => (
+          <li key={`${factor}-${index}`}>{factor}</li>
+        ))}
+      </ul>
+
+      <div className="flex items-center justify-between gap-3 text-[10px] text-ink-3">
+        <span>Updated {updatedMinutesAgo}m ago</span>
+        <span>Reference only — not financial advice</span>
+      </div>
     </div>
   );
 }

@@ -99,12 +99,44 @@ const baseInput: LensInput = {
 
 const fakeOutput: LensOutput = {
   summary: 'Volatility rose this week, and AI estimates below the market.',
-  factors: ['a', 'b', 'c'],
+  factors: ['Volatility rose', 'Threshold remains far', 'Historical skew is bearish', 'Extra factor'],
   fair_range: [0.1, 0.2],
   confidence: 'med',
   reasoning: 'r',
   sources: [],
   caveats: [],
+};
+
+const multiInput: LensInput = {
+  market: {
+    id: 'm2',
+    question: 'winner',
+    type: 'event-multi',
+    end_time: 9_999_999_999,
+    implied_probability: 0.4,
+    outcome_options: ['Brazil', 'France', 'Other'],
+    outcome_implied_probabilities: {
+      Brazil: 0.12,
+      France: 0.28,
+      Other: 0.6,
+    },
+  },
+  context: {},
+  generated_at: 1,
+};
+
+const multiOutput: LensOutput = {
+  summary: 'Favorites concentrate most of the probability.',
+  factors: ['Squad depth', 'Schedule strength', 'Historical performance', 'Market distribution'],
+  confidence: 'low',
+  reasoning: 'Based on curated facts and market distribution.',
+  sources: [],
+  caveats: [],
+  outcome_fair_probabilities: {
+    Brazil: [0.24, 0.32],
+    France: [0.18, 0.26],
+    Other: [0.42, 0.58],
+  },
 };
 
 let container: HTMLDivElement;
@@ -144,7 +176,8 @@ describe('AILensCompact', () => {
     expect(container.textContent).not.toMatch(/cache/i);
   });
 
-  test('点击触发：成功后显示 summary 与 drift chip', async () => {
+  test('点击触发：成功后展开 summary / gauge / factors / footer', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(120_000);
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -172,9 +205,19 @@ describe('AILensCompact', () => {
     });
 
     expect(fetchMock).toHaveBeenCalled();
+    expect(container.textContent).toContain('AI Lens');
+    expect(container.textContent).toContain('Hide');
     expect(container.textContent).toContain('Volatility rose this week');
     expect(container.textContent).toContain('Market 30%');
-    expect(container.querySelector('[aria-label*="Market 30%, AI 10%–20%"]')).toBeTruthy();
+    expect(container.querySelector('[data-ai-lens-gauge="binary"]')).toBeTruthy();
+    expect(container.querySelectorAll('li')).toHaveLength(3);
+    expect(container.textContent).toContain('Volatility rose');
+    expect(container.textContent).toContain('Threshold remains far');
+    expect(container.textContent).toContain('Historical skew is bearish');
+    expect(container.textContent).not.toContain('Extra factor');
+    expect(container.textContent).toContain('Updated 2m ago');
+    expect(container.textContent).toContain('Reference only — not financial advice');
+    expect(container.textContent).not.toContain('↑ rich');
   });
 
   test('loading 状态用 polite status 宣告', async () => {
@@ -249,6 +292,75 @@ describe('AILensCompact', () => {
 
     const status = container.querySelector('div[role="status"][aria-live="polite"]');
     expect(status?.textContent).toContain('Volatility rose this week');
+  });
+
+  test('Hide 按钮回到 idle 状态', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          status: 'ok',
+          cached: false,
+          output: fakeOutput,
+          meta: { last_updated_ms: 0, input_hash: 'h' },
+        }),
+        { status: 200 },
+      ),
+    );
+
+    act(() => {
+      root.render(
+        React.createElement(AILensCompact, { input: baseInput, fetchImpl: fetchMock as typeof fetch }),
+      );
+    });
+
+    const btn = container.querySelector('button');
+    await act(async () => {
+      btn?.click();
+      await flushPromises();
+    });
+
+    const hideButton = Array.from(container.querySelectorAll('button')).find((node) =>
+      node.textContent?.includes('Hide'),
+    );
+    expect(hideButton).toBeTruthy();
+
+    await act(async () => {
+      hideButton?.click();
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain('Ask AI');
+    expect(container.textContent).toContain('AI probability analysis');
+  });
+
+  test('event-multi result 使用 multi gauge', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          status: 'ok',
+          cached: false,
+          output: multiOutput,
+          meta: { last_updated_ms: 0, input_hash: 'h2' },
+        }),
+        { status: 200 },
+      ),
+    );
+
+    act(() => {
+      root.render(
+        React.createElement(AILensCompact, { input: multiInput, fetchImpl: fetchMock as typeof fetch }),
+      );
+    });
+
+    const btn = container.querySelector('button');
+    await act(async () => {
+      btn?.click();
+      await flushPromises();
+    });
+
+    expect(container.querySelector('[data-ai-lens-gauge="multi"]')).toBeTruthy();
+    expect(container.textContent).toContain('Brazil');
+    expect(container.textContent).toContain('Market 12% · AI 24%–32%');
   });
 
   test('cached result 不暴露缓存实现术语', async () => {
