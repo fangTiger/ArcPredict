@@ -120,6 +120,45 @@ describe('lens.schema', () => {
     expect(ok.success).toBe(true);
   });
 
+  test('LensOutput sources[].ts 接受 ISO 字符串并转成 unix 秒数', () => {
+    const ok = LensOutputSchema.safeParse({
+      summary: '阿根廷概率领先。',
+      factors: ['近期战绩', '主力健康', '历史对阵'],
+      outcome_fair_probabilities: {
+        ARG: [0.45, 0.55],
+        DRAW: [0.15, 0.25],
+        BRA: [0.25, 0.35],
+      },
+      confidence: 'med',
+      reasoning: 'r',
+      sources: [{ name: 'facts', ref: 'arg-vs-bra', ts: '2025-12-01T00:00:00Z' }],
+      caveats: [],
+    });
+
+    expect(ok.success).toBe(true);
+    if (ok.success) {
+      expect(ok.data.sources[0].ts).toBe(1764547200);
+    }
+  });
+
+  test('LensOutput sources[].ts 拒绝无法解析的日期字符串', () => {
+    const bad = LensOutputSchema.safeParse({
+      summary: '阿根廷概率领先。',
+      factors: ['近期战绩', '主力健康', '历史对阵'],
+      outcome_fair_probabilities: {
+        ARG: [0.45, 0.55],
+        DRAW: [0.15, 0.25],
+        BRA: [0.25, 0.35],
+      },
+      confidence: 'med',
+      reasoning: 'r',
+      sources: [{ name: 'facts', ref: 'arg-vs-bra', ts: 'not-a-date' }],
+      caveats: [],
+    });
+
+    expect(bad.success).toBe(false);
+  });
+
   test('禁止词命中导致 schema 拒绝', () => {
     expect(FORBIDDEN_WORDS).toContain('建议下注');
     const bad = LensOutputSchema.safeParse({

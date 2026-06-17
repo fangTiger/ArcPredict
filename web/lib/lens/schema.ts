@@ -69,7 +69,17 @@ export type LensInput = z.infer<typeof LensInputSchema>;
 const SourceItem = z.object({
   name: z.string(),
   ref: z.string(),
-  ts: z.number(),
+  ts: z.union([
+    z.number(),
+    z.string().transform((s, ctx) => {
+      const ms = Date.parse(s);
+      if (Number.isNaN(ms)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'invalid date string' });
+        return z.NEVER;
+      }
+      return Math.floor(ms / 1000);
+    }),
+  ]),
 });
 
 const BaseOutputFields = {

@@ -20,6 +20,7 @@ export function buildSystemPrompt(): string {
 - confidence: 'low' | 'med' | 'high'
 - reasoning: string ≤ 800 字符
 - sources: [{ name, ref, ts }]
+- sources[].ts: 必须是 unix 秒数（整数）；如果你想表达日期，请先转 unix 时间戳。禁止 ISO 字符串。
 - caveats: ≤ 3 项 string
 
 `;

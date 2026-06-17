@@ -35,4 +35,8 @@ describe('lens.prompts', () => {
     const obj = JSON.parse(msg);
     expect(obj.market.id).toBe('btc-100k');
   });
+
+  test('system prompt 明确要求 sources ts 使用 unix 秒数', () => {
+    expect(buildSystemPrompt()).toMatch(/unix 秒|unix timestamp/i);
+  });
 });
