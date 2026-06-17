@@ -50,7 +50,7 @@ export function AILensPanel({ input, fetchImpl }: Props) {
         return;
       }
 
-      setState({ kind: 'error', message: json.message ?? '调用失败' });
+      setState({ kind: 'error', message: json.message ?? 'Request failed' });
     } catch (e) {
       setState({ kind: 'error', message: e instanceof Error ? e.message : String(e) });
     }
@@ -63,12 +63,13 @@ export function AILensPanel({ input, fetchImpl }: Props) {
           type="button"
           onClick={trigger}
           className={`inline-flex items-center gap-2 rounded-full border border-arc-glow/40 bg-arc/20 px-5 py-2.5 text-sm font-semibold text-ink transition hover:border-arc-glow hover:bg-arc/25 ${focusRingClassName}`}
-          aria-label="生成 AI Lens 概率分析"
+          aria-label="Generate AI Lens probability analysis"
         >
-          Generate AI Lens
+          ✨ Generate AI Lens
         </button>
         <p className="mt-3 text-xs leading-5 text-ink-3">
-          AI 综合 Pyth 价格 / 市场状态 / 事实表给出公允概率区间，仅供参考、非投顾建议
+          AI synthesizes Pyth prices, market state, and curated facts to estimate a
+          fair-probability range. Reference only — not financial advice.
         </p>
       </section>
     );
@@ -77,7 +78,7 @@ export function AILensPanel({ input, fetchImpl }: Props) {
   if (state.kind === 'loading') {
     return (
       <section className="glass rounded-xl p-6" role="status" aria-live="polite">
-        <p className="text-sm text-ink-2">AI 正在分析…</p>
+        <p className="text-sm text-ink-2">Analyzing…</p>
       </section>
     );
   }
@@ -85,17 +86,14 @@ export function AILensPanel({ input, fetchImpl }: Props) {
   if (state.kind === 'error') {
     return (
       <section className="glass rounded-xl p-6" role="alert">
-        <p className="text-sm text-no">AI Lens 暂不可用</p>
-        <p className="mt-1 text-xs text-ink-3">
-          请稍后重试。
-        </p>
+        <p className="text-sm text-no">AI Lens unavailable. {state.message}</p>
         <button
           type="button"
           onClick={trigger}
           className={`mt-3 text-xs text-arc-glow underline underline-offset-4 ${focusRingClassName}`}
-          aria-label="重试 AI Lens"
+          aria-label="Retry AI Lens"
         >
-          重试
+          Retry
         </button>
       </section>
     );
@@ -168,7 +166,7 @@ export function AILensPanel({ input, fetchImpl }: Props) {
           className={`text-xs text-arc-glow underline underline-offset-4 ${focusRingClassName}`}
           aria-expanded={whyOpen}
         >
-          {whyOpen ? '收起 Why?' : '展开 Why?'}
+          {whyOpen ? 'Hide reasoning' : 'Why?'}
         </button>
         {whyOpen ? <p className="mt-2 text-xs leading-relaxed text-ink-2">{out.reasoning}</p> : null}
       </div>

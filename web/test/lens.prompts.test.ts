@@ -22,11 +22,12 @@ const cryptoInput: LensInput = {
 describe('lens.prompts', () => {
   test('system prompt 包含五条铁律关键短语', () => {
     const sp = buildSystemPrompt();
-    expect(sp).toMatch(/只输出.*JSON/);
-    expect(sp).toMatch(/禁止.*建议下注/);
+    expect(sp).toMatch(/Output JSON only|JSON only/);
+    expect(sp).toMatch(/recommend|advisory/i);
     expect(sp).toMatch(/\[unverified\]/);
-    expect(sp).toMatch(/high.*≥\s*2/);
-    expect(sp).toMatch(/fair_range.*<\s*5pp/);
+    expect(sp).toMatch(/≥\s*2|two sources/i);
+    expect(sp).toMatch(/5\s*pp|0\.05/);
+    expect(sp).toMatch(/English/);
   });
 
   test('user message 是合法 JSON 字符串且包含 market.id', () => {
@@ -37,6 +38,6 @@ describe('lens.prompts', () => {
   });
 
   test('system prompt 明确要求 sources ts 使用 unix 秒数', () => {
-    expect(buildSystemPrompt()).toMatch(/unix 秒|unix timestamp/i);
+    expect(buildSystemPrompt()).toMatch(/unix seconds|unix timestamp/i);
   });
 });

@@ -28,9 +28,9 @@ export function AILensDriftChip({ impliedProb, fairLow, fairHigh, threshold = 0.
     <span
       className={`glass inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${color}`}
       role="status"
-      aria-label={`市场 ${pct(impliedProb)}，AI ${pct(fairLow)} 到 ${pct(fairHigh)}，${label}`}
+      aria-label={`Market ${pct(impliedProb)}, AI ${pct(fairLow)}–${pct(fairHigh)}, ${label}`}
     >
-      <span>市场 {pct(impliedProb)}</span>
+      <span>Market {pct(impliedProb)}</span>
       <span className="opacity-40">/</span>
       <span>
         AI {pct(fairLow)}–{pct(fairHigh)}

@@ -116,20 +116,20 @@ const multiInput: LensInput = {
 };
 
 const fakeOutput: LensOutput = {
-  summary: 'BTC 估算偏低。',
-  factors: ['波动率高', '距阈值远', '历史空头偏多'],
+  summary: 'BTC looks below the market estimate.',
+  factors: ['High volatility', 'Far from threshold', 'Bearish historical skew'],
   fair_range: [0.1, 0.22],
   confidence: 'med',
-  reasoning: '基于 Pyth 30 天波动率推理。',
+  reasoning: 'Based on Pyth 30-day volatility.',
   sources: [{ name: 'Pyth', ref: 'BTC/USD', ts: 1 }],
-  caveats: ['不含突发新闻'],
+  caveats: ['Excludes breaking news'],
 };
 
 const multiOutput: LensOutput = {
-  summary: '强队概率集中。',
-  factors: ['阵容深度', '赛程强度', '历史表现'],
+  summary: 'Favorites concentrate most of the probability.',
+  factors: ['Squad depth', 'Schedule strength', 'Historical performance'],
   confidence: 'low',
-  reasoning: '基于事实表与市场概率分布。',
+  reasoning: 'Based on curated facts and market distribution.',
   sources: [{ name: 'WorldCupFacts', ref: 'seed', ts: 1 }],
   caveats: [],
   outcome_fair_probabilities: {
@@ -170,8 +170,12 @@ describe('AILensPanel', () => {
     });
 
     expect(container.textContent).toContain('Generate AI Lens');
-    expect(container.textContent).toContain('非投顾建议');
-    expect(container.textContent).not.toContain('缓存');
+    expect(container.querySelector('button')?.textContent).toBe('✨ Generate AI Lens');
+    expect(container.textContent).toContain('AI synthesizes Pyth prices');
+    expect(container.textContent).toContain('not financial advice');
+    expect(container.querySelector('button')?.getAttribute('aria-label')).toBe(
+      'Generate AI Lens probability analysis',
+    );
     expect(container.textContent).not.toMatch(/cache/i);
   });
 
@@ -193,9 +197,9 @@ describe('AILensPanel', () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain('AI 正在分析');
+    expect(container.textContent).toContain('Analyzing…');
     const status = container.querySelector('section[role="status"][aria-live="polite"]');
-    expect(status?.textContent).toContain('AI 正在分析');
+    expect(status?.textContent).toContain('Analyzing…');
   });
 
   test('成功后显示 summary / factors / sources / 免责脚标', async () => {
@@ -221,13 +225,23 @@ describe('AILensPanel', () => {
       await flushPromises();
     });
 
-    expect(container.textContent).toContain('BTC 估算偏低');
-    expect(container.textContent).toContain('波动率高');
+    expect(container.textContent).toContain('BTC looks below the market estimate');
+    expect(container.textContent).toContain('High volatility');
     expect(container.textContent).toContain('Pyth · BTC/USD');
     expect(container.textContent).toContain('AI 10%–22%');
     expect(container.textContent).toContain('Not financial advice');
+    const whyButton = Array.from(container.querySelectorAll('button')).find((node) =>
+      node.textContent?.includes('Why?'),
+    );
+    expect(whyButton?.textContent).toBe('Why?');
+    await act(async () => {
+      whyButton?.click();
+      await Promise.resolve();
+    });
+    expect(whyButton?.textContent).toBe('Hide reasoning');
+    expect(container.textContent).toContain('Based on Pyth 30-day volatility');
     const status = container.querySelector('section[role="status"][aria-live="polite"]');
-    expect(status?.textContent).toContain('BTC 估算偏低');
+    expect(status?.textContent).toContain('BTC looks below the market estimate');
   });
 
   test('event-multi 结果显示多 outcome gauge 且不暴露缓存实现术语', async () => {
@@ -255,10 +269,10 @@ describe('AILensPanel', () => {
     });
 
     expect(container.textContent).toContain('Brazil');
-    expect(container.textContent).toContain('市场 12% · AI 24%–32%');
+    expect(container.textContent).toContain('Market 12% · AI 24%–32%');
     expect(container.textContent).toContain('AI 24%–32%');
     expect(container.textContent).toContain('France');
-    expect(container.textContent).toContain('市场 28% · AI 18%–26%');
+    expect(container.textContent).toContain('Market 28% · AI 18%–26%');
     expect(container.textContent).toContain('Updated 4m ago');
     expect(container.textContent).not.toContain('Cached');
     expect(container.textContent).not.toContain('Fresh');
@@ -271,7 +285,7 @@ describe('AILensPanel', () => {
         JSON.stringify({
           status: 'error',
           code: 'llm_failure',
-          message: '上游错误',
+          message: 'Upstream error',
         }),
         { status: 502 },
       ),
@@ -287,7 +301,7 @@ describe('AILensPanel', () => {
       await flushPromises();
     });
 
-    expect(container.textContent).toContain('AI Lens 暂不可用');
-    expect(container.textContent).toContain('重试');
+    expect(container.textContent).toContain('AI Lens unavailable. Upstream error');
+    expect(container.textContent).toContain('Retry');
   });
 });

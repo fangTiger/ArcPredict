@@ -27,7 +27,7 @@ function BinaryBar({ impliedProb, fairLow, fairHigh }: BinaryProps) {
     <div className="space-y-2">
       <div
         className="relative h-3 overflow-hidden rounded-full bg-bg-2"
-        aria-label={`市场 ${pct(impliedProb)}，AI ${pct(fairLow)} 到 ${pct(fairHigh)}`}
+        aria-label={`Market ${pct(impliedProb)}, AI ${pct(fairLow)}–${pct(fairHigh)}`}
       >
         <div
           className="absolute bottom-0 top-0 bg-arc-glow/30"
@@ -41,7 +41,7 @@ function BinaryBar({ impliedProb, fairLow, fairHigh }: BinaryProps) {
         />
       </div>
       <div className="flex justify-between text-xs text-ink-3">
-        <span>市场 {pct(impliedProb)}</span>
+        <span>Market {pct(impliedProb)}</span>
         <span>
           AI {pct(fairLow)}–{pct(fairHigh)}
         </span>
@@ -58,12 +58,12 @@ function MultiStack({ rows }: { rows: MultiProps['rows'] }) {
           <div className="mb-1 flex justify-between gap-3 text-xs">
             <span className="min-w-0 truncate text-ink-2">{row.outcome}</span>
             <span className="shrink-0 text-ink-3">
-              市场 {pct(row.impliedProb)} · AI {pct(row.fairLow)}–{pct(row.fairHigh)}
+              Market {pct(row.impliedProb)} · AI {pct(row.fairLow)}–{pct(row.fairHigh)}
             </span>
           </div>
           <div
             className="relative h-2 overflow-hidden rounded-full bg-bg-2"
-            aria-label={`${row.outcome}：市场 ${pct(row.impliedProb)}，AI ${pct(row.fairLow)} 到 ${pct(
+            aria-label={`${row.outcome}: Market ${pct(row.impliedProb)}, AI ${pct(row.fairLow)}–${pct(
               row.fairHigh,
             )}`}
           >

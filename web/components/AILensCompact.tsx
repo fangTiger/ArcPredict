@@ -43,7 +43,7 @@ export function AILensCompact({ input, fetchImpl }: Props) {
         return;
       }
 
-      setState({ kind: 'error', message: json.message ?? '调用失败' });
+      setState({ kind: 'error', message: json.message ?? 'Request failed' });
     } catch (e) {
       setState({ kind: 'error', message: e instanceof Error ? e.message : String(e) });
     }
@@ -56,11 +56,11 @@ export function AILensCompact({ input, fetchImpl }: Props) {
           type="button"
           onClick={trigger}
           className={`glass inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-ink transition hover:text-arc-glow ${focusRingClassName}`}
-          aria-label="触发 AI 概率分析"
+          aria-label="Run AI probability analysis"
         >
-          Ask AI
+          ✨ Ask AI
         </button>
-        <span className="text-ink-3">AI 概率分析</span>
+        <span className="text-ink-3">AI probability analysis</span>
       </div>
     );
   }
@@ -69,7 +69,7 @@ export function AILensCompact({ input, fetchImpl }: Props) {
     return (
       <div className="border-t border-hair px-3 py-2 text-xs text-ink-2" role="status" aria-live="polite">
         Analyzing…
-        <span className="sr-only">AI 正在分析…</span>
+        <span className="sr-only">AI is analyzing</span>
       </div>
     );
   }
@@ -77,14 +77,14 @@ export function AILensCompact({ input, fetchImpl }: Props) {
   if (state.kind === 'error') {
     return (
       <div className="border-t border-hair px-3 py-2 text-xs text-no" role="alert">
-        AI Lens 暂不可用，请稍后重试
+        AI Lens unavailable — please retry
         <button
           type="button"
           className={`ml-2 text-arc-glow underline underline-offset-4 ${focusRingClassName}`}
           onClick={trigger}
-          aria-label="重试 AI Lens"
+          aria-label="Retry AI Lens"
         >
-          重试
+          Retry
         </button>
       </div>
     );

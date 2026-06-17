@@ -98,7 +98,7 @@ const baseInput: LensInput = {
 };
 
 const fakeOutput: LensOutput = {
-  summary: '近一周波动率上升，AI 估算偏低于市场。',
+  summary: 'Volatility rose this week, and AI estimates below the market.',
   factors: ['a', 'b', 'c'],
   fair_range: [0.1, 0.2],
   confidence: 'med',
@@ -138,7 +138,9 @@ describe('AILensCompact', () => {
     });
 
     expect(container.textContent).toContain('Ask AI');
-    expect(container.textContent).not.toContain('缓存');
+    expect(container.querySelector('button')?.textContent).toBe('✨ Ask AI');
+    expect(container.textContent).toContain('AI probability analysis');
+    expect(container.querySelector('button')?.getAttribute('aria-label')).toBe('Run AI probability analysis');
     expect(container.textContent).not.toMatch(/cache/i);
   });
 
@@ -170,8 +172,9 @@ describe('AILensCompact', () => {
     });
 
     expect(fetchMock).toHaveBeenCalled();
-    expect(container.textContent).toContain('近一周波动率上升');
-    expect(container.textContent).toContain('市场 30%');
+    expect(container.textContent).toContain('Volatility rose this week');
+    expect(container.textContent).toContain('Market 30%');
+    expect(container.querySelector('[aria-label*="Market 30%, AI 10%–20%"]')).toBeTruthy();
   });
 
   test('loading 状态用 polite status 宣告', async () => {
@@ -196,7 +199,7 @@ describe('AILensCompact', () => {
 
     const status = container.querySelector('div[role="status"][aria-live="polite"]');
     expect(status?.textContent).toContain('Analyzing…');
-    expect(status?.textContent).toContain('AI 正在分析…');
+    expect(status?.textContent).toContain('AI is analyzing');
   });
 
   test('error 状态显示错误文案与重试按钮', async () => {
@@ -214,9 +217,9 @@ describe('AILensCompact', () => {
       await flushPromises();
     });
 
-    expect(container.textContent).toContain('AI Lens 暂不可用');
-    expect(container.textContent).toContain('重试');
-    expect(container.querySelector('button[aria-label="重试 AI Lens"]')).toBeTruthy();
+    expect(container.textContent).toContain('AI Lens unavailable — please retry');
+    expect(container.textContent).toContain('Retry');
+    expect(container.querySelector('button[aria-label="Retry AI Lens"]')).toBeTruthy();
   });
 
   test('result 状态用 polite status 宣告', async () => {
@@ -245,7 +248,7 @@ describe('AILensCompact', () => {
     });
 
     const status = container.querySelector('div[role="status"][aria-live="polite"]');
-    expect(status?.textContent).toContain('近一周波动率上升');
+    expect(status?.textContent).toContain('Volatility rose this week');
   });
 
   test('cached result 不暴露缓存实现术语', async () => {
