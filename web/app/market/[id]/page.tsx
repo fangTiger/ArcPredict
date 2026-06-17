@@ -9,6 +9,7 @@ import { useAccount, usePublicClient, useReadContract } from 'wagmi';
 import { BetForm } from '@/components/BetForm';
 import { BetModal } from '@/components/BetModal';
 import { EventBetModal } from '@/components/EventBetModal';
+import { AILensPanel } from '@/components/AILensPanel';
 import { MarketDetailCard } from '@/components/MarketDetailCard';
 import { NetworkBanner } from '@/components/NetworkBanner';
 import { SeedDisclosure, sumSeedContribution } from '@/components/SeedDisclosure';
@@ -25,6 +26,7 @@ import { fetchLogsPaged } from '@/lib/bet-event-scan';
 import { arcTestnet } from '@/lib/chain';
 import { WORLDCUP_ENABLED } from '@/lib/feature-flags';
 import { fmtUsdc } from '@/lib/format';
+import type { LensInput } from '@/lib/lens/schema';
 import { isPhase16Enabled } from '@/lib/phase16-flag';
 import { SEED_WALLETS } from '@/lib/seed-wallets';
 import { useMediaQuery } from '@/lib/use-media-query';
@@ -65,6 +67,53 @@ type SeedBetLog = {
 
 const focusRingClassName =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0';
+
+const toLensProbability = (value: number) => Math.max(0, Math.min(1, value / 100));
+
+function priceImpliedProbability(row: MarketRow): number {
+  const total = row.market.yesPool + row.market.noPool;
+
+  if (total === 0n) {
+    return 0.5;
+  }
+
+  return Number((row.market.yesPool * 10000n) / total) / 10000;
+}
+
+function buildPriceLensInput(row: MarketRow, generatedAt: number): LensInput {
+  return {
+    market: {
+      id: row.id.toString(),
+      question: row.market.question,
+      type: 'crypto-binary',
+      end_time: Number(row.market.resolveAfter),
+      implied_probability: priceImpliedProbability(row),
+    },
+    context: {},
+    generated_at: generatedAt,
+  };
+}
+
+function buildEventLensInput(row: EventRow, generatedAt: number): LensInput {
+  return {
+    market: {
+      id: row.id.toString(),
+      question: row.question,
+      type: 'event-multi',
+      end_time: Number(row.betDeadline),
+      implied_probability: toLensProbability(row.outcomes[0]?.impliedProbability ?? 0),
+      outcome_options: row.outcomes.map((outcome) => outcome.label),
+      outcome_implied_probabilities: Object.fromEntries(
+        row.outcomes.map((outcome) => [
+          outcome.label,
+          toLensProbability(outcome.impliedProbability),
+        ]),
+      ),
+    },
+    context: { facts: [] },
+    generated_at: generatedAt,
+  };
+}
 
 function PositionSummary({ row }: { row: MarketRow }) {
   return (
@@ -148,6 +197,7 @@ export default function MarketDetailPage() {
   const [selectedSide, setSelectedSide] = useState(true);
   const [showMobileBet, setShowMobileBet] = useState(false);
   const [seedBetEvents, setSeedBetEvents] = useState<SeedBetEvent[] | undefined>(undefined);
+  const [lensGeneratedAt] = useState(() => Math.floor(Date.now() / 1000));
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const hasEventMarket = WORLDCUP_ENABLED && EVENT_MARKET_ADDRESS !== zeroAddress;
   const contractIdBn =
@@ -375,17 +425,27 @@ export default function MarketDetailPage() {
 
                   <div className="mt-5">
                     {kind === 'event' && eventRow ? (
-                      <MarketDetailCard
-                        marketKind="event"
-                        row={eventRow}
-                        onBet={(nextRow, outcomeIndex) => setEventBetting({ row: nextRow, outcomeIndex })}
-                      />
+                      <>
+                        <MarketDetailCard
+                          marketKind="event"
+                          row={eventRow}
+                          onBet={(nextRow, outcomeIndex) => setEventBetting({ row: nextRow, outcomeIndex })}
+                        />
+                        <div className="mt-5">
+                          <AILensPanel input={buildEventLensInput(eventRow, lensGeneratedAt)} />
+                        </div>
+                      </>
                     ) : row ? (
-                      <MarketDetailCard
-                        marketKind="price"
-                        row={row}
-                        onBet={handlePriceBet}
-                      />
+                      <>
+                        <MarketDetailCard
+                          marketKind="price"
+                          row={row}
+                          onBet={handlePriceBet}
+                        />
+                        <div className="mt-5">
+                          <AILensPanel input={buildPriceLensInput(row, lensGeneratedAt)} />
+                        </div>
+                      </>
                     ) : null}
                     {showPhase16 && row ? (
                       <div className="mt-4">
