@@ -20,6 +20,7 @@ export function buildSystemPrompt(): string {
 - for event-multi: outcome_fair_probabilities: { [outcome]: [low, high] }, at least 2 entries
 - confidence: 'low' | 'med' | 'high'
 - reasoning: string ≤ 800 characters
+- context.seconds_to_resolve (when provided): authoritative time remaining in seconds until market end. Use this value verbatim; do NOT estimate the time horizon from market.end_time or other fields.
 - sources: [{ name, ref, ts }]
 - sources[].ts: must be a unix seconds integer; if you need to express a date, convert it to a unix timestamp first. ISO strings are forbidden.
 - caveats: ≤ 3 string items

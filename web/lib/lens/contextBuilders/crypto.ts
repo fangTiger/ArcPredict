@@ -4,18 +4,25 @@ export type CryptoContextInput = {
   pythSeries: PythSample[];
   threshold: number;
   maxSamples?: number;
+  endTimeSeconds?: number;
 };
 
 export type CryptoContext = {
   pyth_recent: PythSample[];
   volatility_30d?: number;
   distance_to_threshold_sigma?: number;
+  seconds_to_resolve?: number;
 };
 
 export function buildCryptoContext(input: CryptoContextInput): CryptoContext {
-  const { pythSeries, threshold, maxSamples = 168 } = input;
+  const { pythSeries, threshold, maxSamples = 168, endTimeSeconds } = input;
+  const timeContext =
+    endTimeSeconds !== undefined && endTimeSeconds > 0
+      ? { seconds_to_resolve: Math.max(0, endTimeSeconds - Math.floor(Date.now() / 1000)) }
+      : {};
+
   if (pythSeries.length === 0) {
-    return { pyth_recent: [] };
+    return { pyth_recent: [], ...timeContext };
   }
   const stride = Math.max(1, Math.floor(pythSeries.length / maxSamples));
   const sampled = pythSeries.filter((_, i) => i % stride === 0).slice(0, maxSamples);
@@ -32,5 +39,6 @@ export function buildCryptoContext(input: CryptoContextInput): CryptoContext {
     pyth_recent: sampled,
     volatility_30d: volatility,
     distance_to_threshold_sigma: distance,
+    ...timeContext,
   };
 }

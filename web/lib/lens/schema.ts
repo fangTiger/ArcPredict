@@ -50,6 +50,7 @@ const CryptoContext = z.object({
   pyth_recent: z.array(z.object({ ts: z.number(), price: z.number() })).optional(),
   volatility_30d: z.number().optional(),
   distance_to_threshold_sigma: z.number().optional(),
+  seconds_to_resolve: z.number().nonnegative().optional(),
 });
 
 const EventContext = z.object({

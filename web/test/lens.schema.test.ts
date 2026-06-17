@@ -27,6 +27,27 @@ describe('lens.schema', () => {
     expect(ok.success).toBe(true);
   });
 
+  test('LensInput 接受带 seconds_to_resolve 的 crypto-binary 输入', () => {
+    const ok = LensInputSchema.safeParse({
+      market: {
+        id: 'btc-100k',
+        question: 'BTC 在 2026-12-31 前是否 ≥ $100k？',
+        type: 'crypto-binary',
+        end_time: 1893456000,
+        implied_probability: 0.32,
+      },
+      context: {
+        seconds_to_resolve: 3600,
+      },
+      generated_at: 1718524800,
+    });
+
+    expect(ok.success).toBe(true);
+    if (ok.success) {
+      expect(ok.data.context.seconds_to_resolve).toBe(3600);
+    }
+  });
+
   test('LensInput 拒绝越界 implied_probability', () => {
     const bad = LensInputSchema.safeParse({
       market: {
