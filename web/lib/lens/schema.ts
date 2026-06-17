@@ -80,13 +80,13 @@ const BaseOutputFields = {
   caveats: z.array(z.string().max(200)).max(3),
 };
 
-const BinaryOutput = z.object({
+export const BinaryOutputSchema = z.object({
   ...BaseOutputFields,
   fair_range: probRange,
   outcome_fair_probabilities: z.undefined().optional(),
 });
 
-const MultiOutput = z.object({
+export const MultiOutputSchema = z.object({
   ...BaseOutputFields,
   fair_range: z.undefined().optional(),
   outcome_fair_probabilities: z.record(z.string(), probRange).refine(
@@ -95,5 +95,9 @@ const MultiOutput = z.object({
   ),
 });
 
-export const LensOutputSchema = z.union([BinaryOutput, MultiOutput]);
+export function selectOutputSchema(marketType: 'crypto-binary' | 'event-multi') {
+  return marketType === 'crypto-binary' ? BinaryOutputSchema : MultiOutputSchema;
+}
+
+export const LensOutputSchema = z.union([BinaryOutputSchema, MultiOutputSchema]);
 export type LensOutput = z.infer<typeof LensOutputSchema>;

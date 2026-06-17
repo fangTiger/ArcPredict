@@ -4,6 +4,7 @@ import {
   LensInputSchema,
   LensOutputSchema,
   FORBIDDEN_WORDS,
+  selectOutputSchema,
 } from '../lib/lens/schema';
 
 describe('lens.schema', () => {
@@ -88,6 +89,23 @@ describe('lens.schema', () => {
       summary: '建议下注 Yes',
       factors: ['a', 'b', 'c'],
       fair_range: [0.3, 0.4],
+      confidence: 'low',
+      reasoning: 'r',
+      sources: [],
+      caveats: [],
+    });
+    expect(bad.success).toBe(false);
+  });
+
+  test('selectOutputSchema 按 crypto-binary 拒绝 multi 输出字段', () => {
+    const schema = selectOutputSchema('crypto-binary');
+    const bad = schema.safeParse({
+      summary: 'BTC 概率区间无法由多结果字段表达。',
+      factors: ['波动率', '价格距离', '剩余时间'],
+      outcome_fair_probabilities: {
+        YES: [0.45, 0.55],
+        NO: [0.45, 0.55],
+      },
       confidence: 'low',
       reasoning: 'r',
       sources: [],
