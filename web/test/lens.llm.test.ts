@@ -62,6 +62,19 @@ describe('lens.llm.callDeepSeek', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  test('401 认证失败不重试', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 401 }));
+    await expect(
+      callDeepSeek({
+        config: baseConfig,
+        systemPrompt: 'sys',
+        userMessage: 'usr',
+        fetchImpl: fetchMock as any,
+      }),
+    ).rejects.toThrow(/401/);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   test('非 JSON content 抛错', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(

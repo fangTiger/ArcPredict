@@ -21,6 +21,7 @@ export type DeepSeekResult = {
 class NonRetryableDeepSeekError extends Error {}
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const nonRetryableHttpStatuses = new Set([400, 401, 403]);
 
 export async function callDeepSeek(params: DeepSeekCallParams): Promise<DeepSeekResult> {
   const { config, systemPrompt, userMessage } = params;
@@ -51,7 +52,13 @@ export async function callDeepSeek(params: DeepSeekCallParams): Promise<DeepSeek
         signal: controller.signal,
       });
       clearTimeout(timer);
-      if (!res.ok) throw new Error(`DeepSeek HTTP ${res.status}`);
+      if (!res.ok) {
+        const message = `DeepSeek HTTP ${res.status}`;
+        if (nonRetryableHttpStatuses.has(res.status)) {
+          throw new NonRetryableDeepSeekError(message);
+        }
+        throw new Error(message);
+      }
       const payload = (await res.json()) as {
         choices: { message: { content: string } }[];
         usage: { prompt_tokens: number; completion_tokens: number };
