@@ -1,8 +1,11 @@
 import { computeInputHash } from './cache';
 import type { CacheEntry } from './cache';
+import { buildCategoryContextProse } from './contextBuilders';
 import { buildSystemPrompt, buildUserMessage } from './prompts';
 import { selectOutputSchema } from './schema';
 import type { LensInput, LensOutput } from './schema';
+import type { DefiLlamaClient } from '../markets/clients/defillama';
+import type { FredClient } from '../markets/clients/fred';
 
 export type LensRouteResponseOk = {
   status: 'ok';
@@ -35,6 +38,10 @@ export type HandleLensParams = {
     canSpend: (usd: number) => boolean;
     record: (usd: number) => void;
     estimateCostUsd: (inputTokens: number, outputTokens: number) => number;
+  };
+  categoryClients?: {
+    fredClient?: FredClient;
+    defiLlama?: DefiLlamaClient;
   };
   ttlMs: number;
   nowMs?: () => number;
@@ -85,9 +92,28 @@ export async function handleLensRequest(params: HandleLensParams): Promise<Handl
 
   let raw: { contentJson: unknown; usage: { promptTokens: number; completionTokens: number } };
   try {
+    const baseUserMessage = buildUserMessage(input);
+    const categoryProse =
+      params.categoryClients && input.market.category
+        ? await buildCategoryContextProse({
+            category: input.market.category,
+            market: {
+              eventId: (input.market.eventId ?? input.market.id) as `0x${string}`,
+              question: input.market.question,
+              externalKey: input.market.externalKey ?? '',
+              outcomes: input.market.outcomes ?? [],
+            },
+            fredClient: params.categoryClients.fredClient,
+            defiLlama: params.categoryClients.defiLlama,
+          })
+        : null;
+    const finalUserMessage = categoryProse
+      ? `${baseUserMessage}\n\n[Category context]\n${categoryProse}`
+      : baseUserMessage;
+
     raw = await callLLM({
       systemPrompt: buildSystemPrompt(),
-      userMessage: buildUserMessage(input),
+      userMessage: finalUserMessage,
     });
   } catch {
     return {

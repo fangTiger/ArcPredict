@@ -28,12 +28,20 @@ const probRange = z
   .tuple([probability, probability])
   .refine(([lo, hi]) => lo <= hi, { message: 'fair_range 必须按 [low, high] 升序' });
 
+const MarketExtensionFields = {
+  category: z.enum(['crypto', 'worldcup', 'macro', 'chain']).optional(),
+  externalKey: z.string().optional(),
+  eventId: z.string().optional(),
+  outcomes: z.array(z.object({ id: z.string(), label: z.string() })).optional(),
+};
+
 const MarketMetaBinary = z.object({
   id: z.string(),
   question: z.string(),
   type: z.literal('crypto-binary'),
   end_time: z.number().int().positive(),
   implied_probability: probability,
+  ...MarketExtensionFields,
 });
 
 export const MarketMetaMulti = z.object({
@@ -44,6 +52,7 @@ export const MarketMetaMulti = z.object({
   implied_probability: probability,
   outcome_options: z.array(z.string()).min(2),
   outcome_implied_probabilities: z.record(z.string(), probability),
+  ...MarketExtensionFields,
 });
 
 const CryptoContext = z.object({
