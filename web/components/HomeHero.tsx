@@ -1,4 +1,5 @@
-import type { MarketCategory } from '@/lib/market-kind';
+import Link from 'next/link';
+import type { MarketCategory } from '../lib/market-kind';
 import { HeroParticleCanvas } from './HeroParticleCanvas';
 
 type Props = {
@@ -9,6 +10,11 @@ type Props = {
     pendingResolution: number;
   };
 };
+
+const NEW_CATEGORIES: { href: string; title: string; sub: string }[] = [
+  { href: '/?category=macro', title: 'Macro', sub: 'CPI · Fed · NFP' },
+  { href: '/?category=chain', title: 'On-chain', sub: 'TVL · unlocks' },
+];
 
 export function HomeHero({ category, stats }: Props) {
   const activeMarkets = stats?.activeMarkets.toString() ?? '--';
@@ -48,6 +54,18 @@ export function HomeHero({ category, stats }: Props) {
           </div>
           <h1 className="hero-title mt-3 text-ink">{copy.title}</h1>
           <p className="mt-2 max-w-xl text-sm leading-5 text-ink-2">{copy.description}</p>
+          <div className="mt-4 flex flex-wrap gap-2.5">
+            {NEW_CATEGORIES.map((categoryEntry) => (
+              <Link
+                key={categoryEntry.href}
+                href={categoryEntry.href}
+                className="hero-stat min-w-[8.5rem] rounded-lg border border-hair bg-bg-1/55 px-3 py-2.5 text-ink backdrop-blur transition hover:border-arc-glow/40 hover:bg-arc/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
+              >
+                <span className="block text-lg font-semibold leading-none">{categoryEntry.title}</span>
+                <span className="mt-1 block text-sm leading-none text-ink-2">{categoryEntry.sub}</span>
+              </Link>
+            ))}
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-2.5 lg:col-span-5">
