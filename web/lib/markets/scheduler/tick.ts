@@ -1,5 +1,6 @@
 import { computeMarketId } from '../external-key';
 import { enabledSources } from '../registry';
+import type { MarketDraft, OnChainMarket } from '../sources/base';
 import type {
   ChainReaderLike,
   ChainWriterLike,
@@ -8,7 +9,9 @@ import type {
 } from './types';
 
 const CREATE_LIMIT = 5;
+const RESOLVE_LIMIT = 10;
 const CREATE_GUARD_SECONDS = 600;
+const CHALLENGE_WINDOW_SECONDS = 72 * 3_600;
 
 export interface TickReport {
   perSource: Record<string, {
@@ -35,7 +38,7 @@ export async function runTick(args: RunTickArgs): Promise<TickReport> {
   const report: TickReport = { perSource: {}, totalDurationMs: 0 };
 
   for (const source of enabledSources()) {
-    const perSource = {
+    const perSource: TickReport['perSource'][string] = {
       opened: 0,
       skipped: 0,
       resolvedSettled: 0,
@@ -47,6 +50,10 @@ export async function runTick(args: RunTickArgs): Promise<TickReport> {
     try {
       const drafts = await source.fetchUpcoming(args.now);
       const nowSec = Math.floor(args.now.getTime() / 1000);
+      const draftsByEventId = new Map<`0x${string}`, MarketDraft>();
+      for (const draft of drafts) {
+        draftsByEventId.set(computeMarketId(source.id, draft.externalKey), draft);
+      }
 
       for (const draft of drafts) {
         if (perSource.opened >= CREATE_LIMIT) break;
@@ -83,6 +90,51 @@ export async function runTick(args: RunTickArgs): Promise<TickReport> {
         }
         perSource.opened++;
       }
+
+      const pending = await args.reader.pendingMarketsForSource(
+        source.id,
+        Array.from(draftsByEventId.keys()),
+      );
+
+      let processed = 0;
+      for (const market of pending) {
+        if (processed >= RESOLVE_LIMIT) break;
+        if (market.resolveAfter > nowSec) continue;
+
+        switch (market.oracleStatus) {
+          case 'pending': {
+            const resolved = await source.resolve(
+              toOnChainMarket(market, source.id, draftsByEventId.get(market.eventId)),
+              args.now,
+            );
+            if (resolved.kind === 'still-open') break;
+            if (resolved.kind === 'invalid') break;
+
+            await args.writer.proposeOutcome(market.eventId, resolved.settledOutcomeIndex);
+            perSource.resolvedProposed++;
+            processed++;
+            break;
+          }
+          case 'proposed': {
+            const proposedAgo = market.proposedAt == null ? 0 : nowSec - market.proposedAt;
+            if (proposedAgo >= CHALLENGE_WINDOW_SECONDS) {
+              await args.writer.finalizeOutcome(market.eventId);
+              await args.writer.settleMarket(market.marketId);
+              perSource.resolvedFinalized++;
+              perSource.resolvedSettled++;
+              processed++;
+            }
+            break;
+          }
+          case 'challenged':
+            break;
+          case 'finalized':
+            await args.writer.settleMarket(market.marketId);
+            perSource.resolvedSettled++;
+            processed++;
+            break;
+        }
+      }
     } catch (err) {
       perSource.error = err instanceof Error ? err.message : String(err);
     }
@@ -90,4 +142,31 @@ export async function runTick(args: RunTickArgs): Promise<TickReport> {
 
   report.totalDurationMs = Date.now() - start;
   return report;
+}
+
+function toOnChainMarket(
+  market: {
+    marketId: bigint;
+    eventId: `0x${string}`;
+    resolveAfter: number;
+    oracleStatus: OnChainMarket['oracleStatus'];
+    proposedAt?: number;
+    settled: boolean;
+  },
+  sourceId: string,
+  draft: MarketDraft | undefined,
+): OnChainMarket {
+  return {
+    marketId: market.marketId,
+    eventId: market.eventId,
+    sourceId,
+    externalKey: draft?.externalKey ?? '',
+    question: draft?.question ?? '',
+    outcomeCount: draft?.outcomes.length ?? 0,
+    betDeadline: draft?.betDeadline ?? 0,
+    resolveAfter: market.resolveAfter,
+    isSettled: market.settled,
+    oracleStatus: market.oracleStatus,
+    proposedAt: market.proposedAt,
+  };
 }

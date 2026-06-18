@@ -1,10 +1,23 @@
 import type { OracleStatusName } from './chain-reader';
 import type { LensPreloadTarget } from './lens-preloader';
 
+export interface PendingMarketForSource {
+  marketId: bigint;
+  eventId: `0x${string}`;
+  resolveAfter: number;
+  oracleStatus: OracleStatusName;
+  proposedAt?: number;
+  settled: boolean;
+}
+
 export interface ChainReaderLike {
   marketIdForEventId(eventId: `0x${string}`): Promise<bigint | null>;
   oracleStatus(eventId: `0x${string}`): Promise<OracleStatusName>;
   marketSettled(marketId: bigint): Promise<boolean>;
+  pendingMarketsForSource(
+    sourceId: string,
+    knownEventIds: `0x${string}`[],
+  ): Promise<PendingMarketForSource[]>;
 }
 
 export interface ChainWriterLike {

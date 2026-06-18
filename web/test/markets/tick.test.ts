@@ -33,6 +33,7 @@ const fakeReader = {
   marketIdForEventId: vi.fn().mockResolvedValue(null),
   oracleStatus: vi.fn().mockResolvedValue('pending'),
   marketSettled: vi.fn().mockResolvedValue(false),
+  pendingMarketsForSource: vi.fn().mockResolvedValue([]),
 };
 
 const fakeWriter = {
