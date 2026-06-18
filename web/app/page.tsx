@@ -40,10 +40,11 @@ import {
   sliceVisibleMarketRows,
 } from '@/lib/market-pagination';
 import {
+  MARKET_CATEGORIES,
   normalizeWorldCupStageFilter,
   type MarketCategory,
   type WorldCupStageFilter,
-} from '@/lib/market-kind';
+} from '../lib/market-kind';
 import {
   getUpcomingWorldCupMarkets,
   resolveWorldCupMarkets,
@@ -100,8 +101,8 @@ function HomePageContent() {
   const user = address ?? zeroAddress;
   const categoryParam = searchParams.get('category');
   const categoryFromQuery: MarketCategory = WORLDCUP_ENABLED
-    ? categoryParam === 'crypto'
-      ? 'crypto'
+    ? categoryParam && MARKET_CATEGORIES.includes(categoryParam as MarketCategory)
+      ? (categoryParam as MarketCategory)
       : 'worldcup'
     : 'crypto';
   const showAllPositions = searchParams.get('positions') === 'all';
@@ -182,9 +183,9 @@ function HomePageContent() {
   );
   const positionKindFilter = showAllPositions
     ? undefined
-    : effectiveCategory === 'worldcup'
-      ? 'event'
-      : 'price';
+    : effectiveCategory === 'crypto'
+      ? 'price'
+      : 'event';
   const allPositionsHref = useMemo(() => {
     const nextQuery = new URLSearchParams(searchParams.toString());
     nextQuery.set('positions', 'all');
@@ -203,7 +204,11 @@ function HomePageContent() {
     [stage, upcomingWorldCupMarkets],
   );
   const visibleMarketTotal =
-    effectiveCategory === 'worldcup' ? visibleWorldCupMarkets.length : visibleCryptoMarkets.length;
+    effectiveCategory === 'worldcup'
+      ? visibleWorldCupMarkets.length
+      : effectiveCategory === 'crypto'
+        ? visibleCryptoMarkets.length
+        : 0;
   const renderedWorldCupMarkets = useMemo(
     () => sliceVisibleMarketRows(visibleWorldCupMarkets, visibleMarketCount),
     [visibleMarketCount, visibleWorldCupMarkets],
@@ -291,16 +296,16 @@ function HomePageContent() {
     if (!showCategoryTabs) {
       nextQuery.delete('category');
       nextQuery.delete('stage');
-    } else if (effectiveCategory === 'crypto') {
-      nextQuery.set('category', 'crypto');
-      nextQuery.delete('stage');
-    } else {
+    } else if (effectiveCategory === 'worldcup') {
       nextQuery.delete('category');
       if (stage === 'all') {
         nextQuery.delete('stage');
       } else {
         nextQuery.set('stage', stage);
       }
+    } else {
+      nextQuery.set('category', effectiveCategory);
+      nextQuery.delete('stage');
     }
 
     const nextQueryString = nextQuery.toString();
@@ -337,7 +342,7 @@ function HomePageContent() {
           showCategoryTabs={showCategoryTabs}
           onCategoryChange={(nextCategory) => {
             setCategory(nextCategory);
-            if (nextCategory === 'crypto') {
+            if (nextCategory !== 'worldcup') {
               setStage('all');
             }
           }}
@@ -369,6 +374,14 @@ function HomePageContent() {
         ) : effectiveCategory === 'worldcup' && visibleWorldCupMarkets.length === 0 ? (
           <div className="py-20 text-sm text-ink-2">
             No World Cup markets match this stage. Try another stage.
+          </div>
+        ) : effectiveCategory === 'macro' ? (
+          <div className="py-20 text-sm text-ink-2">
+            No Macro markets are available yet.
+          </div>
+        ) : effectiveCategory === 'chain' ? (
+          <div className="py-20 text-sm text-ink-2">
+            No On-chain markets are available yet.
           </div>
         ) : (
           <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">

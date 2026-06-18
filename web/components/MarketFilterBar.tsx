@@ -1,9 +1,10 @@
 'use client';
 
-import type {
-  MarketCategory,
-  WorldCupStageFilter,
-} from '@/lib/market-kind';
+import {
+  MARKET_CATEGORIES,
+  type MarketCategory,
+  type WorldCupStageFilter,
+} from '../lib/market-kind';
 import { parseCadenceTag, type Cadence } from '../lib/cadence-tag';
 
 export type Asset = 'BTC' | 'ETH' | 'SOL';
@@ -39,7 +40,16 @@ type Props = {
 
 const assetOptions: AssetFilter[] = ['all', 'BTC', 'ETH', 'SOL'];
 const cadenceOptions: CadenceFilter[] = ['all', 'daily', 'weekly', 'monthly', 'quarterly'];
-const categoryOptions: MarketCategory[] = ['crypto', 'worldcup'];
+const categoryDisplayLabels: Record<MarketCategory, string> = {
+  crypto: 'Crypto',
+  worldcup: 'World Cup',
+  macro: 'Macro',
+  chain: 'On-chain',
+};
+const categoryOptions: { value: MarketCategory; label: string }[] = MARKET_CATEGORIES.map((value) => ({
+  value,
+  label: categoryDisplayLabels[value],
+}));
 const stageOptions: WorldCupStageFilter[] = ['all', 'group', 'r16', 'qf', 'sf', 'final', 'winner'];
 const stageDisplayLabels: Record<WorldCupStageFilter, string> = {
   all: 'All',
@@ -98,6 +108,10 @@ export function filterMarkets<T extends FilterMarketInput>(
       return true;
     }
 
+    if (category !== 'crypto') {
+      return true;
+    }
+
     if (opts.asset !== 'all') {
       const asset = market.pythPriceId
         ? opts.priceIdToAsset[market.pythPriceId.toLowerCase()]
@@ -119,7 +133,7 @@ export function filterMarkets<T extends FilterMarketInput>(
 }
 
 function categoryLabel(value: MarketCategory): string {
-  return value === 'crypto' ? 'Crypto' : 'World Cup';
+  return categoryDisplayLabels[value];
 }
 
 function stageLabel(value: WorldCupStageFilter): string {
@@ -151,16 +165,17 @@ export function MarketFilterBar({
   return (
     <div className="my-10 border-y border-hair px-2 py-3">
       {showCategoryTabs ? (
-        <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="mb-4 flex flex-wrap items-center gap-2" role="tablist" aria-label="Market categories">
           {categoryOptions.map((option) => (
             <button
-              key={option}
+              key={option.value}
               type="button"
-              onClick={() => handleCategoryChange(option)}
-              className={buttonClassName(option === category)}
-              aria-pressed={option === category}
+              role="tab"
+              onClick={() => handleCategoryChange(option.value)}
+              className={buttonClassName(option.value === category)}
+              aria-selected={option.value === category}
             >
-              {categoryLabel(option)}
+              {categoryLabel(option.value)}
             </button>
           ))}
         </div>
@@ -183,7 +198,7 @@ export function MarketFilterBar({
             ))}
           </div>
         </div>
-      ) : (
+      ) : category === 'crypto' ? (
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-medium uppercase text-ink-2">Asset</span>
@@ -221,7 +236,7 @@ export function MarketFilterBar({
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
