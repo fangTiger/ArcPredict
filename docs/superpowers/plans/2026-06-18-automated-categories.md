@@ -178,7 +178,7 @@ OpenSpec design.md 仅列要点与决策记录，避免双份维护。
 | D3 | cron 平台 | Vercel Cron | GH Actions | 已有部署，零新基础设施 |
 | D4 | Phase 1 品类 | macro + chain | sports / esports | 数据源最稳、与 Lens 协同最强 |
 | D5 | tick 上限 | 5 新建 + 10 resolve / source | 不限 | Vercel 60s 限制 |
-| D6 | 引导流动性 | 固定 10 USDC | 策略化 | Phase 1 简单可控 |
+| D6 | 引导流动性 | 固定 1 USDC | 策略化 | Phase 1 成本更低，便于测试网持续跑通 |
 
 ## 架构图
 
@@ -1453,7 +1453,7 @@ export function createChainWriter(opts: ChainWriterOptions) {
       });
     },
 
-    /** Phase 1：固定 10 USDC，按 outcome 均分 approve（实际下注通过另一路径）。
+    /** Phase 1：按配置金额为每个市场引导流动性，按 outcome 均分 approve（实际下注通过另一路径）。
      *  此处仅 approve USDC 给 EventMarket，方便后续 seed 调用。 */
     async approveUsdc(amount: bigint): Promise<`0x${string}`> {
       return walletClient.writeContract({
@@ -1537,14 +1537,14 @@ describe('seed-liquidity', () => {
       writer: writer as any,
       walletClient: walletClient as any,
       eventMarketAddress: '0xaa' as any,
-      perMarketUsdc: 10_000_000n, // 10 USDC (6 decimals)
+      perMarketUsdc: 1_000_000n, // 1 USDC (6 decimals)
     });
     await seed.seed(123n, 3);
-    expect(calls[0]).toEqual({ kind: 'approve', n: 10_000_000n });
+    expect(calls[0]).toEqual({ kind: 'approve', n: 1_000_000n });
     expect(calls.slice(1).every((c) => c.kind === 'bet')).toBe(true);
     expect(calls.slice(1)).toHaveLength(3);
     const amounts = calls.slice(1).map((c) => c.args[2]);
-    expect(new Set(amounts)).toEqual(new Set([3_333_333n])); // 10/3 truncated
+    expect(new Set(amounts)).toEqual(new Set([333_333n])); // 1/3 truncated
   });
 });
 ```
@@ -1602,7 +1602,7 @@ pnpm vitest run test/markets/seed-liquidity.test.ts
 
 ```bash
 git add web/lib/markets/scheduler/{abi,seed-liquidity}.ts web/test/markets/seed-liquidity.test.ts
-git commit -m "feat(markets): seed liquidity (10 USDC / market, equal split)"
+git commit -m "feat(markets): seed liquidity (1 USDC / market, equal split)"
 ```
 
 ---
@@ -3304,7 +3304,7 @@ export async function POST(req: Request): Promise<Response> {
     writer,
     walletClient,
     eventMarketAddress,
-    perMarketUsdc: 10_000_000n,
+    perMarketUsdc: 1_000_000n,
   });
   const preloader = createLensPreloader({
     warmFn: async (target) => {
@@ -3608,7 +3608,7 @@ describe.skipIf(!process.env.E2E)('E2E tick on fork', () => {
       now: new Date(),
       reader,
       writer,
-      seedLiquidity: createSeedLiquidity({ writer, walletClient, eventMarketAddress: process.env.E2E_EVENT_MARKET as `0x${string}`, perMarketUsdc: 10_000_000n }),
+      seedLiquidity: createSeedLiquidity({ writer, walletClient, eventMarketAddress: process.env.E2E_EVENT_MARKET as `0x${string}`, perMarketUsdc: 1_000_000n }),
       preloader: createLensPreloader({ warmFn: async () => ({ status: 'ok' }) }),
     });
     const openedFred = report1.perSource['fred-macro']?.opened ?? 0;

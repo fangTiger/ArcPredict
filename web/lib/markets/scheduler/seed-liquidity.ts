@@ -1,4 +1,4 @@
-import type { WalletClient } from 'viem';
+import type { PublicClient, WalletClient } from 'viem';
 import { eventMarketAbi } from './abi';
 
 interface ChainWriterLike {
@@ -8,19 +8,20 @@ interface ChainWriterLike {
 export interface SeedLiquidityOptions {
   writer: ChainWriterLike;
   walletClient: WalletClient;
+  publicClient?: PublicClient;
   eventMarketAddress: `0x${string}`;
   perMarketUsdc: bigint;
 }
 
 export function createSeedLiquidity(opts: SeedLiquidityOptions) {
-  const { writer, walletClient, eventMarketAddress, perMarketUsdc } = opts;
+  const { writer, walletClient, publicClient, eventMarketAddress, perMarketUsdc } = opts;
 
   return {
     async seed(marketId: bigint, outcomeCount: number): Promise<void> {
       await writer.approveUsdc(perMarketUsdc);
       const perOutcome = perMarketUsdc / BigInt(outcomeCount);
       for (let i = 0; i < outcomeCount; i++) {
-        await walletClient.writeContract({
+        const hash = await walletClient.writeContract({
           address: eventMarketAddress,
           abi: eventMarketAbi,
           functionName: 'bet',
@@ -28,6 +29,9 @@ export function createSeedLiquidity(opts: SeedLiquidityOptions) {
           chain: walletClient.chain ?? null,
           account: walletClient.account!,
         });
+        if (publicClient) {
+          await publicClient.waitForTransactionReceipt({ hash });
+        }
       }
     },
   };

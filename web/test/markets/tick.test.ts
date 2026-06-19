@@ -33,6 +33,7 @@ const fakeReader = {
   marketIdForEventId: vi.fn().mockResolvedValue(null),
   oracleStatus: vi.fn().mockResolvedValue('pending'),
   marketSettled: vi.fn().mockResolvedValue(false),
+  marketHasLiquidity: vi.fn().mockResolvedValue(false),
   pendingMarketsForSource: vi.fn().mockResolvedValue([]),
 };
 
@@ -52,6 +53,7 @@ beforeEach(() => {
   Object.values(fakeWriter).forEach((m) => m.mockClear());
   fakeSeed.seed.mockClear();
   fakePreloader.warm.mockClear();
+  fakeReader.marketHasLiquidity.mockResolvedValue(false);
 });
 
 describe('runTick', () => {
@@ -91,6 +93,7 @@ describe('runTick', () => {
     const draft = makeDraft('CPIAUCSL:2026-07-15');
     registerSource(makeSource('fred-macro', [draft]));
     fakeReader.marketIdForEventId.mockResolvedValue(99n);
+    fakeReader.marketHasLiquidity.mockResolvedValue(true);
 
     const report = await runTick({
       now: new Date(),
@@ -102,6 +105,25 @@ describe('runTick', () => {
 
     expect(fakeWriter.openMarket).not.toHaveBeenCalled();
     expect(report.perSource['fred-macro'].opened).toBe(0);
+    expect(report.perSource['fred-macro'].skipped).toBe(1);
+  });
+
+  it('seeds an existing market when it has no liquidity yet', async () => {
+    const draft = makeDraft('CPIAUCSL:2026-07-15', 3);
+    registerSource(makeSource('fred-macro', [draft]));
+    fakeReader.marketIdForEventId.mockResolvedValue(99n);
+    fakeReader.marketHasLiquidity.mockResolvedValue(false);
+
+    const report = await runTick({
+      now: new Date(),
+      reader: fakeReader,
+      writer: fakeWriter,
+      seedLiquidity: fakeSeed,
+      preloader: fakePreloader,
+    });
+
+    expect(fakeWriter.openMarket).not.toHaveBeenCalled();
+    expect(fakeSeed.seed).toHaveBeenCalledWith(99n, 3);
     expect(report.perSource['fred-macro'].skipped).toBe(1);
   });
 

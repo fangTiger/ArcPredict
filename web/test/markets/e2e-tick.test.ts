@@ -112,7 +112,7 @@ describe.skipIf(!process.env.E2E)('E2E tick on fork', () => {
       writer,
       walletClient,
       eventMarketAddress,
-      perMarketUsdc: 10_000_000n,
+      perMarketUsdc: 1_000_000n,
     });
     const preloaded: HexAddress[] = [];
     const preloader = createLensPreloader({

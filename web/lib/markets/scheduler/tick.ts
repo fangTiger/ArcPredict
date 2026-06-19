@@ -12,6 +12,8 @@ const CREATE_LIMIT = 5;
 const RESOLVE_LIMIT = 10;
 const CREATE_GUARD_SECONDS = 600;
 const CHALLENGE_WINDOW_SECONDS = 72 * 3_600;
+const MARKET_ID_RETRY_ATTEMPTS = 6;
+const MARKET_ID_RETRY_DELAY_MS = 1_000;
 
 export interface TickReport {
   perSource: Record<string, {
@@ -65,6 +67,7 @@ export async function runTick(args: RunTickArgs): Promise<TickReport> {
         const eventId = computeMarketId(source.id, draft.externalKey);
         const existing = await args.reader.marketIdForEventId(eventId);
         if (existing != null) {
+          await seedIfNeeded(args.reader, args.seedLiquidity, existing, draft.outcomes.length);
           perSource.skipped++;
           continue;
         }
@@ -77,9 +80,9 @@ export async function runTick(args: RunTickArgs): Promise<TickReport> {
           resolveAfter: draft.resolveAfter,
         });
 
-        const marketId = await args.reader.marketIdForEventId(eventId);
+        const marketId = await waitForMarketId(args.reader, eventId);
         if (marketId != null) {
-          await args.seedLiquidity.seed(marketId, draft.outcomes.length);
+          await seedIfNeeded(args.reader, args.seedLiquidity, marketId, draft.outcomes.length);
           await args.preloader.warm({
             eventId,
             category: draft.category,
@@ -142,6 +145,30 @@ export async function runTick(args: RunTickArgs): Promise<TickReport> {
 
   report.totalDurationMs = Date.now() - start;
   return report;
+}
+
+async function seedIfNeeded(
+  reader: ChainReaderLike,
+  seedLiquidity: SeedLiquidityLike,
+  marketId: bigint,
+  outcomeCount: number,
+): Promise<void> {
+  if (await reader.marketHasLiquidity(marketId)) return;
+  await seedLiquidity.seed(marketId, outcomeCount);
+}
+
+async function waitForMarketId(
+  reader: ChainReaderLike,
+  eventId: `0x${string}`,
+): Promise<bigint | null> {
+  for (let attempt = 0; attempt < MARKET_ID_RETRY_ATTEMPTS; attempt++) {
+    const marketId = await reader.marketIdForEventId(eventId);
+    if (marketId != null) return marketId;
+    if (attempt < MARKET_ID_RETRY_ATTEMPTS - 1) {
+      await new Promise((resolve) => setTimeout(resolve, MARKET_ID_RETRY_DELAY_MS));
+    }
+  }
+  return null;
 }
 
 function toOnChainMarket(

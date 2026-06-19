@@ -3,6 +3,7 @@ import { createChainReader } from '../../lib/markets/scheduler/chain-reader';
 import { ORACLE_STATUS } from '../../lib/markets/scheduler/abi';
 
 const fakePublicClient = (overrides: Record<string, unknown>) => ({
+  getBlockNumber: vi.fn().mockResolvedValue(overrides.blockNumber ?? 1_000n),
   getContractEvents: vi.fn().mockImplementation(async ({ eventName }: { eventName: string }) => {
     if (eventName === 'ResultProposed') return overrides.proposedEvents ?? [];
     return overrides.events ?? [];
@@ -37,6 +38,38 @@ describe('chain-reader', () => {
     expect(await r.marketIdForEventId('0xee')).toBe(42n);
   });
 
+  it('paginates event scans to stay within Arc RPC eth_getLogs range limits', async () => {
+    const eventId = `0x${'34'.repeat(32)}` as const;
+    const client = {
+      getBlockNumber: vi.fn().mockResolvedValue(20_250n),
+      getContractEvents: vi.fn().mockImplementation(async ({ fromBlock }: { fromBlock: bigint }) => (
+        fromBlock === 20_100n ? [{ args: { id: 77n, eventId } }] : []
+      )),
+      readContract: vi.fn(),
+    };
+    const r = createChainReader({
+      client: client as never,
+      eventMarketAddress: '0xaa',
+      oracleAddress: '0xbb',
+      fromBlock: 100n,
+    });
+
+    await expect(r.marketIdForEventId(eventId)).resolves.toBe(77n);
+    expect(client.getContractEvents).toHaveBeenCalledTimes(3);
+    expect(client.getContractEvents).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      fromBlock: 100n,
+      toBlock: 10_099n,
+    }));
+    expect(client.getContractEvents).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      fromBlock: 10_100n,
+      toBlock: 20_099n,
+    }));
+    expect(client.getContractEvents).toHaveBeenNthCalledWith(3, expect.objectContaining({
+      fromBlock: 20_100n,
+      toBlock: 20_250n,
+    }));
+  });
+
   it('oracleStatus returns mapped enum string', async () => {
     const client = fakePublicClient({ status: ORACLE_STATUS.Proposed });
     const r = createChainReader({
@@ -45,6 +78,31 @@ describe('chain-reader', () => {
       oracleAddress: '0xbb',
     });
     expect(await r.oracleStatus('0xee')).toBe('proposed');
+  });
+
+  it('marketHasLiquidity detects any non-zero outcome pool', async () => {
+    const market = [
+      `0x${'12'.repeat(32)}`,
+      3,
+      1000n,
+      2000n,
+      [0n, 333_333n, 0n],
+      0n,
+      0n,
+      100,
+      `0x${'ab'.repeat(20)}`,
+      255,
+      0n,
+      'Q',
+    ] as const;
+    const client = fakePublicClient({ market });
+    const r = createChainReader({
+      client: client as never,
+      eventMarketAddress: '0xaa',
+      oracleAddress: '0xbb',
+    });
+
+    await expect(r.marketHasLiquidity(42n)).resolves.toBe(true);
   });
 
   it('pendingMarketsForSource reads unresolved markets and proposedAt from ResultProposed events', async () => {

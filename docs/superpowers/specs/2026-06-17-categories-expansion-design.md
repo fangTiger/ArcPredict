@@ -209,7 +209,7 @@ Day 3+ (同 tick 顺手做)
 ### 5.4 引导流动性
 
 新市场创建后立即调用 seed liquidity：
-- Phase 1 固定金额：每个市场 10 USDC（每个 outcome 均分）
+- Phase 1 固定金额：每个市场 1 USDC（每个 outcome 均分）
 - 自动化钱包持有少量 USDC 余额，cron 监控低于阈值时打日志告警
 - Phase 2 再做策略化（按品类、热度差异化）
 
@@ -318,7 +318,7 @@ context block 拼装：
 | D3 | cron 平台 | Vercel Cron | GH Actions / 独立服务 | 已有 Vercel 部署，零新基础设施 |
 | D4 | Phase 1 品类选择 | 宏观 + 链上 | 宏观/体育/AI/选举/电竞 | 数据源最稳定、自动化最彻底、与 Lens 协同最强 |
 | D5 | 评估颗粒度 | 单 tick = 5 新建 + 10 resolve 上限 | 不限 / 异步队列 | Vercel 60s 限制；上限简单可调 |
-| D6 | 引导流动性策略 | 固定 10 USDC/市场 | 按品类差异化 / 不引导 | 简单可控；Phase 2 再策略化 |
+| D6 | 引导流动性策略 | 固定 1 USDC/市场 | 按品类差异化 / 不引导 | 成本更低，便于测试网持续跑通；Phase 2 再策略化 |
 | D7 | OpenSpec 流程 | 走完整 OpenSpec | 仅 superpowers spec | CLAUDE.md 强制；ai-lens 已有先例 |
 
 ## 10. Out of Scope

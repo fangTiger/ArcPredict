@@ -41,6 +41,7 @@ const fakeReader = {
   marketIdForEventId: vi.fn().mockResolvedValue(1n),
   oracleStatus: vi.fn().mockResolvedValue('pending'),
   marketSettled: vi.fn().mockResolvedValue(false),
+  marketHasLiquidity: vi.fn().mockResolvedValue(true),
   pendingMarketsForSource: vi.fn(),
 };
 
@@ -56,6 +57,7 @@ beforeEach(() => {
   Object.values(fakeReader).forEach((m) => m.mockReset());
   Object.values(fakeWriter).forEach((m) => m.mockReset());
   fakeReader.marketIdForEventId.mockResolvedValue(1n);
+  fakeReader.marketHasLiquidity.mockResolvedValue(true);
 });
 
 describe('runTick resolve branch', () => {

@@ -28,7 +28,7 @@ export function ResolveCountdown({ row }: { row: DashboardRow }) {
     const urgent = secondsLeft < 3600 && secondsLeft > 0;
 
     return (
-      <span className={`font-mono text-xs num-glow ${urgent ? 'countdown-urgent' : 'text-ink'}`}>
+      <span className={`font-mono text-xs num-glow ${urgent ? 'countdown-urgent text-heat' : 'text-ink'}`}>
         距结算窗口 {countdownText}
       </span>
     );

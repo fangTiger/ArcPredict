@@ -11,10 +11,11 @@ import {
 } from './worldcup-seed';
 import {
   worldCupStageLabel,
+  type MarketCategory,
   type WorldCupStage,
 } from './market-kind';
 
-export type WorldCupMarketType = '1x2' | 'spread' | 'winner';
+export type WorldCupMarketType = '1x2' | 'spread' | 'totals' | 'winner';
 
 export type WorldCupDisplayTeam = {
   teamId?: WorldCupTeam['id'];
@@ -32,10 +33,18 @@ export type WorldCupMarketOutcome = {
   teamId?: WorldCupTeam['id'];
 };
 
+export type MarketThemeVisual = {
+  id: string;
+  imageUrl: string;
+  alt: string;
+  title: string;
+  subtitle: string;
+};
+
 export type WorldCupMarketRow = {
   id: bigint;
   marketKind: 'event';
-  category: 'worldcup';
+  category: MarketCategory;
   matchId: string | null;
   stage: WorldCupStage;
   stageLabel: string;
@@ -54,6 +63,7 @@ export type WorldCupMarketRow = {
   outcomes: WorldCupMarketOutcome[];
   liquidity: bigint;
   positionLabel: string;
+  themeVisual?: MarketThemeVisual;
 };
 
 export type EventMarketDashboardRow = {
@@ -85,6 +95,7 @@ const toUnixSeconds = (iso: string) => BigInt(Math.floor(Date.parse(iso) / 1000)
 const MATCH_DURATION_SECONDS = 150n * 60n;
 const MATCH_ID_PATTERN = /\b(group-[a-h]-[1-6]|r16-[1-8]|qf-[1-4]|sf-[1-2]|final-[12])\b/iu;
 const WINNER_MARKET_PATTERN = /winner|champion|冠军/iu;
+const TOTAL_GOALS_MARKET_PATTERN = /(?:total\s+goals?|goals?)[\s-]*(?:over|o\/u)?\s*([0-9]+(?:\.[0-9]+)?)/iu;
 const SEEDED_MATCH_ID_BY_EVENT_HASH: Record<string, string> = {
   // SeedWorldCupMarkets._eventId("1x2", "final-1")
   '0x2b902d6a9c3a763f380d5c1af8475ea4efa1142488ebc730dc7c1c8851b061b1': 'final-1',
@@ -125,6 +136,18 @@ const GENERIC_WINNER_TEAM: WorldCupDisplayTeam = {
   shortCode: 'WC',
   nameZh: '冠军盘',
   nameEn: 'World Cup',
+};
+
+const GENERIC_MACRO_TEAM: WorldCupDisplayTeam = {
+  shortCode: 'MACRO',
+  nameZh: 'Macro',
+  nameEn: 'Macro',
+};
+
+const GENERIC_CHAIN_TEAM: WorldCupDisplayTeam = {
+  shortCode: 'CHAIN',
+  nameZh: 'On-chain',
+  nameEn: 'On-chain',
 };
 
 const winnerFavorites = [
@@ -438,7 +461,7 @@ export function getUpcomingWorldCupMarkets<T extends Pick<WorldCupMarketRow, 'id
     .filter((market) => market.settledOutcome === EVENT_UNRESOLVED_OUTCOME && market.betDeadline > now)
     .sort((left, right) => {
       if (left.betDeadline !== right.betDeadline) {
-        return left.betDeadline < right.betDeadline ? -1 : 1;
+        return left.betDeadline > right.betDeadline ? -1 : 1;
       }
 
       if (left.id === right.id) {
@@ -503,6 +526,14 @@ function isWinnerDescriptor(value: string | null | undefined): boolean {
   return value ? WINNER_MARKET_PATTERN.test(value) : false;
 }
 
+function totalGoalsLine(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  return TOTAL_GOALS_MARKET_PATTERN.exec(value)?.[1] ?? null;
+}
+
 function inferMarketType(
   outcomeCount: number,
   question: string,
@@ -510,6 +541,10 @@ function inferMarketType(
 ): WorldCupMarketType {
   if (outcomeCount >= 32 || isWinnerDescriptor(question) || isWinnerDescriptor(readableEventId)) {
     return 'winner';
+  }
+
+  if (totalGoalsLine(question) || totalGoalsLine(readableEventId)) {
+    return 'totals';
   }
 
   return outcomeCount === 2 ? 'spread' : '1x2';
@@ -699,6 +734,7 @@ function buildTemplateOutcomes(
   marketType: WorldCupMarketType,
   homeTeam: WorldCupDisplayTeam,
   awayTeam: WorldCupDisplayTeam | null,
+  question = '',
 ): WorldCupMarketOutcome[] {
   if (marketType === 'winner') {
     return winnerFavorites.map((entry) =>
@@ -709,6 +745,15 @@ function buildTemplateOutcomes(
         entry.teamId,
       ),
     );
+  }
+
+  if (marketType === 'totals') {
+    const line = totalGoalsLine(question) ?? '2.5';
+    const idSuffix = line.replace('.', '-');
+    return [
+      createOutcome(`over-${idSuffix}`, `Over ${line}`, 50),
+      createOutcome(`under-${idSuffix}`, `Under ${line}`, 50),
+    ];
   }
 
   if (marketType === 'spread') {
@@ -740,7 +785,7 @@ function normalizeOutcomePools(
   marketType: WorldCupMarketType,
 ): bigint[] {
   const fallbackCount =
-    marketType === 'winner' ? winnerFavorites.length : marketType === 'spread' ? 2 : 3;
+    marketType === 'winner' ? winnerFavorites.length : marketType === 'spread' || marketType === 'totals' ? 2 : 3;
   const outcomeCount = row.market.outcomeCount > 0 ? row.market.outcomeCount : fallbackCount;
   const pools =
     row.market.outcomePools.length > 0
@@ -767,6 +812,171 @@ function normalizeOutcomeStakes(
   return stakes;
 }
 
+function inferEventCategory(question: string, readableEventId?: string | null): MarketCategory {
+  const descriptor = `${readableEventId ?? ''} ${question}`.toLowerCase();
+
+  if (/\b(?:us cpi|cpi y?o?y?|fed funds|nfp|non-farm|payrolls?)\b/u.test(descriptor)) {
+    return 'macro';
+  }
+
+  if (/\b(?:tvl|defillama|ethereum|arbitrum)\b/u.test(descriptor)) {
+    return 'chain';
+  }
+
+  return 'worldcup';
+}
+
+const MARKET_THEME_VISUALS = {
+  macroCpi: {
+    id: 'macro-cpi',
+    imageUrl: '/market-themes/macro-cpi.png',
+    alt: 'Macro inflation market theme image',
+    title: 'Inflation print',
+    subtitle: 'US CPI YoY',
+  },
+  macroFedFunds: {
+    id: 'macro-fed-funds',
+    imageUrl: '/market-themes/macro-fed-funds.png',
+    alt: 'Macro central bank rates market theme image',
+    title: 'Rate corridor',
+    subtitle: 'Fed Funds',
+  },
+  macroNfp: {
+    id: 'macro-nfp',
+    imageUrl: '/market-themes/macro-nfp.png',
+    alt: 'Macro labor market theme image',
+    title: 'Labor pulse',
+    subtitle: 'NFP momentum',
+  },
+  chainEthereumTvl: {
+    id: 'chain-ethereum-tvl',
+    imageUrl: '/market-themes/chain-ethereum-tvl.png',
+    alt: 'On-chain Ethereum TVL market theme image',
+    title: 'Ethereum TVL',
+    subtitle: 'Liquidity threshold',
+  },
+  chainArbitrumTvl: {
+    id: 'chain-arbitrum-tvl',
+    imageUrl: '/market-themes/chain-arbitrum-tvl.png',
+    alt: 'On-chain Arbitrum TVL market theme image',
+    title: 'Arbitrum TVL',
+    subtitle: 'Layer-2 liquidity',
+  },
+  chainTokenUnlock: {
+    id: 'chain-token-unlock',
+    imageUrl: '/market-themes/chain-token-unlock.png',
+    alt: 'On-chain token unlock market theme image',
+    title: 'Unlock schedule',
+    subtitle: 'Vesting cliff',
+  },
+} satisfies Record<string, MarketThemeVisual>;
+
+function automatedThemeVisual(
+  category: MarketCategory,
+  question: string,
+  readableEventId?: string | null,
+): MarketThemeVisual | undefined {
+  const descriptor = `${readableEventId ?? ''} ${question}`.toLowerCase();
+
+  if (category === 'macro') {
+    if (/\b(?:fed funds?|rate|rates)\b/u.test(descriptor)) {
+      return MARKET_THEME_VISUALS.macroFedFunds;
+    }
+
+    if (/\b(?:nfp|non-farm|payrolls?|labor|employment)\b/u.test(descriptor)) {
+      return MARKET_THEME_VISUALS.macroNfp;
+    }
+
+    return MARKET_THEME_VISUALS.macroCpi;
+  }
+
+  if (category === 'chain') {
+    if (/\b(?:unlock|vesting|cliff)\b/u.test(descriptor)) {
+      return MARKET_THEME_VISUALS.chainTokenUnlock;
+    }
+
+    if (/\b(?:arbitrum|arb)\b/u.test(descriptor)) {
+      return MARKET_THEME_VISUALS.chainArbitrumTvl;
+    }
+
+    return MARKET_THEME_VISUALS.chainEthereumTvl;
+  }
+
+  return undefined;
+}
+
+function automatedStageLabel(category: MarketCategory): string {
+  if (category === 'macro') {
+    return 'Macro';
+  }
+
+  if (category === 'chain') {
+    return 'On-chain';
+  }
+
+  return 'Event';
+}
+
+function automatedHomeTeam(category: MarketCategory): WorldCupDisplayTeam {
+  return category === 'macro' ? GENERIC_MACRO_TEAM : GENERIC_CHAIN_TEAM;
+}
+
+function fallbackOutcomeLabels(outcomeCount: number): string[] {
+  return Array.from({ length: Math.max(0, outcomeCount) }, (_, index) => `Outcome ${index + 1}`);
+}
+
+function automatedOutcomeLabels(
+  category: MarketCategory,
+  question: string,
+  outcomeCount: number,
+): string[] {
+  if (category === 'chain') {
+    return outcomeCount === 2 ? ['Yes', 'No'] : fallbackOutcomeLabels(outcomeCount);
+  }
+
+  if (category === 'macro') {
+    const lowerQuestion = question.toLowerCase();
+
+    if (lowerQuestion.includes('cpi')) {
+      return ['< 2.5%', '2.5%-3.5%', '> 3.5%'];
+    }
+
+    if (lowerQuestion.includes('fed funds')) {
+      return ['< 4.5%', '4.5%-5.0%', '> 5.0%'];
+    }
+
+    if (lowerQuestion.includes('nfp') || lowerQuestion.includes('payroll')) {
+      return ['< 100k', '100k-200k', '> 200k'];
+    }
+  }
+
+  return fallbackOutcomeLabels(outcomeCount);
+}
+
+function automatedMarketType(outcomeCount: number): WorldCupMarketType {
+  return outcomeCount === 2 ? 'spread' : '1x2';
+}
+
+function buildAutomatedTemplateOutcomes(
+  category: MarketCategory,
+  question: string,
+  outcomeCount: number,
+): WorldCupMarketOutcome[] {
+  const labels = automatedOutcomeLabels(category, question, outcomeCount);
+  const fallbackProbability = labels.length > 0 ? Number((100 / labels.length).toFixed(1)) : 0;
+
+  return labels.map((label, index) =>
+    createOutcome(
+      label
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/gu, '-')
+        .replace(/^-|-$/gu, '') || `outcome-${index + 1}`,
+      label,
+      fallbackProbability,
+    ),
+  );
+}
+
 export function resolveWorldCupMarkets(
   eventRows: readonly EventMarketDashboardRow[],
 ): WorldCupMarketRow[] {
@@ -776,14 +986,26 @@ export function resolveWorldCupMarkets(
 
   return eventRows.map((row) => {
     const readableEventId = decodeReadableEventId(row.market.eventId);
+    const category = inferEventCategory(row.market.question, readableEventId);
     const marketType = inferMarketType(row.market.outcomeCount, row.market.question, readableEventId);
-    const match = resolveMatchedMatch(row, marketType);
-    const stage = match?.stage ?? inferGenericStage(row.market.question, marketType, readableEventId);
-    const { homeTeam, awayTeam } = resolveTeams(marketType, match, row.market.question);
-    const pools = normalizeOutcomePools(row, marketType);
+    const resolvedMarketType =
+      category === 'worldcup' ? marketType : automatedMarketType(row.market.outcomeCount);
+    const match = category === 'worldcup' ? resolveMatchedMatch(row, marketType) : null;
+    const stage =
+      category === 'worldcup'
+        ? match?.stage ?? inferGenericStage(row.market.question, marketType, readableEventId)
+        : 'group';
+    const { homeTeam, awayTeam } =
+      category === 'worldcup'
+        ? resolveTeams(marketType, match, row.market.question)
+        : { homeTeam: automatedHomeTeam(category), awayTeam: null };
+    const pools = normalizeOutcomePools(row, resolvedMarketType);
     const stakes = normalizeOutcomeStakes(row, pools.length);
     const totalPool = sum(pools);
-    const templateOutcomes = buildTemplateOutcomes(marketType, homeTeam, awayTeam);
+    const templateOutcomes =
+      category === 'worldcup'
+        ? buildTemplateOutcomes(marketType, homeTeam, awayTeam, row.market.question)
+        : buildAutomatedTemplateOutcomes(category, row.market.question, pools.length);
     const outcomes = pools.map((pool, outcomeIndex) => {
       const templateOutcome =
         templateOutcomes[outcomeIndex] ??
@@ -804,11 +1026,11 @@ export function resolveWorldCupMarkets(
     return {
       id: row.id,
       marketKind: 'event',
-      category: 'worldcup',
-      matchId: match?.matchId ?? extractMatchId(readableEventId),
+      category,
+      matchId: category === 'worldcup' ? match?.matchId ?? extractMatchId(readableEventId) : null,
       stage,
-      stageLabel: stageLabelForMatch(stage, match),
-      marketType,
+      stageLabel: category === 'worldcup' ? stageLabelForMatch(stage, match) : automatedStageLabel(category),
+      marketType: resolvedMarketType,
       question: row.market.question,
       kickoffTime: fallbackKickoffTime(row.market.resolveAfter),
       betDeadline: row.market.betDeadline,
@@ -823,6 +1045,7 @@ export function resolveWorldCupMarkets(
       outcomes,
       liquidity: totalPool,
       positionLabel: activeStake > 0n ? `Position ${Number(activeStake) / 1_000_000} USDC` : 'No position',
+      themeVisual: automatedThemeVisual(category, row.market.question, readableEventId),
     };
   });
 }

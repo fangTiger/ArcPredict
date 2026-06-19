@@ -23,7 +23,7 @@
 - [x] D.0 合约 ABI 收口（abi.ts，markets/getResult/getEventStatus/MarketCreated/ResultProposed）
 - [x] D.1 chain-reader（扫 EventMarket events + 读 oracle status + pendingMarketsForSource）
 - [x] D.2 chain-writer（createMarket / proposeResult / finalizeResult / EventMarket.resolve / approveUsdc）
-- [x] D.3 seed-liquidity（10 USDC / 市场，按 outcome 均分）
+- [x] D.3 seed-liquidity（1 USDC / 市场，按 outcome 均分）
 
 ## Phase E: Sources 实现
 - [x] E.1 fred-macro source（CPI + Fed Funds + NFP，区间 outcomes）
@@ -44,6 +44,7 @@
 ## Phase H: 前端
 - [x] H.1 MarketFilterBar 扩 4 tab + page.tsx 路由扩展
 - [x] H.2 HomeHero 暴露新品类入口（stash 隔离用户脏改）
+- [x] H.3 Macro / On-chain 自动化市场主题图片（静态资产 + row metadata + 列表/详情渲染）
 
 ## Phase I: 验收
 - [x] I.1 mainnet fork E2E smoke test（代码落档，默认 skip）

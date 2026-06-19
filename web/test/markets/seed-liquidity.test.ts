@@ -33,13 +33,13 @@ describe('seed-liquidity', () => {
       writer: writer as never,
       walletClient: walletClient as never,
       eventMarketAddress: '0xaa',
-      perMarketUsdc: 10_000_000n,
+      perMarketUsdc: 1_000_000n,
     });
     await seed.seed(123n, 3);
-    expect(calls[0]).toEqual({ kind: 'approve', n: 10_000_000n });
+    expect(calls[0]).toEqual({ kind: 'approve', n: 1_000_000n });
     expect(calls.slice(1).every((c) => c.kind === 'bet')).toBe(true);
     expect(calls.slice(1)).toHaveLength(3);
     const amounts = calls.slice(1).map((c) => (c as { kind: 'bet'; args: readonly [bigint, number, bigint] }).args[2]);
-    expect(new Set(amounts)).toEqual(new Set([3_333_333n]));
+    expect(new Set(amounts)).toEqual(new Set([333_333n]));
   });
 });

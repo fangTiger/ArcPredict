@@ -56,11 +56,31 @@ function statusMessage(
   row: WorldCupMarketRow,
   liveLabel: string | null,
 ): string {
+  if (row.category !== 'worldcup') {
+    return 'Settlement follows the configured source and finalized on-chain oracle result.';
+  }
+
   if (row.marketType === 'winner') {
     return 'Winner markets do not have a single-match live score.';
   }
 
   return liveLabel ? `Match status: ${liveLabel}` : 'Live score is unavailable; schedule data is shown instead.';
+}
+
+function eventCategoryLabel(category: WorldCupMarketRow['category']): string {
+  if (category === 'macro') {
+    return 'Macro';
+  }
+
+  if (category === 'chain') {
+    return 'On-chain';
+  }
+
+  if (category === 'crypto') {
+    return 'Crypto';
+  }
+
+  return 'World Cup';
 }
 
 export function EventInfoPanel({ row }: { row: WorldCupMarketRow }) {
@@ -83,8 +103,44 @@ export function EventInfoPanel({ row }: { row: WorldCupMarketRow }) {
     nowTs <= kickoffMs + MATCH_DURATION_MS;
   const liveScore = useLiveScore(row.matchId ?? '', {
     containerRef,
-    matchInProgress,
+    matchInProgress: row.category === 'worldcup' && matchInProgress,
   });
+
+  if (row.category !== 'worldcup') {
+    return (
+      <section
+        ref={containerRef}
+        className="glass rounded-3xl p-6"
+      >
+        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="text-xs uppercase text-arc-glow">
+              Event Info
+            </div>
+            <h3 className="mt-2 text-lg font-semibold text-ink">{eventCategoryLabel(row.category)}</h3>
+            <p className="mt-1 text-sm text-ink-2">Closes · {formatKickoff(new Date(Number(row.betDeadline * 1000n)).toISOString())} UTC</p>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-hair px-4 py-3">
+            <div className="text-xs text-ink-2">Source category</div>
+            <div className="mt-2 font-mono text-sm text-ink">{eventCategoryLabel(row.category)}</div>
+          </div>
+          <div className="rounded-2xl border border-hair px-4 py-3">
+            <div className="text-xs text-ink-2">Outcomes</div>
+            <div className="mt-2 font-mono text-sm text-ink">{row.outcomes.length}</div>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-hair px-4 py-3">
+          <div className="text-xs text-ink-2">Market note</div>
+          <p className="mt-2 text-sm leading-6 text-ink">{row.question}</p>
+          <p className="mt-2 text-xs text-ink-2">{statusMessage(row, null)}</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section

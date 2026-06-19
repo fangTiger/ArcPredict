@@ -161,7 +161,7 @@ export function WorldCupOutcomePanel({
     );
   }
 
-  const gridClassName = marketType === 'spread' ? 'grid-cols-2' : 'grid-cols-3';
+  const gridClassName = marketType === 'spread' || marketType === 'totals' ? 'grid-cols-2' : 'grid-cols-3';
 
   return (
     <div className="glass rounded-3xl p-6">

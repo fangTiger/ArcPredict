@@ -10,6 +10,7 @@ import { createChainWriter } from '../../../../../lib/markets/scheduler/chain-wr
 import { createLensPreloader } from '../../../../../lib/markets/scheduler/lens-preloader';
 import { runTick } from '../../../../../lib/markets/scheduler/tick';
 import { createSeedLiquidity } from '../../../../../lib/markets/scheduler/seed-liquidity';
+import { AUTOMATED_MARKET_SEED_USDC } from '../../../../../lib/markets/scheduler/seed-config';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -65,6 +66,7 @@ async function handleTick(req: Request): Promise<Response> {
     });
     const writer = createChainWriter({
       walletClient,
+      publicClient,
       eventMarketAddress,
       oracleAddress,
       usdcAddress,
@@ -72,8 +74,9 @@ async function handleTick(req: Request): Promise<Response> {
     const seedLiquidity = createSeedLiquidity({
       writer,
       walletClient,
+      publicClient,
       eventMarketAddress,
-      perMarketUsdc: 10_000_000n,
+      perMarketUsdc: AUTOMATED_MARKET_SEED_USDC,
     });
     const preloader = createLensPreloader({
       warmFn: async (target) => {

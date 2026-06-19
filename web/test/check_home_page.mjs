@@ -150,8 +150,8 @@ assertMatches(
 assertMatches(
   'page.tsx',
   pageSource,
-  /categoryParam === 'crypto'\s*\?\s*'crypto'\s*:\s*'worldcup'/u,
-  'World Cup 开启时首页空查询必须默认进入 World Cup，只有 category=crypto 才切回 Crypto。',
+  /MARKET_CATEGORIES\.includes\(categoryParam as MarketCategory\)[\s\S]*\? \(categoryParam as MarketCategory\)[\s\S]*: 'worldcup'/u,
+  'World Cup 开启时首页空查询必须默认进入 World Cup，同时允许 Macro 与 On-chain URL category。',
 );
 
 assertMatches(
@@ -176,8 +176,15 @@ assertExcludesAll('page.tsx', pageSource, [
 assertMatches(
   'page.tsx',
   pageSource,
-  /effectiveCategory === 'crypto'[\s\S]*nextQuery\.set\('category', 'crypto'\)/u,
-  '切换到 Crypto 时必须写入 category=crypto，避免空查询又回到 World Cup。',
+  /lastSyncedQueryStringRef[\s\S]*queryChangedOutsideState[\s\S]*stateMatchesQuery[\s\S]*return;/u,
+  '外部 URL category 变化必须先同步到 state，不能被旧 effectiveCategory 立刻 replace 回去。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /effectiveCategory === 'worldcup'[\s\S]*nextQuery\.set\('category', effectiveCategory\)/u,
+  '切换到非默认品类时必须写入当前 effectiveCategory，避免 Macro/On-chain 回跳。',
 );
 
 assertMatches(
@@ -253,8 +260,8 @@ assertMatches(
 assertMatches(
   'page.tsx',
   pageSource,
-  /sliceVisibleMarketRows\(\s*visibleWorldCupMarkets,\s*visibleMarketCount\s*\)[\s\S]*WorldCupMarketCard/u,
-  'World Cup 市场必须按 visibleMarketCount 分批渲染。',
+  /sliceVisibleMarketRows\(\s*visibleEventMarkets,\s*visibleMarketCount\s*\)[\s\S]*WorldCupMarketCard/u,
+  '事件市场必须按 visibleMarketCount 分批渲染。',
 );
 
 assertMatches(

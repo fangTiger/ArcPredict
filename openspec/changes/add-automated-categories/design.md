@@ -14,7 +14,7 @@ OpenSpec design.md 仅列要点与决策记录，避免双份维护。
 | D3 | cron 平台 | Vercel Cron | GH Actions | 已有部署，零新基础设施 |
 | D4 | Phase 1 品类 | macro + chain | sports / esports | 数据源最稳、与 Lens 协同最强 |
 | D5 | tick 上限 | 5 新建 + 10 resolve / source | 不限 | Vercel 60s 限制 |
-| D6 | 引导流动性 | 固定 10 USDC | 策略化 | Phase 1 简单可控 |
+| D6 | 引导流动性 | 固定 1 USDC | 策略化 | Phase 1 成本更低，便于测试网持续跑通 |
 
 ## 架构图
 

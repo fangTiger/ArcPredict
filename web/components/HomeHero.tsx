@@ -25,7 +25,7 @@ export function HomeHero({ category, stats }: Props) {
     ? {
         eyebrow: 'World Cup board',
         title: 'Pick the next winner.',
-        description: '1X2 / spreads / winner markets · USDC-settled on Arc.',
+        description: '1X2 / totals / winner markets · USDC-settled on Arc.',
       }
     : {
         eyebrow: 'Crypto board',
@@ -44,11 +44,11 @@ export function HomeHero({ category, stats }: Props) {
         <div className="min-w-0 lg:col-span-7">
           <div className="flex items-center gap-2.5">
             <span className="live-dot" aria-hidden="true" />
-            <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-2">
+            <span className="font-mono text-[10px] uppercase text-ink-2">
               Live
             </span>
             <span className="text-ink-3">·</span>
-            <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-arc-glow">
+            <span className="font-mono text-[10px] uppercase text-arc-glow">
               {copy.eyebrow}
             </span>
           </div>
@@ -81,7 +81,7 @@ export function HomeHero({ category, stats }: Props) {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="hero-stat rounded-lg border border-hair bg-bg-1/55 px-3 py-2.5 backdrop-blur">
-      <div className="font-mono text-[9px] uppercase tracking-[0.22em] text-ink-3">{label}</div>
+      <div className="font-mono text-[9px] uppercase text-ink-3">{label}</div>
       <div className="mt-1 font-mono text-lg leading-none text-ink num-glow">{value}</div>
     </div>
   );

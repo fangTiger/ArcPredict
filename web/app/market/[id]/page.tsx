@@ -102,6 +102,8 @@ function buildEventLensInput(row: EventRow, generatedAt: number): LensInput {
       type: 'event-multi',
       end_time: Number(row.betDeadline),
       implied_probability: toLensProbability(row.outcomes[0]?.impliedProbability ?? 0),
+      category: row.category,
+      eventId: row.eventId,
       outcome_options: row.outcomes.map((outcome) => outcome.label),
       outcome_implied_probabilities: Object.fromEntries(
         row.outcomes.map((outcome) => [
@@ -261,8 +263,14 @@ export default function MarketDetailPage() {
   const detailLoading = kind === 'event' ? hasEventMarket && isEventLoading : isLoading;
   const detailError = kind === 'event' ? hasEventMarket && isEventError : isError;
   const walletStatus = address ? 'Connected' : 'Not connected';
-  const detailTitle = kind === 'event' ? 'World Cup Market' : 'Market Details';
-  const backHref = kind === 'event' ? '/?category=worldcup' : '/';
+  const eventCategoryLabel =
+    eventRow?.category === 'macro'
+      ? 'Macro'
+      : eventRow?.category === 'chain'
+        ? 'On-chain'
+        : 'World Cup';
+  const detailTitle = kind === 'event' ? `${eventCategoryLabel} Market` : 'Market Details';
+  const backHref = kind === 'event' ? `/?category=${eventRow?.category ?? 'worldcup'}` : '/';
   const showPhase16 = kind !== 'event' && isPhase16Enabled();
   const seedContribution = useMemo(
     () => sumSeedContribution(seedBetEvents ?? [], SEED_WALLETS),
@@ -379,7 +387,7 @@ export default function MarketDetailPage() {
             <span aria-hidden>←</span> 返回
           </Link>
           <div className="font-mono text-xs text-ink-2">
-            {kind === 'event' ? 'World Cup ' : ''}Market #{routeId ?? 'unknown'}
+            {kind === 'event' ? `${eventCategoryLabel} ` : ''}Market #{routeId ?? 'unknown'}
           </div>
         </div>
 
@@ -413,7 +421,7 @@ export default function MarketDetailPage() {
                       <h1 className="mt-2 font-display text-2xl text-ink">{detailTitle}</h1>
                       <p className="mt-2 text-sm leading-6 text-ink-2">
                         {kind === 'event'
-                          ? 'Review the market, pick an outcome, and place a World Cup bet from this page.'
+                          ? `Review the market, pick an outcome, and place a ${eventCategoryLabel} bet from this page.`
                           : 'Review the question, pool state, and betting actions from a direct market link.'}
                       </p>
                     </div>

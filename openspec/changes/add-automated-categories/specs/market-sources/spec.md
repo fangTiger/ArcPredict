@@ -26,6 +26,16 @@
 - **THEN** chain-writer SHALL 仅处理前 5 个
 - **AND** 剩余 3 个在下次 tick 自动重新出现并被处理
 
+### Requirement: Automated market seed budget
+
+系统 SHALL 对 cron 新建的每个自动化市场注入 1 USDC 项目方引导流动性，
+并按 outcome 数量均分。
+
+#### Scenario: 新建自动化市场使用低成本 seed
+- **WHEN** cron 创建 macro 或 chain 市场
+- **THEN** seed liquidity SHALL approve 1 USDC
+- **AND** seed liquidity SHALL 将该 1 USDC 按 outcome 数量均分下注
+
 ### Requirement: 失败局部化
 
 系统 SHALL 在单个 source 抛错时局部化失败，其他 source 不受影响。

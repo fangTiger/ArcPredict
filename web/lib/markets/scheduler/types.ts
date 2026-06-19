@@ -14,6 +14,7 @@ export interface ChainReaderLike {
   marketIdForEventId(eventId: `0x${string}`): Promise<bigint | null>;
   oracleStatus(eventId: `0x${string}`): Promise<OracleStatusName>;
   marketSettled(marketId: bigint): Promise<boolean>;
+  marketHasLiquidity(marketId: bigint): Promise<boolean>;
   pendingMarketsForSource(
     sourceId: string,
     knownEventIds: `0x${string}`[],

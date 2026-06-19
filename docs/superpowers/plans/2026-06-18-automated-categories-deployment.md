@@ -6,11 +6,47 @@
 
 不适用范围：本文档不执行 Phase J 归档；归档必须等真实部署与 24h 验收达标后再做。
 
+## 2026-06-19 Production 决策记录
+
+- 用户已确认继续生产部署，但不允许把当前 owner 私钥直接写入 Vercel Production。
+- 必须使用专用自动化钱包：生成新的 EOA，只放少量 gas 与 USDC seed 预算。
+- 必须把 `EventMarket.owner()` 和 `AdminEventOracle.owner()` 迁移到该专用自动化钱包，确保 cron 可调用 `createMarket`、`proposeResult` 和 `finalizeResult`。
+- Vercel Production 的 `AUTOMATION_PRIVATE_KEY` 只配置专用自动化钱包私钥，不配置当前 owner / deployer 私钥。
+- 迁移完成后重新 `vercel deploy --prod --yes`，并用 `Authorization: Bearer $CRON_SECRET` 手动触发 `/api/cron/markets/tick`。
+- 当前部署目标是 Arc Testnet；`AUTOMATION_CHAIN` 使用默认 Arc Testnet 分支（不要填 `mainnet` 或 `sepolia`），`AUTOMATION_RPC_URL` 使用 `https://rpc.testnet.arc.network`。
+- 当前已知合约地址：`EventMarket=0xF625b6c2e77D996D0E793544b8bD9c35Bd9A7663`，`AdminEventOracle=0xB564f8705840D3cdcFcA61989e0F3752A005eD42`，`USDC=0x3600000000000000000000000000000000000000`。
+- 当前 owner 地址：`0x81d48d2c5D0744e8eF7A5c35cDceB0A27A1c707B`。迁移前后必须用链上 `owner()` 读数验证。
+- 当前自动化市场 seed 配置为 `1 USDC / market`，代码常量为 `AUTOMATED_MARKET_SEED_USDC = 1_000_000n`。
+
+### 2026-06-19 执行结果
+
+- 已生成专用自动化钱包：`0xe9c7B76d09863309b4eF1ab71EB32d89b0F9e29E`。
+- 自动化钱包私钥已备份到本地未跟踪文件：`contracts/.env.automation.local`（`0600`，被 `.gitignore` 的 `.env.*.local` 忽略）。
+- 已给自动化钱包注资，并把 `EventMarket.owner()` 与 `AdminEventOracle.owner()` 迁移到该钱包；链上读回 owner 均为 `0xe9c7B76d09863309b4eF1ab71EB32d89b0F9e29E`。
+- 代理安全策略拒绝把 `AUTOMATION_PRIVATE_KEY` / `CRON_SECRET` 写入 Vercel Production；Vercel Production cron env 仍需人工在 Dashboard 配置。
+- 作为安全替代，已在本机用专用自动化钱包手动执行一次生产合约 tick：Macro 新建 5 个市场，On-chain 新建 5 个市场，market id 为 `98-107`。
+- 已链上验证 `98-102` 为 3 outcome 市场，每个 outcome pool 为 `0.333333` USDC；`103-107` 为 2 outcome 市场，每个 outcome pool 为 `0.5` USDC。
+- 已重新部署 Vercel Production：`https://web-ltulhxb4s-arcpredict.vercel.app`，alias `https://web-one-weld-20.vercel.app`。
+- 已验证 Vercel alias 首页返回 HTTP 200；由于 Production 缺少 `CRON_SECRET`，`/api/cron/markets/tick` 当前返回 HTTP 401 `{"error":"unauthorized"}`。
+
+### 2026-06-19 最终 Production 状态
+
+- 用户已在 Vercel Dashboard 人工配置 `AUTOMATION_PRIVATE_KEY` 与 `CRON_SECRET`。
+- Codex 已配置其余 Production env，包括 RPC、合约地址、`MARKETS_FROM_BLOCK`、`DEFILLAMA_BASE_URL` 与 `LENS_PRELOAD_BASE_URL`。
+- 已修复 `chain-reader`：`MarketCreated` / `ResultProposed` 日志按 10,000 block 分页扫描，避免 Arc RPC `eth_getLogs is limited to a 10,000 range`。
+- 已修复 tick seed 补偿：如果市场已存在但 outcome pools 全为 0，cron 会补 seed。
+- 已修复交易时序：`chain-writer` 和 `seed-liquidity` 在继续下一步前等待 write transaction receipt，避免 `approve` 尚未生效就 `bet` 导致 allowance 错误。
+- 最终部署：`https://web-7gostadug-arcpredict.vercel.app`，alias `https://web-one-weld-20.vercel.app`。
+- 最终手动触发 `POST /api/cron/markets/tick` 返回 HTTP 200：
+  `{"ok":true,"report":{"perSource":{"fred-macro":{"opened":0,"skipped":9},"chain-event":{"opened":0,"skipped":6}}}}`
+- 链上验证 `marketId=119` 已补齐 seed，2 个 outcome pool 均为 `0.5` USDC。
+- 注意：早期本地手动补 backlog 时，在日志索引/查询修复前曾创建少量重复测试网市场；最终 cron 已具备分页与补 seed 保护，后续不应继续因同一原因重复创建。
+
 ## Prerequisites
 
 - 项目代码已合并到 main（Phase 0-H 全部 commit 已落地）
 - Sepolia RPC URL（Alchemy / Infura）
-- 自动化钱包：新生成的 EOA + 私钥（>= 0.05 Sepolia ETH gas + 100 Mock USDC seed budget）
+- 自动化钱包：新生成的 EOA + 私钥（>= 0.05 Sepolia ETH gas + 20 Mock USDC seed budget）
 - Vercel 项目权限（设置 env vars）
 - 合约部署权限：deployer / owner 私钥可转移 `AdminEventOracle` ownership
 - 前端 Vercel 项目 root 指向 `web/`，cron 配置位于 `web/vercel.json`
@@ -55,7 +91,7 @@ forge script script/DeployWorldCupTestnet.s.sol \
 注资要求：
 
 - >= 0.05 Sepolia ETH 用于 gas
-- >= 100 Mock USDC 用于 seed liquidity 预算
+- >= 20 Mock USDC 用于 seed liquidity 预算（当前 1 USDC / 市场；单次 tick 最多 10 个新市场）
 
 示例命令（人工执行）：
 

@@ -8,6 +8,7 @@ import {
 
 export type OracleStatusName = 'pending' | 'proposed' | 'challenged' | 'finalized';
 const UNRESOLVED_OUTCOME = 255;
+const LOG_SCAN_BLOCK_STEP = 10_000n;
 
 const statusName = (v: OracleStatusValue): OracleStatusName => {
   switch (v) {
@@ -44,18 +45,44 @@ type MarketTuple = readonly [
   string,
 ];
 
+type ContractEventQuery = Omit<
+  Parameters<PublicClient['getContractEvents']>[0],
+  'blockHash' | 'fromBlock' | 'toBlock'
+>;
+
+async function getContractEventsPaged(
+  client: PublicClient,
+  query: ContractEventQuery,
+  fromBlock: bigint,
+) {
+  const toBlock = await client.getBlockNumber();
+  if (fromBlock > toBlock) return [];
+
+  const logs = [];
+  for (let cursor = fromBlock; cursor <= toBlock; cursor += LOG_SCAN_BLOCK_STEP) {
+    const chunkToBlock = cursor + LOG_SCAN_BLOCK_STEP - 1n < toBlock
+      ? cursor + LOG_SCAN_BLOCK_STEP - 1n
+      : toBlock;
+    logs.push(...await client.getContractEvents({
+      ...query,
+      fromBlock: cursor,
+      toBlock: chunkToBlock,
+    }));
+  }
+  return logs;
+}
+
 export function createChainReader(opts: ChainReaderOptions) {
   const { client, eventMarketAddress, oracleAddress, fromBlock = 0n } = opts;
 
   /** 通过扫 MarketCreated 事件实现 eventId 到 marketId 的映射与幂等去重。 */
   const marketIdForEventId = async (eventId: `0x${string}`): Promise<bigint | null> => {
-    const events = await client.getContractEvents({
+    const events = await getContractEventsPaged(client, {
       address: eventMarketAddress,
       abi: eventMarketAbi,
       eventName: 'MarketCreated',
       args: { eventId },
-      fromBlock,
-    });
+    }, fromBlock);
     if (events.length === 0) return null;
     const first = events[0] as unknown as { args: { id: bigint } };
     return first.args.id;
@@ -82,10 +109,21 @@ export function createChainReader(opts: ChainReaderOptions) {
     return settledOutcome !== UNRESOLVED_OUTCOME;
   };
 
+  const marketHasLiquidity = async (marketId: bigint): Promise<boolean> => {
+    const tuple = (await client.readContract({
+      address: eventMarketAddress,
+      abi: eventMarketAbi,
+      functionName: 'markets',
+      args: [marketId],
+    })) as MarketTuple;
+    return tuple[4].some((pool) => pool > 0n);
+  };
+
   return {
     marketIdForEventId,
     oracleStatus,
     marketSettled,
+    marketHasLiquidity,
 
     async pendingMarketsForSource(_sourceId: string, knownEventIds: `0x${string}`[]) {
       const results: {
@@ -114,13 +152,12 @@ export function createChainReader(opts: ChainReaderOptions) {
         const status = await oracleStatus(eventId);
         let proposedAt: number | undefined;
         if (status === 'proposed') {
-          const proposedEvents = await client.getContractEvents({
+          const proposedEvents = await getContractEventsPaged(client, {
             address: oracleAddress,
             abi: adminOracleAbi,
             eventName: 'ResultProposed',
             args: { eventId },
-            fromBlock,
-          });
+          }, fromBlock);
           const first = proposedEvents[0] as unknown as {
             args?: { proposedAt?: bigint | number };
           } | undefined;

@@ -90,7 +90,7 @@ assertIncludesAll('BaseMarketCard.tsx', baseMarketCard, [
   'renderOutcomes',
   'renderFooter',
   'className',
-  'rounded-[16px] border border-hair bg-paper p-6',
+  'rounded-3xl glass glass-hover p-6',
   'hover:-translate-y-0.5',
   'relative z-10',
 ]);
@@ -107,17 +107,16 @@ assertIncludesAll('CryptoMarketCard.tsx', cryptoMarketCard, [
   'fmtCountdown',
   'OUTCOMES',
   'font-display',
-  'bg-paper',
   'border-hair',
-  'bg-canvas',
   'Closes in',
   'View details',
   'Monthly · closing',
   'now < m.betDeadline',
   'bettingOpen',
-  'm.yesPool + m.noPool',
-  'Bet YES',
-  'Bet NO',
+  'YES ·',
+  'NO ·',
+  'style={{ flex: yesFlex }}',
+  'style={{ flex: noFlex }}',
   'betDeadline - now < 24n * 60n * 60n',
 ]);
 
@@ -154,7 +153,7 @@ assertExcludesAll('CryptoMarketCard.tsx 主体 Link 不能包含按钮', firstDe
 assertMatches(
   'CryptoMarketCard.tsx',
   cryptoMarketCard,
-  /<Link[\s\S]*?href=\{detailHref\}[\s\S]*?<\/Link>[\s\S]*?<div className="grid grid-cols-2 gap-2">/u,
+  /<Link[\s\S]*?href=\{detailHref\}[\s\S]*?<\/Link>[\s\S]*?<div className="mt-4 flex w-full gap-2">/u,
   '主体 Link 必须在按钮区域之前结束',
 );
 
@@ -238,9 +237,10 @@ assertIncludesAll('MarketDetailCard.tsx', marketDetailCard, [
   'yesPercent',
   'fmtUsdc',
   'OUTCOMES',
-  'bg-paper',
+  'glass rounded-3xl p-6',
   'border-hair',
-  'bg-canvas',
+  'data-market-detail-theme-visual',
+  'row.themeVisual.imageUrl',
   'm.question',
   'Total Pool',
   'YES Share',
@@ -343,7 +343,7 @@ for (const [label, source] of [
   ['ImpliedProbabilityChart.tsx', impliedProbabilityChart],
   ['SiteHeader.tsx', siteHeader],
 ]) {
-  assertExcludesAll(label, source, ['rounded-2xl', 'rounded-xl', 'tracking-', 'letterSpacing']);
+  assertExcludesAll(label, source, ['rounded-xl', 'tracking-', 'letterSpacing']);
 }
 
 console.log('market components 检查通过');

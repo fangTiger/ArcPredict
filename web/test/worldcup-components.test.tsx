@@ -17,18 +17,22 @@ const moduleCache = new Map<string, unknown>();
 
 type LoadedWorldCupRow = {
   marketKind: string;
+  category: string;
   matchId: string | null;
   stage: string;
   stageLabel: string;
   marketType: string;
+  question: string;
   kickoffTime: string;
   userOutcomeStakes: bigint[];
   homeTeam: {
     shortCode: string;
+    nameEn?: string;
     teamId?: string;
   };
   awayTeam: {
     shortCode: string;
+    nameEn?: string;
     teamId?: string;
   } | null;
   outcomes: Array<{
@@ -38,6 +42,13 @@ type LoadedWorldCupRow = {
     impliedProbability: number;
     teamId?: string;
   }>;
+  themeVisual?: {
+    id: string;
+    imageUrl: string;
+    alt: string;
+    title: string;
+    subtitle: string;
+  };
 };
 
 const resolveTsSpecifier = (specifier: string, parentDir: string) => {
@@ -309,6 +320,8 @@ describe('worldcup components', () => {
   });
 
   test('World Cup outcome tiles can open the event betting flow directly', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-17T00:00:00Z'));
     setMatchMedia(true);
     const row = WORLDCUP_SKELETON_MARKETS.find((market) => market.marketType === '1x2');
     const onBet = vi.fn();
@@ -683,6 +696,139 @@ describe('worldcup components', () => {
         .toISOString()
         .replace('.000Z', 'Z'),
     );
+  });
+
+  test('自动事件市场会从 question 归类为 Macro 或 On-chain 并恢复 outcome 标签', () => {
+    const macroResolveAfter = secondsForIso('2026-07-15T12:00:00Z');
+    const chainResolveAfter = secondsForIso('2026-09-17T00:00:00Z');
+    const [macroRow, chainRow] = resolveWorldCupMarkets([
+      makeEventRow({
+        eventId: `0x${'11'.repeat(32)}` as `0x${string}`,
+        outcomeCount: 3,
+        question: 'US CPI YoY released on 2026-07-15 - what range?',
+        resolveAfter: macroResolveAfter,
+        outcomePools: [20_000_000n, 50_000_000n, 30_000_000n],
+      }),
+      makeEventRow({
+        eventId: `0x${'22'.repeat(32)}` as `0x${string}`,
+        outcomeCount: 2,
+        question: 'Will Ethereum TVL be >= $100.00B by 2026-09-17?',
+        resolveAfter: chainResolveAfter,
+        outcomePools: [60_000_000n, 40_000_000n],
+      }),
+    ]);
+
+    expect(macroRow.category).toBe('macro');
+    expect(macroRow.stageLabel).toBe('Macro');
+    expect(macroRow.outcomes.map((outcome) => outcome.label)).toEqual([
+      '< 2.5%',
+      '2.5%-3.5%',
+      '> 3.5%',
+    ]);
+
+    expect(chainRow.category).toBe('chain');
+    expect(chainRow.stageLabel).toBe('On-chain');
+    expect(chainRow.outcomes.map((outcome) => outcome.label)).toEqual(['Yes', 'No']);
+  });
+
+  test('自动事件市场会按题材派生静态主题图 metadata', () => {
+    const [cpiRow, fedRow, nfpRow, ethRow, arbRow] = resolveWorldCupMarkets([
+      makeEventRow({
+        eventId: `0x${'44'.repeat(32)}` as `0x${string}`,
+        outcomeCount: 3,
+        question: 'US CPI YoY released on 2026-07-15 - what range?',
+        resolveAfter: secondsForIso('2026-07-15T12:00:00Z'),
+        outcomePools: [20_000_000n, 50_000_000n, 30_000_000n],
+      }),
+      makeEventRow({
+        eventId: `0x${'45'.repeat(32)}` as `0x${string}`,
+        outcomeCount: 3,
+        question: 'Fed Funds Rate on 2026-07-15 - what range?',
+        resolveAfter: secondsForIso('2026-07-15T12:00:00Z'),
+        outcomePools: [20_000_000n, 50_000_000n, 30_000_000n],
+      }),
+      makeEventRow({
+        eventId: `0x${'46'.repeat(32)}` as `0x${string}`,
+        outcomeCount: 3,
+        question: 'NFP released on 2026-07-15 - MoM change?',
+        resolveAfter: secondsForIso('2026-07-15T12:00:00Z'),
+        outcomePools: [20_000_000n, 50_000_000n, 30_000_000n],
+      }),
+      makeEventRow({
+        eventId: `0x${'47'.repeat(32)}` as `0x${string}`,
+        outcomeCount: 2,
+        question: 'Will Ethereum TVL be >= $100.00B by 2026-09-17?',
+        resolveAfter: secondsForIso('2026-09-17T00:00:00Z'),
+        outcomePools: [60_000_000n, 40_000_000n],
+      }),
+      makeEventRow({
+        eventId: `0x${'48'.repeat(32)}` as `0x${string}`,
+        outcomeCount: 2,
+        question: 'Will Arbitrum TVL be >= $8.50B by 2026-09-17?',
+        resolveAfter: secondsForIso('2026-09-17T00:00:00Z'),
+        outcomePools: [55_000_000n, 45_000_000n],
+      }),
+    ]);
+
+    expect(cpiRow.themeVisual?.imageUrl).toBe('/market-themes/macro-cpi.png');
+    expect(fedRow.themeVisual?.imageUrl).toBe('/market-themes/macro-fed-funds.png');
+    expect(nfpRow.themeVisual?.imageUrl).toBe('/market-themes/macro-nfp.png');
+    expect(ethRow.themeVisual?.imageUrl).toBe('/market-themes/chain-ethereum-tvl.png');
+    expect(arbRow.themeVisual?.imageUrl).toBe('/market-themes/chain-arbitrum-tvl.png');
+
+    for (const row of [cpiRow, fedRow, nfpRow, ethRow, arbRow]) {
+      expect(row.themeVisual?.alt).toContain(row.category === 'macro' ? 'Macro' : 'On-chain');
+      expect(row.themeVisual?.title).not.toHaveLength(0);
+      expect(row.themeVisual?.subtitle).not.toHaveLength(0);
+      expect(existsSync(resolve(webRoot, 'public', row.themeVisual!.imageUrl.slice(1)))).toBe(true);
+    }
+  });
+
+  test('On-chain 事件卡片使用市场问题作为标题，不显示球队 VS 布局', async () => {
+    setMatchMedia(false);
+    const [row] = resolveWorldCupMarkets([
+      makeEventRow({
+        eventId: `0x${'33'.repeat(32)}` as `0x${string}`,
+        outcomeCount: 2,
+        question: 'Will Arbitrum TVL be >= $8.50B by 2026-09-17?',
+        resolveAfter: secondsForIso('2026-09-17T00:00:00Z'),
+        outcomePools: [55_000_000n, 45_000_000n],
+      }),
+    ]);
+
+    await act(async () => {
+      root.render(React.createElement(WorldCupMarketCard, { row, onBet: vi.fn() }));
+      await Promise.resolve();
+    });
+
+    expect(host.textContent).toContain('On-chain');
+    expect(host.textContent).toContain('Will Arbitrum TVL be >= $8.50B by 2026-09-17?');
+    expect(host.textContent).toContain('Yes');
+    expect(host.textContent).toContain('No');
+    expect(host.textContent).not.toContain('Home VS Away');
+  });
+
+  test('自动事件卡片会渲染主题图层', async () => {
+    setMatchMedia(false);
+    const [row] = resolveWorldCupMarkets([
+      makeEventRow({
+        eventId: `0x${'49'.repeat(32)}` as `0x${string}`,
+        outcomeCount: 2,
+        question: 'Will Ethereum TVL be >= $100.00B by 2026-09-17?',
+        resolveAfter: secondsForIso('2026-09-17T00:00:00Z'),
+        outcomePools: [60_000_000n, 40_000_000n],
+      }),
+    ]);
+
+    await act(async () => {
+      root.render(React.createElement(WorldCupMarketCard, { row, onBet: vi.fn() }));
+      await Promise.resolve();
+    });
+
+    const visual = host.querySelector<HTMLElement>('[data-market-theme-visual]');
+    expect(visual).not.toBeNull();
+    expect(visual?.style.backgroundImage).toContain('/market-themes/chain-ethereum-tvl.png');
+    expect(visual?.getAttribute('aria-label')).toContain('On-chain');
   });
 
   test('readable knockout eventId 命中 placeholder seed 时，会优先使用 question 中的真实球队', () => {

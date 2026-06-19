@@ -39,6 +39,22 @@ function marketTypeLabel(marketType: WorldCupMarketRow['marketType']): string {
   return marketType === 'totals' ? 'TOTALS' : marketType.toUpperCase();
 }
 
+function eventCategoryLabel(category: WorldCupMarketRow['category']): string {
+  if (category === 'macro') {
+    return 'Macro';
+  }
+
+  if (category === 'chain') {
+    return 'On-chain';
+  }
+
+  if (category === 'crypto') {
+    return 'Crypto';
+  }
+
+  return 'World Cup';
+}
+
 function TeamBadge({ nameEn, shortCode, teamId }: WorldCupMarketRow['homeTeam']) {
   const flagUrl = teamId ? flagIconUrlForTeam(teamId) : null;
 
@@ -85,7 +101,7 @@ function OutcomeFlexButtons({
         {row.outcomes.map((outcome, outcomeIndex) => {
           const pct = Math.round(outcome.impliedProbability);
           const label =
-            row.marketType === '1x2'
+            row.category === 'worldcup' && row.marketType === '1x2'
               ? fixedOneXTwoLabels[outcomeIndex] ?? `Outcome ${outcomeIndex + 1}`
               : outcome.label;
           return (
@@ -133,12 +149,17 @@ export function WorldCupMarketCard({
   const liquidityLabel = `${fmtUsdc(row.liquidity)} USDC`;
   const positionLabel = row.positionLabel;
   const bettingOpen = row.settledOutcome === EVENT_UNRESOLVED_OUTCOME && row.betDeadline > now;
+  const isWorldCupMarket = row.category === 'worldcup';
   const countdownLabel =
-    row.betDeadline > now ? `⚽ ${fmtCountdown(row.betDeadline, now)}` : '⚽ Closed';
+    row.betDeadline > now
+      ? `${isWorldCupMarket ? '⚽ ' : ''}${fmtCountdown(row.betDeadline, now)}`
+      : `${isWorldCupMarket ? '⚽ ' : ''}Closed`;
   const detailHref = `/market/${row.id.toString()}?kind=event`;
   const isWinnerMarket = row.marketType === 'winner';
   const titleLabel =
-    isWinnerMarket
+    !isWorldCupMarket
+      ? row.question
+      : isWinnerMarket
       ? 'World Cup Winner'
       : `${row.homeTeam.nameEn} VS ${row.awayTeam?.nameEn ?? ''}`;
   const lensOutcomeOptions = row.outcomes.map((outcome) => outcome.label);
@@ -149,6 +170,8 @@ export function WorldCupMarketCard({
       type: 'event-multi',
       end_time: Number(row.betDeadline),
       implied_probability: toLensProbability(row.outcomes[0]?.impliedProbability ?? 0),
+      category: row.category,
+      eventId: row.eventId,
       outcome_options: lensOutcomeOptions,
       outcome_implied_probabilities: Object.fromEntries(
         row.outcomes.map((outcome) => [
@@ -171,16 +194,47 @@ export function WorldCupMarketCard({
           <div className="mb-[18px] flex items-center justify-between gap-3">
             <div className="inline-flex items-center gap-[10px]">
               <span className="inline-flex h-8 items-center justify-center rounded-full border border-arc-glow/30 bg-arc/10 px-3 text-[11px] font-semibold uppercase text-arc-glow">
-                {stageLabel}
+                {isWorldCupMarket ? stageLabel : eventCategoryLabel(row.category)}
               </span>
               <span className="font-mono text-xs text-ink-2">#{row.id.toString()}</span>
             </div>
             <span className="rounded-[12px] bg-arc/15 px-[10px] py-1 text-[11px] font-semibold uppercase text-arc-glow">
-              {isWinnerMarket ? `Closes ${formatUnixTime(row.betDeadline)}` : kickoffLabel}
+              {!isWorldCupMarket || isWinnerMarket ? `Closes ${formatUnixTime(row.betDeadline)}` : kickoffLabel}
             </span>
           </div>
 
-          {isWinnerMarket ? (
+          {!isWorldCupMarket ? (
+            <div className="mb-4 overflow-hidden rounded-lg border border-arc-glow/40 bg-arc/10">
+              {row.themeVisual ? (
+                <div
+                  data-market-theme-visual=""
+                  aria-label={row.themeVisual.alt}
+                  className="relative aspect-[16/9] bg-cover bg-center"
+                  style={{
+                    backgroundImage: `linear-gradient(90deg, rgba(5,6,20,0.86) 0%, rgba(5,6,20,0.28) 58%, rgba(5,6,20,0.08) 100%), url(${row.themeVisual.imageUrl})`,
+                  }}
+                >
+                  <div className="absolute inset-x-4 bottom-3">
+                    <div className="font-mono text-[10px] uppercase text-arc-glow">
+                      {row.themeVisual.subtitle}
+                    </div>
+                    <div className="mt-1 truncate font-display text-xl leading-none text-ink">
+                      {row.themeVisual.title}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+              <div className="px-4 py-3">
+                <div className="font-mono text-[11px] uppercase text-arc-glow">
+                  {eventCategoryLabel(row.category)} event
+                </div>
+                <h3 className="mt-2 font-display text-[24px] leading-[1.15] text-ink">{titleLabel}</h3>
+                <div className="mt-2 font-mono text-xs text-ink-2">
+                  {row.outcomes.length} outcomes · closes {formatUnixTime(row.betDeadline)}
+                </div>
+              </div>
+            </div>
+          ) : isWinnerMarket ? (
             <div className="mb-4 rounded-lg border border-arc-glow/40 bg-arc/10 px-4 py-3">
               <div className="font-mono text-[11px] uppercase text-arc-glow">
                 Tournament outright

@@ -120,6 +120,7 @@ function HomePageContent() {
   const [visibleMarketCount, setVisibleMarketCount] = useState(MARKET_PAGE_SIZE);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const positionsRef = useRef<HTMLElement | null>(null);
+  const lastSyncedQueryStringRef = useRef(searchParams.toString());
   const showCategoryTabs = WORLDCUP_ENABLED;
   const effectiveCategory = showCategoryTabs ? category : 'crypto';
   const backgroundVariant = effectiveCategory === 'worldcup' ? 'pitch' : 'default';
@@ -165,21 +166,21 @@ function HomePageContent() {
       }),
     [activeMarkets, asset, cadence],
   );
-  const worldCupSourceMarkets = useMemo(
+  const eventSourceMarkets = useMemo(
     () => resolveWorldCupMarkets(hasEventMarket ? eventRows : []),
     [eventRows, hasEventMarket],
   );
-  const upcomingWorldCupMarkets = useMemo(
-    () => getUpcomingWorldCupMarkets(worldCupSourceMarkets, now),
-    [now, worldCupSourceMarkets],
+  const upcomingEventMarkets = useMemo(
+    () => getUpcomingWorldCupMarkets(eventSourceMarkets, now),
+    [eventSourceMarkets, now],
   );
   const pricePositionRows = useMemo(
     () => activeMarkets.map((row) => ({ ...row, marketKind: 'price' as const })),
     [activeMarkets],
   );
   const positionRows = useMemo(
-    () => [...pricePositionRows, ...worldCupSourceMarkets],
-    [pricePositionRows, worldCupSourceMarkets],
+    () => [...pricePositionRows, ...eventSourceMarkets],
+    [eventSourceMarkets, pricePositionRows],
   );
   const positionKindFilter = showAllPositions
     ? undefined
@@ -192,26 +193,29 @@ function HomePageContent() {
     const query = nextQuery.toString();
     return query ? `/?${query}#positions` : '/#positions';
   }, [searchParams]);
-  const visibleWorldCupMarkets = useMemo(
-    () =>
-      filterMarkets(upcomingWorldCupMarkets, {
-        category: 'worldcup',
-        stage,
+  const visibleEventMarkets = useMemo(
+    () => {
+      if (effectiveCategory === 'crypto') {
+        return [] as WorldCupMarketRow[];
+      }
+
+      return filterMarkets(upcomingEventMarkets, {
+        category: effectiveCategory,
+        stage: effectiveCategory === 'worldcup' ? stage : 'all',
         asset: 'all',
         cadence: 'all',
         priceIdToAsset: PYTH_PRICE_ID_TO_ASSET,
-      }),
-    [stage, upcomingWorldCupMarkets],
+      });
+    },
+    [effectiveCategory, stage, upcomingEventMarkets],
   );
   const visibleMarketTotal =
-    effectiveCategory === 'worldcup'
-      ? visibleWorldCupMarkets.length
-      : effectiveCategory === 'crypto'
-        ? visibleCryptoMarkets.length
-        : 0;
-  const renderedWorldCupMarkets = useMemo(
-    () => sliceVisibleMarketRows(visibleWorldCupMarkets, visibleMarketCount),
-    [visibleMarketCount, visibleWorldCupMarkets],
+    effectiveCategory === 'crypto'
+      ? visibleCryptoMarkets.length
+      : visibleEventMarkets.length;
+  const renderedEventMarkets = useMemo(
+    () => sliceVisibleMarketRows(visibleEventMarkets, visibleMarketCount),
+    [visibleEventMarkets, visibleMarketCount],
   );
   const renderedCryptoMarkets = useMemo(
     () => sliceVisibleMarketRows(visibleCryptoMarkets, visibleMarketCount),
@@ -291,6 +295,21 @@ function HomePageContent() {
 
   useEffect(() => {
     const currentQuery = searchParams.toString();
+    const queryChangedOutsideState = lastSyncedQueryStringRef.current !== currentQuery;
+
+    if (queryChangedOutsideState) {
+      lastSyncedQueryStringRef.current = currentQuery;
+
+      const stateMatchesQuery =
+        !showCategoryTabs ||
+        (effectiveCategory === categoryFromQuery &&
+          (effectiveCategory !== 'worldcup' || stage === stageFromQuery));
+
+      if (!stateMatchesQuery) {
+        return;
+      }
+    }
+
     const nextQuery = new URLSearchParams(currentQuery);
 
     if (!showCategoryTabs) {
@@ -313,8 +332,17 @@ function HomePageContent() {
       return;
     }
 
+    lastSyncedQueryStringRef.current = nextQueryString;
     router.replace(nextQueryString ? `/?${nextQueryString}` : '/', { scroll: false });
-  }, [effectiveCategory, router, searchParams, showCategoryTabs, stage]);
+  }, [
+    categoryFromQuery,
+    effectiveCategory,
+    router,
+    searchParams,
+    showCategoryTabs,
+    stage,
+    stageFromQuery,
+  ]);
 
   return (
     <>
@@ -329,7 +357,7 @@ function HomePageContent() {
         <HomeHero
           category={effectiveCategory}
           stats={{
-            activeMarkets: activeMarkets.length + upcomingWorldCupMarkets.length,
+            activeMarkets: activeMarkets.length + upcomingEventMarkets.length,
             totalVolumeUsdc: '—',
             pendingResolution: rows.filter((r) => OUTCOMES[r.market.outcome] === 'Unresolved').length,
           }}
@@ -371,35 +399,43 @@ function HomePageContent() {
           <div className="py-20 text-sm text-ink-2">
             No unresolved markets match these filters. Try another asset or cadence.
           </div>
-        ) : effectiveCategory === 'worldcup' && visibleWorldCupMarkets.length === 0 ? (
+        ) : effectiveCategory === 'worldcup' && visibleEventMarkets.length === 0 ? (
           <div className="py-20 text-sm text-ink-2">
             No World Cup markets match this stage. Try another stage.
           </div>
-        ) : effectiveCategory === 'macro' ? (
+        ) : effectiveCategory === 'macro' && visibleEventMarkets.length === 0 ? (
           <div className="py-20 text-sm text-ink-2">
             No Macro markets are available yet.
           </div>
-        ) : effectiveCategory === 'chain' ? (
+        ) : effectiveCategory === 'chain' && visibleEventMarkets.length === 0 ? (
           <div className="py-20 text-sm text-ink-2">
             No On-chain markets are available yet.
           </div>
         ) : (
           <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {effectiveCategory === 'worldcup'
-              ? renderedWorldCupMarkets.map((row) => (
+              ? renderedEventMarkets.map((row) => (
                   <WorldCupMarketCard
                     key={row.id.toString()}
                     row={row}
                     onBet={(nextRow, outcomeIndex) => setEventBetting({ row: nextRow, outcomeIndex })}
                   />
                 ))
-              : renderedCryptoMarkets.map((row) => (
-                  <CryptoMarketCard
-                    key={row.id.toString()}
-                    row={row}
-                    onBet={(_id, side) => setBetting({ row, side })}
-                  />
-                ))}
+              : effectiveCategory === 'crypto'
+                ? renderedCryptoMarkets.map((row) => (
+                    <CryptoMarketCard
+                      key={row.id.toString()}
+                      row={row}
+                      onBet={(_id, side) => setBetting({ row, side })}
+                    />
+                  ))
+                : renderedEventMarkets.map((row) => (
+                    <WorldCupMarketCard
+                      key={row.id.toString()}
+                      row={row}
+                      onBet={(nextRow, outcomeIndex) => setEventBetting({ row: nextRow, outcomeIndex })}
+                    />
+                  ))}
           </section>
         )}
 
@@ -413,13 +449,13 @@ function HomePageContent() {
               <button
                 type="button"
                 onClick={() => setVisibleMarketCount((currentCount) => nextVisibleMarketCount(visibleMarketTotal, currentCount))}
-                className="inline-flex items-center gap-2 rounded-full border border-hair bg-bg-1/55 px-4 py-2 text-xs uppercase tracking-[0.22em] text-ink-2 backdrop-blur transition hover:border-arc-glow/40 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
+                className="inline-flex items-center gap-2 rounded-full border border-hair bg-bg-1/55 px-4 py-2 text-xs uppercase text-ink-2 backdrop-blur transition hover:border-arc-glow/40 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
               >
                 加载更多
                 <span aria-hidden="true">↓</span>
               </button>
             ) : null}
-            <div className="font-mono text-xs uppercase tracking-[0.22em] text-ink-3">
+            <div className="font-mono text-xs uppercase text-ink-3">
               {Math.min(visibleMarketCount, visibleMarketTotal)} / {visibleMarketTotal} markets
             </div>
           </div>
