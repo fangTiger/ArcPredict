@@ -1,8 +1,8 @@
 # Tasks: add-automated-categories
 
-> 进度：Phase 0-H 全部完成（25 commits，140 vitest passed，typecheck/build/openspec validate 全绿）。
+> 进度：Phase 0-J 全部完成，归档于 2026-06-22。
 > Phase I.1（E2E 测试代码）已落档但默认 skip。
-> Phase I.2（testnet 部署 + 24h 观察）+ Phase J（归档）等真实 RPC + 24h 验收后推进，详见 `docs/superpowers/plans/2026-06-18-automated-categories-deployment.md`。
+> Phase I.2（testnet 部署 + 24h 观察）与 Phase J（归档）证据见 `docs/superpowers/plans/2026-06-18-automated-categories-deployment.md` 的 2026-06-19 生产记录。
 
 ## Phase 0: OpenSpec scaffolding
 - [x] 0.1 创建 openspec/changes/add-automated-categories/ 骨架
@@ -48,8 +48,11 @@
 
 ## Phase I: 验收
 - [x] I.1 mainnet fork E2E smoke test（代码落档，默认 skip）
-- [ ] I.2 测试网 24h 稳定运行验收（依赖人工部署，runbook 见 deployment 文档）
+- [x] I.2 测试网 24h 稳定运行验收（依赖人工部署，runbook 见 deployment 文档）
+  - 证据：deployment runbook `2026-06-19 Production 决策记录`、`2026-06-19 执行结果`、`2026-06-19 最终 Production 状态`：专用自动化钱包 `0xe9c7B76d09863309b4eF1ab71EB32d89b0F9e29E` 已接管 owner；Macro/On-chain 生产合约 tick 新建 marketId `98-107` 并链上验证 outcome pools；最终 Vercel Production `https://web-7gostadug-arcpredict.vercel.app`（alias `https://web-one-weld-20.vercel.app`）手动触发 `POST /api/cron/markets/tick` 返回 HTTP 200；`marketId=119` seed 补齐后每个 outcome pool 为 `0.5` USDC。
 
 ## Phase J: 归档
-- [ ] J.1 合并 delta 到 openspec/specs/（等 I.2 通过后做）
-- [ ] J.2 归档变更到 archive/YYYY-MM-DD-add-automated-categories/（等 I.2 通过后做）
+- [x] J.1 合并 delta 到 openspec/specs/（等 I.2 通过后做）
+  - 证据：2026-06-22 归档执行将 `market-sources`、`market-category`、`ai-lens` delta 合并到 `openspec/specs/`，并保留 I.2 runbook 证据指针。
+- [x] J.2 归档变更到 archive/YYYY-MM-DD-add-automated-categories/（等 I.2 通过后做）
+  - 证据：2026-06-22 归档执行将本 change 移动到 `openspec/changes/archive/2026-06-22-add-automated-categories/`。

@@ -18,6 +18,7 @@ POST /api/lens/[marketId]            ← web/app/api/lens/[marketId]/route.ts
     │     └─ MISS ↓
     │
     ├─ handleLensRequest (web/lib/lens/route-handler.ts)
+    │     ├─ 按 market.category 分发到 crypto / event / macro / chain contextBuilder
     │     ├─ 调 DeepSeek (web/lib/lens/llm.ts, 原生 fetch, 5s timeout, 4xx 不重试除 408/429)
     │     ├─ Zod 强校验 (web/lib/lens/schema.ts, selectOutputSchema(type))
     │     ├─ 记录预算 (web/lib/lens/budget.ts)
@@ -38,6 +39,9 @@ POST /api/lens/[marketId]            ← web/app/api/lens/[marketId]/route.ts
 | Route Handler | `web/lib/lens/route-handler.ts` + `web/app/api/lens/[marketId]/route.ts` | POST 入口 lazy 读 env，handleLensRequest 纯函数 |
 | Context: Crypto | `web/lib/lens/contextBuilders/crypto.ts` | Pyth 价格采样 + 波动率 + sigma 距离 + seconds_to_resolve |
 | Context: Event | `web/lib/lens/contextBuilders/event.ts` | 从 worldcup-facts.json 读静态事实 |
+| Context: Macro | `web/lib/lens/contextBuilders/macro.ts` | FRED 历史序列 + 同类指标对照 + 相关资产联动 |
+| Context: Chain | `web/lib/lens/contextBuilders/chain.ts` | DefiLlama 当前值 + 子组成拆解 + 历史里程碑 |
+| Lens Preloader | `web/lib/markets/lens-preloader.ts` | 自动化市场创建后 best-effort 预生成 Lens cache |
 | 事实表种子 | `web/data/worldcup-facts.json` | admin 维护的世界杯静态事实表 |
 | UI: DriftChip | `web/components/AILensDriftChip.tsx` | rich/cheap/aligned 标签 |
 | UI: Gauge | `web/components/AILensGauge.tsx` | binary 水平条 + multi 堆叠条形 |
@@ -68,6 +72,12 @@ POST /api/lens/[marketId]            ← web/app/api/lens/[marketId]/route.ts
 ### seconds_to_resolve
 - 发现 LLM 在 prompt 里看到 `end_time` 时会自行推断"距今多少年"，且经常算错
 - 解决：context 显式喂 `seconds_to_resolve`，system prompt 强约束"使用 context 提供的值，禁止自估时间"
+
+### 自动化品类 Lens 扩展
+- `route-handler.ts` 按 `market.category` 分发到 crypto / event / macro / chain 四类 contextBuilder
+- macro context 以 FRED 历史序列、同类指标和相关资产联动补足宏观题目上下文
+- chain context 以 DefiLlama 当前值、组成拆解、历史里程碑和 deadline 距离补足链上题目上下文
+- cron 新建自动化市场后可调用 lens-preloader 预生成 24h cache；该路径是用户主动触发规则的唯一后台例外，且失败不阻塞开市
 
 ## 测试矩阵
 
