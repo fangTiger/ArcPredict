@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Capability: worldcup-category
+
+## Purpose
+
+ArcPredict 的 `worldcup-category` 能力在现有 Crypto 价格预测市场之外，提供世界杯离散事件市场。该能力使用独立 `EventMarket` 合约和 `AdminEventOracle` 结算源，支持 1X2、单场二元让分/大小和 32 队冠军盘，并在前端通过 World Cup 品类、赛事卡片、阶段过滤和低频比分展示与 Crypto 流程隔离。
+
+## Requirements
 
 ### Requirement: 市场类型维度（marketKind）
 
@@ -23,9 +29,9 @@
 系统 SHALL 支持单场比赛的 1X2 市场（主队胜 / 平 / 客队胜），使用 `EventMarket` 合约，outcome 数量固定为 3，互斥且穷尽。
 
 #### Scenario: 下注 1X2 市场
-- **WHEN** 用户在 ARG vs FRA 1X2 市场中选择"ARG WIN"并下注 100 USDC
+- **WHEN** 用户在 ARG vs FRA 1X2 市场中选择 "ARG WIN" 并下注 100 USDC
 - **THEN** 系统 SHALL 在 `stakeByOutcome` 中记录 100 单位 "ARG WIN" 持仓
-- **AND** 其他两个 outcome（DRAW、FRA WIN）的隐含概率 SHALL 可由 outcomePools 重新计算
+- **AND** 其他两个 outcome（DRAW、FRA WIN）的隐含概率 SHALL 可由 `outcomePools` 重新计算
 
 #### Scenario: 1X2 市场结算
 - **WHEN** 比赛结束且 `AdminEventOracle` 已最终化结果为 "DRAW"
@@ -34,7 +40,7 @@
 
 ### Requirement: 单场让分市场（Binary）
 
-系统 SHALL 支持单场比赛的让分市场，使用 `EventMarket` 合约且 outcomeCount = 2，outcome 为 "OVER / UNDER" 或 "HOME COVER / AWAY COVER"。让分线在市场创建时确定，不可变更。
+系统 SHALL 支持单场比赛的让分市场，使用 `EventMarket` 合约且 `outcomeCount = 2`，outcome 为 "OVER / UNDER" 或 "HOME COVER / AWAY COVER"。让分线在市场创建时确定，不可变更。
 
 #### Scenario: 创建总进球数 Over/Under 市场
 - **WHEN** 项目方创建 "ARG vs FRA 总进球数 > 2.5" 市场
@@ -53,7 +59,7 @@
 #### Scenario: 冠军盘下注
 - **WHEN** 用户在冠军盘中购买 50 USDC 的 "Argentina" outcome
 - **THEN** 系统 SHALL 在 `stakeByOutcome` 中记录 50 单位 "Argentina" 持仓
-- **AND** 其他 31 个队伍的隐含概率 SHALL 可由 outcomePools 重新计算
+- **AND** 其他 31 个队伍的隐含概率 SHALL 可由 `outcomePools` 重新计算
 
 #### Scenario: 冠军最终化
 - **WHEN** 决赛结束，`AdminEventOracle` 最终化冠军为 "Argentina"
@@ -120,17 +126,17 @@
 
 ### Requirement: 实时比分仅用于展示且低频按需轮询
 
-系统 SHALL 通过 `web/lib/event-source.ts` 调用 **TheSportsDB 免费版** API 获取实时比分用于前端展示。该数据 SHALL NOT 进入任何合约结算路径，结算 MUST 只信任 `AdminEventOracle` 的最终化结果。轮询策略 SHALL 严格遵守以下规则以最小化 API 调用：
+系统 SHALL 通过 `web/lib/event-source.ts` 调用 TheSportsDB 免费版 API 获取实时比分用于前端展示。该数据 SHALL NOT 进入任何合约结算路径，结算 MUST 只信任 `AdminEventOracle` 的最终化结果。轮询策略 SHALL 严格遵守以下规则以最小化 API 调用：
 
-- 仅在**比赛进行中**（`now ∈ [kickoffTime, kickoffTime + 150min]`）且**用户聚焦详情页**时启动轮询
-- 轮询间隔 **60 秒**
-- 用户切走 Tab / 浏览器最小化 / 详情卡片滚出视口 → 立刻停止轮询（用 Page Visibility API + IntersectionObserver）
+- 仅在比赛进行中（`now ∈ [kickoffTime, kickoffTime + 150min]`）且用户聚焦详情页时启动轮询
+- 轮询间隔 60 秒
+- 用户切走 Tab / 浏览器最小化 / 详情卡片滚出视口时立刻停止轮询
 - 列表页（卡片网格）SHALL NOT 轮询比分，仅展示赛程时间
-- 同一 `matchId` 60 秒内 SHALL 只发出一次请求（全局共享缓存）
+- 同一 `matchId` 60 秒内 SHALL 只发出一次请求
 
 #### Scenario: 比赛进行中聚焦详情页
 - **WHEN** 用户进入正在进行中的比赛详情页，且页面处于聚焦状态
-- **THEN** 前端 SHALL 立即请求一次当前比分并显示（如 "ARG 1 - 0 FRA, 67'"）
+- **THEN** 前端 SHALL 立即请求一次当前比分并显示
 - **AND** 后续每 60 秒重新请求一次
 
 #### Scenario: 用户切走 Tab 或最小化
@@ -169,7 +175,7 @@
 
 ### Requirement: 灰度开关
 
-系统 SHALL 通过环境变量 `NEXT_PUBLIC_WORLDCUP_ENABLED` 控制 World Cup 品类的可见性。当该值为 `false` 时，前端 SHALL NOT 渲染 World Cup Tab 与相关组件；当为 `true` 时正常展示。
+系统 SHALL 通过环境变量 `NEXT_PUBLIC_WORLDCUP_ENABLED` 控制 World Cup 品类的可见性。当该值为字符串 `false` 时，前端 SHALL NOT 渲染 World Cup Tab 与相关组件；当未设置或为其他值时正常展示。
 
 #### Scenario: 灰度关闭
 - **WHEN** `NEXT_PUBLIC_WORLDCUP_ENABLED = false`
@@ -177,5 +183,5 @@
 - **AND** 所有 World Cup 相关路由（如详情页）SHALL 返回 404 或重定向到首页
 
 #### Scenario: 灰度开启
-- **WHEN** `NEXT_PUBLIC_WORLDCUP_ENABLED = true`
+- **WHEN** `NEXT_PUBLIC_WORLDCUP_ENABLED` 未设置或不等于字符串 `false`
 - **THEN** 前端 SHALL 显示品类 Tab 并默认选中 Crypto

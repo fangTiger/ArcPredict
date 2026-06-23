@@ -76,24 +76,37 @@
 ## 10. 灰度发布与验证
 
 > **DoD 关单规则**：10.1 + 10.2 + 10.3 + 10.4 + 10.5 + 10.6 全部 [x] → Phase 7 主线 DoD 达成 → change 可 archive。10.7 不阻塞 archive，由部署后 73h 单独补录。
+> 进度：全 Phase 完成，归档于 2026-06-24。10.7 仍为 post-archive smoke，不阻塞归档。
 
-- [ ] 10.1 灰度关闭状态下回归测试：Crypto 流程无任何变化（首页、下注、领奖、Faucet、钱包）
+- [x] 10.1 灰度关闭状态下回归测试：Crypto 流程无任何变化（首页、下注、领奖、Faucet、钱包）
+  - 证据：`docs/qa/2026-06-23-phase7-10x-non-broadcast.md` §10.1；`NEXT_PUBLIC_WORLDCUP_ENABLED=false pnpm exec vitest run` 为 `36 passed | 2 skipped`，`NEXT_PUBLIC_WORLDCUP_ENABLED=false pnpm build` exit 0，`NEXT_PUBLIC_WORLDCUP_ENABLED=false pnpm typecheck` exit 0；首页/hero/filter/position 静态 smoke 通过，BetModal 旧静态脚本已因 BetForm 重构漂移而不作为本轮证据。
 - [x] 10.2 Phase 7a：本地 Anvil 完整 6 步闭环（真实 72h dispute window via vm.warp）
   - [x] 10.2.1 编写 `contracts/script/Phase7E2E.s.sol`
   - [x] 10.2.2 Anvil 跑通：deploy → seed 98 → 3 钱包 deposit → final-1 三向下注 → warp 到 kickoff+150min → admin propose ARG → warp +72h → finalize → 3 钱包 claim
   - [x] 10.2.3 输出 `docs/qa/2026-06-13-phase7a-anvil-e2e.md`：tx hashes、gas、状态读、payout 对账
-- [ ] 10.3 Phase 7b：测试网部署 + 首笔下注证据（compressed final-1 startTime = deploy + 15min）
-  - [ ] 10.3.1 编写 `contracts/script/DeployWorldCupTestnet.s.sol`（仅 final-1 kickoff 压缩，其余 97 个保持真实赛程偏移）
-  - [ ] 10.3.2 广播部署 + seed + USDC fund（人工确认 broadcast）
-  - [ ] 10.3.3 前端连接，在 final-1 下一笔小额 ARG 单
-  - [ ] 10.3.4 输出 `docs/qa/2026-06-13-phase7b-testnet-deploy.md`：合约地址、tx hash、区块浏览器链接、前端截屏
-- [ ] 10.4 三条挑战路径验证（在 7a Anvil 环境内联补充，复用 6 步框架）
-  - [ ] 10.4.1 owner 撤销路径
-  - [ ] 10.4.2 owner 驳回路径
-  - [ ] 10.4.3 owner 不响应（finalizeOnTimeout）路径
+- [x] 10.3 Phase 7b：测试网部署 + 首笔下注证据（compressed final-1 startTime = deploy + 15min）
+  - 证据：`docs/qa/2026-06-13-phase7b-testnet-deploy.md` §环境 / §新合约 / §Seed 结果 / §首笔下注；Arc Testnet chainId `5042002` 广播 `100` 笔 tx，`marketCount=98`，final-1 `marketId=96`，kickoff 相对 EventMarket 部署区块 `+862s`。
+  - [x] 10.3.1 编写 `contracts/script/DeployWorldCupTestnet.s.sol`（仅 final-1 kickoff 压缩，其余 97 个保持真实赛程偏移）
+    - 证据：`docs/qa/2026-06-13-phase7b-testnet-deploy.md` §环境 / §Seed 结果；脚本常量 `TESTNET_FINAL_KICKOFF_DELAY = 15 minutes`，final-1 读数 `startTime=1782234237`。
+  - [x] 10.3.2 广播部署 + seed + USDC fund（人工确认 broadcast）
+    - 证据：`docs/qa/2026-06-13-phase7b-testnet-deploy.md` §新合约 / §Seed 结果；AdminEventOracle `0xA4b27Ee975C31Ad60fF0Bda8ACB680Cb183BC004`，EventMarket `0x2E9F15905739632ed7b156b4c7824d368a97bB15`，deploy tx `0x77f7a8e8e4454dfe2552b39dea7a28b767c2b445ec7aac3734379a54fc015339` / `0x398a7df2f124b195aeca61e62db3935157f2f05c3ec13a70c123ade7d57c390b`。
+  - [x] 10.3.3 前端连接，在 final-1 下一笔小额 ARG 单
+    - 证据：`web/lib/addresses.ts` 已回填新 EventMarket/AdminEventOracle；`docs/qa/2026-06-13-phase7b-testnet-deploy.md` §首笔下注记录 final-1 `outcomeIndex=0 (home / ARG)`，金额 `500000` raw USDC，bet tx `0xa1453b221e50e019253304b68021061b14e7c247f729bca7275a3ffa7883aa0e`，池子从 `[0,0,0]` 变为 `[500000,0,0]`。
+  - [x] 10.3.4 输出 `docs/qa/2026-06-13-phase7b-testnet-deploy.md`：合约地址、tx hash、区块浏览器链接、前端截屏
+    - 证据：`docs/qa/2026-06-13-phase7b-testnet-deploy.md` §新合约 / §首笔下注 / §Owner 验证；本轮按最终任务包以链上读数和 tx explorer 作为首注证据，未执行 Vercel 或远端前端部署。
+- [x] 10.4 三条挑战路径验证（在 7a Anvil 环境内联补充，复用 6 步框架）
+  - 证据：`contracts/script/Phase7E2EChallengePaths.s.sol` 与 `docs/qa/2026-06-23-phase7-10x-non-broadcast.md` §10.4；沙箱拒绝本地 Anvil RPC 绑定，已记录降级，并用 `forge script --offline script/Phase7E2EChallengePaths.s.sol -vvv` 跑通同一 dry-run EVM 流程，exit 0，`Script ran successfully.`，`Gas used: 51821503`。
+  - [x] 10.4.1 owner 撤销路径
+    - 证据：§10.4.1；`revokeProposal` 后状态回 Pending，挑战者恢复到 `10000.000000`，bonusBank 扣 `100.000000`，重新提案后 Alice claim，market/oracle 余额归零。
+  - [x] 10.4.2 owner 驳回路径
+    - 证据：§10.4.2；`confirmProposal` 后状态 Finalized，挑战质押没收到 feeRecipient，feeRecipient 为 `102.000000`，Alice claim 后 market/oracle 余额归零。
+  - [x] 10.4.3 owner 不响应（finalizeOnTimeout）路径
+    - 证据：§10.4.3；72h+ 后 `finalizeOnTimeout`，挑战者仅退回 stake、无 bonus，feeRecipient 仅协议费 `2.000000`，Alice claim 后 market/oracle 余额归零。
 - [x] 10.5 移动端可视化检查：卡片折叠展开、品类 Tab 切换、绿茵背景
-- [ ] 10.6 比分 API 失败降级验证：断网/拔 key 后页面仍可正常下注领奖
+- [x] 10.6 比分 API 失败降级验证：断网/拔 key 后页面仍可正常下注领奖
+  - 证据：`web/test/event-source.degradation.test.tsx` 与 `docs/qa/2026-06-23-phase7-10x-non-broadcast.md` §10.6；覆盖网络错误、4xx、5xx、429、timeout、空响应、非法 JSON；`pnpm exec vitest run test/event-source.degradation.test.tsx` 为 `7 passed`，相关组件/数据层回归为 `36 passed`。
 - [ ] 10.7 Phase 7c（post-archive smoke，不阻塞 archive）：测试网 finalize/claim
+  - 注：post-archive smoke，不阻塞本次 `add-worldcup-category` 归档；等待 final-1 resolveAfter 与 72h dispute window 后补录。
   - [ ] 10.7.1 propose outcome=ARG via AdminEventOracle 测试网
   - [ ] 10.7.2 等待 72h dispute window 过
   - [ ] 10.7.3 调 finalize
@@ -102,6 +115,9 @@
 
 ## 11. 文档与归档
 
-- [ ] 11.1 在 `docs/` 下新增 `worldcup-category-runbook.md`，记录 owner 提案/撤销/确认操作流程、异议处理 SOP、API 替换步骤、bonus 预留账户充值方法
-- [ ] 11.2 更新 `web/README.md` 与项目根 README，加入新品类介绍与开关说明
-- [ ] 11.3 提案归档前同步 delta spec 到 `openspec/specs/worldcup-category/` 与 `openspec/specs/event-oracle/`，完成完整性检查（CLAUDE.md Section 0.7）
+- [x] 11.1 在 `docs/` 下新增 `worldcup-category-runbook.md`，记录 owner 提案/撤销/确认操作流程、异议处理 SOP、API 替换步骤、bonus 预留账户充值方法
+  - 证据：`docs/worldcup-category-runbook.md`；包含 capability 概述、owner SOP、dispute、bonus bank、SPORTSDB API 切换、灰度开关、自动化钱包私钥保管和回滚/应急。
+- [x] 11.2 更新 `web/README.md` 与项目根 README，加入新品类介绍与开关说明
+  - 证据：`web/README.md` §Market Categories 与项目根 `README.md`；记录 Crypto / World Cup 差异、`NEXT_PUBLIC_WORLDCUP_ENABLED`、`SPORTSDB_API_BASE` / `NEXT_PUBLIC_SPORTSDB_API_BASE`。
+- [x] 11.3 提案归档前同步 delta spec 到 `openspec/specs/worldcup-category/` 与 `openspec/specs/event-oracle/`，完成完整性检查（CLAUDE.md Section 0.7）
+  - 证据：`openspec/specs/worldcup-category/spec.md`、`openspec/specs/worldcup-category/design.md`、`openspec/specs/event-oracle/spec.md`、`openspec/specs/event-oracle/design.md` 已创建；delta 已转为正式 capability spec，不保留 `ADDED Requirements` 头；完整性检查见 `docs/qa/2026-06-13-phase7b-testnet-deploy.md` §Section 0.7 §worldcup 自检。

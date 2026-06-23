@@ -1,73 +1,105 @@
-# Phase 7b — 测试网部署 + 首笔下注证据
-
-## 当前准备状态
-
-- 当前文档为 Phase 7b 回填框架，真实部署结果、首笔下注结果与截图均待后续工单补录。
-- 工单 4 dry-run 证据：`DeployWorldCupTestnet` 的 build、fmt、dry-run 已通过。
-- `final-1` eventId：`0x2b902d6a9c3a763f380d5c1af8475ea4efa1142488ebc730dc7c1c8851b061b1`
-- dry-run 参考：`final-1 marketId = 96`，`winner marketId = 97`
-- dry-run 参考总 gas 估算：`25627863`
-- 说明：以上 dry-run 数据仅供本地 Anvil dummy env 对照，不代表测试网实际广播结果。
-
-## 人工执行命令清单
-
-- 以下命令为工单 5 的准备清单，待人工确认后执行；本文不声称已执行。
-
-```bash
-forge script contracts/script/DeployWorldCupTestnet.s.sol --rpc-url $RPC_URL
-
-forge script contracts/script/DeployWorldCupTestnet.s.sol --rpc-url $RPC_URL --broadcast --verify
-
-cast send $USDC_ADDRESS "transfer(address,uint256)" $WALLET_A 1000000000 --rpc-url $RPC_URL --private-key $FUND_KEY
-
-cast send $USDC_ADDRESS "transfer(address,uint256)" $WALLET_B 1000000000 --rpc-url $RPC_URL --private-key $FUND_KEY
-```
+# Phase 7b — Arc Testnet 部署与首笔下注报告
 
 ## 环境
 
-- 测试网：待人工确认后回填
-- chainId：待人工确认后回填
-- 部署时间：待工单 5 广播后回填
-- final-1 startTime：待工单 5 广播后回填
+- 日期：2026-06-24（Asia/Shanghai）
+- chainId：`5042002`
+- RPC：`https://rpc.testnet.arc.network`
+- 自动化钱包地址：`0xe9c7B76d09863309b4eF1ab71EB32d89b0F9e29E`
+- 部署脚本：`contracts/script/DeployWorldCupTestnet.s.sol`
+- 广播命令：`forge script script/DeployWorldCupTestnet.s.sol --rpc-url $AUTOMATION_RPC_URL --broadcast --slow`
+- broadcast 产物：`contracts/broadcast/DeployWorldCupTestnet.s.sol/5042002/run-latest.json`
+- 部署 tx 数：`100`（2 笔合约部署 + 98 笔 `createMarket`）
+- EventMarket 部署区块：`48345106`
+- EventMarket 部署区块时间：`1782233375`（2026-06-23 16:49:35 UTC）
 
-## 部署地址表
+## 新合约
 
-| 合约 | 地址 | 区块浏览器 |
-|------|------|-----------|
-| USDC | 待工单 5 广播后回填 | 待工单 5 广播后回填 |
-| AdminEventOracle | 待工单 5 广播后回填 | 待工单 5 广播后回填 |
-| EventMarket | 待工单 5 广播后回填 | 待工单 5 广播后回填 |
+| 合约 | 地址 | 部署 tx | Explorer |
+| --- | --- | --- | --- |
+| AdminEventOracle | `0xA4b27Ee975C31Ad60fF0Bda8ACB680Cb183BC004` | `0x77f7a8e8e4454dfe2552b39dea7a28b767c2b445ec7aac3734379a54fc015339` | `https://testnet.arcscan.app/address/0xA4b27Ee975C31Ad60fF0Bda8ACB680Cb183BC004` |
+| EventMarket | `0x2E9F15905739632ed7b156b4c7824d368a97bB15` | `0x398a7df2f124b195aeca61e62db3935157f2f05c3ec13a70c123ade7d57c390b` | `https://testnet.arcscan.app/address/0x2E9F15905739632ed7b156b4c7824d368a97bB15` |
 
-## Seed tx hash 表
+Explorer 可访问性检查：
+- `https://testnet.arcscan.app/address/...`：HTTP 200
+- `https://testnet.arcscan.app/tx/...`：HTTP 200
+- `https://explorer.testnet.arc.network/...`：TLS 连接失败，本次不采用
 
-| 操作 | tx hash | 块号 | gas |
-|------|---------|------|-----|
-| createMarket final-1 | 待工单 5 广播后回填 | 待工单 5 广播后回填 | 待工单 5 广播后回填 |
-| createMarket winner | 待工单 5 广播后回填 | 待工单 5 广播后回填 | 待工单 5 广播后回填 |
-| createMarket group-1 | 待工单 5 广播后回填 | 待工单 5 广播后回填 | 待工单 5 广播后回填 |
-| 其余 group-* / goals-25 共 95 条 | 待工单 5 广播后回填 | 待工单 5 广播后回填 | 待工单 5 广播后回填 |
+### Constructor / 链上读数
 
-## 首笔下注证据
+AdminEventOracle：
+- `USDC()`：`0x3600000000000000000000000000000000000000`
+- `owner()`：`0xe9c7B76d09863309b4eF1ab71EB32d89b0F9e29E`
+- `feeRecipient()`：自动化钱包地址 `0xe9c7B76d09863309b4eF1ab71EB32d89b0F9e29E`（testnet 简化决策，记录于本任务包）
+- `bonusBank()`：自动化钱包地址 `0xe9c7B76d09863309b4eF1ab71EB32d89b0F9e29E`（testnet 简化决策，记录于本任务包）
+- `DISPUTE_WINDOW()`：`259200` 秒（72h）
+- `CHALLENGE_STAKE()`：`100000000` raw USDC（100 USDC）
+- `BONUS()`：`100000000` raw USDC（100 USDC）
+- `MAX_OUTCOMES()`：`32`
 
-- 钱包：待工单 6 前端下注后回填
-- final-1 marketId：待工单 6 前端下注后回填
-- outcome：待工单 6 前端下注后回填
-- 金额：待工单 6 前端下注后回填
-- tx hash：待工单 6 前端下注后回填
-- 区块浏览器：待工单 6 前端下注后回填
+EventMarket：
+- `USDC()`：`0x3600000000000000000000000000000000000000`
+- `owner()`：`0xe9c7B76d09863309b4eF1ab71EB32d89b0F9e29E`
+- `feeRecipient()`：自动化钱包地址 `0xe9c7B76d09863309b4eF1ab71EB32d89b0F9e29E`（testnet 简化决策，记录于本任务包）
+- `ORACLE()`：`0xA4b27Ee975C31Ad60fF0Bda8ACB680Cb183BC004`
 
-## 前端截屏
+## Seed 结果
 
-- 首页 World Cup Tab：待工单 6 前端下注后回填，路径：`screenshots/worldcup/2026-06-13-phase7b/01-home.png`
-- final-1 详情页：待工单 6 前端下注后回填，路径：`screenshots/worldcup/2026-06-13-phase7b/02-detail.png`
-- 下注确认：待工单 6 前端下注后回填，路径：`screenshots/worldcup/2026-06-13-phase7b/03-confirm.png`
-- 下注成功：待工单 6 前端下注后回填，路径：`screenshots/worldcup/2026-06-13-phase7b/04-success.png`
+- `marketCount()`：`98`
+- 小组赛市场：`96` 个（48 场 * 1X2 + goals-25）
+- final-1 1X2 市场：`marketId = 96`
+- winner 市场：`marketId = 97`
+- final-1 `eventId`：`0x2b902d6a9c3a763f380d5c1af8475ea4efa1142488ebc730dc7c1c8851b061b1`
+- final-1 问题：`ARG vs FRA 1X2`
+- final-1 `outcomeCount`：`3`
+- final-1 `betDeadline`：`1782233937`（2026-06-23 16:58:57 UTC）
+- final-1 `kickoff/startTime`：`1782234237`（2026-06-23 17:03:57 UTC，2026-06-24 01:03:57 CST）
+- final-1 `resolveAfter`：`1782243237`（2026-06-23 19:33:57 UTC）
+- kickoff 压缩校验：相对 EventMarket 部署区块时间 `1782233375` 为 `+862s`，落在 `[deploy+12min, deploy+18min]`
+- final-1 market creation tx：`0xbed88ffb683cf622d38433a3d5a9b7e9f1ddb225679d8fef973416062f0d011f`
+- winner market creation tx：`0xd1c8d9fd89adfceb1dbba4b8bedc9b55291419e8b7c8f0159009b580edc7d983`
 
-## 结论
+部署 seed 资金预算说明：
+- `EventMarket.createMarket` 只创建空池并发出事件，不执行 USDC 转账。
+- 本次部署 seed 阶段实际 USDC 消耗为 `0`。
+- 首笔下注消耗 `500000` raw USDC（0.5 USDC），低于 110 USDC 停止阈值。
 
-- 待工单 5/6 完成后判定。
-- 当前阶段仅确认回填框架、占位规则与 dry-run 参考信息已整理完毕。
+## 首笔下注
 
-## Phase 7c smoke
+- 钱包：`0xe9c7B76d09863309b4eF1ab71EB32d89b0F9e29E`
+- 市场：final-1 `marketId = 96`
+- outcomeIndex：`0`
+- outcome 语义：`home / ARG`
+- 金额：`500000` raw USDC（0.5 USDC）
+- approve tx：`0xeb3874e15dc062d01976807d1d6b3ef654f17aba6f543e632f9a4588f2ba449c`
+- bet tx：`0xa1453b221e50e019253304b68021061b14e7c247f729bca7275a3ffa7883aa0e`
+- bet explorer：`https://testnet.arcscan.app/tx/0xa1453b221e50e019253304b68021061b14e7c247f729bca7275a3ffa7883aa0e`
+- approve status：`0x1`
+- bet status：`0x1`
+- 下注前 `outcomePools`：`[0, 0, 0]`
+- 下注后 `outcomePools`：`[500000, 0, 0]`
+- `stakeByOutcome(96, wallet, 0)`：`500000`
+- 下注后自动化钱包 USDC 余额：`14755338` raw USDC（约 14.755338 USDC）
 
-- 待补录
+## Owner 验证
+
+| 合约 | `owner()` 读数 | 结果 |
+| --- | --- | --- |
+| AdminEventOracle | `0xe9c7B76d09863309b4eF1ab71EB32d89b0F9e29E` | PASS |
+| EventMarket | `0xe9c7B76d09863309b4eF1ab71EB32d89b0F9e29E` | PASS |
+
+## Section 0.7 §worldcup 自检
+
+- specs 完整性：`ai-lens`、`market-category`、`market-sources` 已存在；本次补齐 `worldcup-category` 与 `event-oracle`。
+- design 完整性：本次补齐 `openspec/specs/worldcup-category/design.md` 与 `openspec/specs/event-oracle/design.md`。
+- delta 合并：`openspec/changes/add-worldcup-category/specs/{worldcup-category,event-oracle}/spec.md` 已转为正式 capability spec，不保留 `ADDED Requirements` delta 头。
+- 归档 tasks：10.3、10.3.1、10.3.2、10.3.3、10.3.4、11.3 已完成；10.7 保持 post-archive smoke，不阻塞 archive。
+- 孤立 change：归档后以 `openspec list` 验证无活跃 `add-worldcup-category`。
+
+## 下一步：Phase 10.7 post-archive 72h smoke
+
+- 在 final-1 `resolveAfter = 1782243237` 之后，由 owner 对 `eventId = 0x2b902d6a9c3a763f380d5c1af8475ea4efa1142488ebc730dc7c1c8851b061b1` 调用 `proposeResult(..., 0)`（ARG）。
+- 等待 72h dispute window。
+- 调用 `finalizeResult`。
+- 对本次 `marketId = 96`、`outcomeIndex = 0`、`amount = 500000` 的持仓执行 `claim`。
+- 将 propose / finalize / claim tx 与 payout 对账追加到本文的 Phase 7c smoke 章节。

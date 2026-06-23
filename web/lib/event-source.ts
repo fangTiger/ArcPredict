@@ -102,10 +102,14 @@ function toScoreValue(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function parseScorePayload(payload: unknown): LiveScore {
+function parseScorePayload(payload: unknown): LiveScore | null {
   const events = Array.isArray((payload as { events?: unknown[] })?.events)
     ? (payload as { events: Record<string, unknown>[] }).events
     : [];
+  if (events.length === 0) {
+    return null;
+  }
+
   const current = events[0] ?? {};
 
   return {
@@ -185,9 +189,14 @@ async function requestLiveScore(
     }
 
     const payload = await response.json();
+    const score = parseScorePayload(payload);
+    if (!score) {
+      return { status: 'error', score: null, ts: now };
+    }
+
     const next: LiveScoreSuccess = {
       status: 'success',
-      score: parseScorePayload(payload),
+      score,
       ts: now,
     };
 

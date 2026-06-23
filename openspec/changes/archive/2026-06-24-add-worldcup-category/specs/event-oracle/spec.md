@@ -2,13 +2,17 @@
 
 ### Requirement: IEventOracle 接口
 
-系统 SHALL 定义 `IEventOracle` Solidity 接口，作为赛事结算预言机的统一抽象。任何赛事预言机实现（MVP 的 `AdminEventOracle`、未来的 `UMAEventOracle` 等）MUST 实现该接口。接口至少 SHALL 包含：提交结果、查询当前提案、查询最终化结果、查询事件状态。
+系统 SHALL 定义 `IEventOracle` Solidity 接口，作为赛事结算预言机的统一抽象。任何赛事预言机实现（MVP 的 `AdminEventOracle`、未来的 `UMAEventOracle` 等）MUST 实现该接口。接口至少 SHALL 包含：提交结果、挑战、owner 裁定、无挑战最终化、超时最终化、查询最终化结果、查询事件状态。
 
 #### Scenario: 接口最小方法集
 - **WHEN** 任何赛事预言机实现 `IEventOracle`
 - **THEN** 实现 MUST 提供以下方法：
   - `proposeResult(bytes32 eventId, uint8 outcomeIndex)` — 提交结果提案
+  - `challenge(bytes32 eventId)` — 发起挑战并质押
+  - `revokeProposal(bytes32 eventId)` — owner 接受挑战并撤销提案
+  - `confirmProposal(bytes32 eventId)` — owner 驳回挑战并确认原提案
   - `finalizeResult(bytes32 eventId)` — 在异议期过后最终化
+  - `finalizeOnTimeout(bytes32 eventId)` — owner 未响应挑战时按原提案最终化
   - `getResult(bytes32 eventId)` — 返回 `(uint8 outcomeIndex, bool finalized)`
   - `getEventStatus(bytes32 eventId)` — 返回 `enum {Pending, Proposed, Challenged, Finalized}`
 
@@ -63,7 +67,7 @@
 
 ### Requirement: Owner 权限管理
 
-`AdminEventOracle` SHALL 继承 OpenZeppelin `Ownable`，由部署时设定的 owner EOA 持有 `proposeResult` / `revokeProposal` / `confirmProposal` / `pause` / `unpause` 权限。**owner 地址 SHALL 与现有 `PredictionMarket` 合约的 owner 保持一致**（部署脚本读取相同的 `OWNER_PRIVATE_KEY`）。
+`AdminEventOracle` SHALL 继承 OpenZeppelin `Ownable2Step`，由部署时设定的 owner EOA 持有 `proposeResult` / `revokeProposal` / `confirmProposal` / `pause` / `unpause` 权限。**owner 地址 SHALL 与现有 `PredictionMarket` 合约的 owner 保持一致**（部署脚本读取相同的 `OWNER_PRIVATE_KEY`）。
 
 #### Scenario: 非 owner 提交被拒
 - **WHEN** 非 owner 账户调用 `proposeResult` / `revokeProposal` / `confirmProposal`
@@ -71,8 +75,8 @@
 
 #### Scenario: Owner 转移
 - **WHEN** owner 需要轮换
-- **THEN** 转移 SHALL 通过 `Ownable.transferOwnership` 标准流程进行
-- **AND** 新 owner SHALL 立即继承所有权限
+- **THEN** 转移 SHALL 通过 `Ownable2Step.transferOwnership` + 新 owner `acceptOwnership` 标准流程进行
+- **AND** 新 owner 接受 ownership 后 SHALL 继承所有权限
 
 ### Requirement: 暂停与紧急停止
 
@@ -91,10 +95,15 @@
 
 `AdminEventOracle` 的所有状态变更（提交、挑战、撤销、确认、超时最终化、暂停）SHALL 通过 Solidity event 广播。前端 SHALL 在市场详情页显示"结算来源 = AdminEventOracle"标识，并提供链接到链上事件历史。
 
-#### Scenario: 事件发出
+#### Scenario: 赛事状态事件发出
 - **WHEN** 任一状态变更方法成功执行
-- **THEN** 合约 SHALL 发出对应 event（`ResultProposed`、`Challenged`、`ProposalRevoked`、`ProposalConfirmed`、`Finalized`、`FinalizedOnTimeout`、`Paused`、`Unpaused`）
+- **THEN** 合约 SHALL 发出对应 event（`ResultProposed`、`Challenged`、`ProposalRevoked`、`ProposalConfirmed`、`Finalized`、`FinalizedOnTimeout`）
 - **AND** event 参数 SHALL 包含 `eventId`、相关地址、时间戳
+
+#### Scenario: 暂停事件发出
+- **WHEN** owner 调用 `pause()` 或 `unpause()`
+- **THEN** 合约 SHALL 发出 OpenZeppelin `Paused(address)` 或 `Unpaused(address)` event
+- **AND** event 参数 SHALL 包含触发账户
 
 #### Scenario: 前端展示结算来源
 - **WHEN** 用户进入 World Cup 市场详情页
