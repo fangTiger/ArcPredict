@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
 
-const webRoot = process.cwd();
+const cwd = process.cwd();
+const webRoot = existsSync(resolve(cwd, 'app')) ? cwd : resolve(cwd, 'web');
 const scanRoots = ['app', 'components'];
 const forbiddenPatterns = [
   {
     label: '旧主题 token',
-    test: /\b(?:bg|text|border)-(?:base|surface|elevated|accent|warning)(?:\/[0-9[\].]+)?\b/gu,
+    test: /\b(?:bg|border)-(?:base|surface|elevated|accent|warning)(?:\/[0-9[\].]+)?\b|\btext-(?:surface|elevated|accent|warning)(?:\/[0-9[\].]+)?\b/gu,
   },
   {
     label: '旧暗色边框',

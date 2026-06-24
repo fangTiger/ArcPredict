@@ -1,4 +1,5 @@
 import type { DefiLlamaClient } from '../clients/defillama';
+import { getThemePackForDraft } from '../../themes';
 import {
   ResolveStillOpen,
   type MarketDraft,
@@ -43,9 +44,16 @@ export function createChainEventSource(opts: ChainEventSourceOptions): MarketSou
           const threshold = Math.floor(current * bump);
           const deadline = isoDateOffset(now, TVL_DEADLINE_DAYS);
           const deadlineTs = Math.floor(Date.parse(`${deadline}T00:00:00Z`) / 1000);
-          drafts.push({
-            externalKey: `${chain.id}:tvl:gte:${threshold}:${deadline}`,
+          const externalKey = `${chain.id}:tvl:gte:${threshold}:${deadline}`;
+          const themePack = getThemePackForDraft({
             category: 'chain',
+            sourceId: 'chain-event',
+            externalKey,
+          }, now);
+          drafts.push({
+            externalKey,
+            category: 'chain',
+            themeId: themePack?.themeId,
             question: `Will ${chain.defiLlamaName} TVL be >= $${formatUsdBillions(threshold)} by ${deadline}?`,
             outcomes: [
               { id: 'yes', label: 'Yes' },

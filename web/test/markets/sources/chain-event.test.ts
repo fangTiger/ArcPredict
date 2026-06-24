@@ -37,6 +37,35 @@ describe('chain-event source', () => {
     });
   });
 
+  it('tags drafts with the active weekly chain themeId', async () => {
+    const llama = mockDefiLlama({
+      chainTvl: {
+        Ethereum: 200_000_000_000,
+        Arbitrum: 10_000_000_000,
+      },
+    });
+    const s = createChainEventSource({ defiLlama: llama as any });
+    const drafts = await s.fetchUpcoming(new Date('2026-06-24T00:00:00Z'));
+    const taggedDrafts = drafts.filter((draft) => draft.themeId === 'arc-summer-onchain');
+
+    expect(drafts.length).toBeGreaterThan(0);
+    expect(taggedDrafts.map((draft) => draft.externalKey)).toEqual(drafts.map((draft) => draft.externalKey));
+  });
+
+  it('does not tag chain TVL drafts outside the active theme deadline week', async () => {
+    const llama = mockDefiLlama({
+      chainTvl: {
+        Ethereum: 200_000_000_000,
+        Arbitrum: 10_000_000_000,
+      },
+    });
+    const s = createChainEventSource({ defiLlama: llama as any });
+    const drafts = await s.fetchUpcoming(new Date('2026-06-30T00:00:00Z'));
+
+    expect(drafts.length).toBeGreaterThan(0);
+    expect(drafts.every((draft) => draft.themeId == null)).toBe(true);
+  });
+
   it('TVL resolve: still-open when current TVL between threshold and deadline not reached', async () => {
     const llama = mockDefiLlama({ chainTvl: 150_000_000_000 });
     const s = createChainEventSource({ defiLlama: llama as any });

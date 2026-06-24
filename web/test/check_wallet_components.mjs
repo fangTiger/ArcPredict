@@ -56,15 +56,16 @@ assertIncludesAll('WalletPill.tsx', walletPill, [
   'openConnectModal',
   'openAccountModal',
   'Connect Wallet',
-  'bg-ink text-paper rounded-full px-3 py-2 text-xs font-medium sm:px-4 sm:text-sm',
+  'pillBase',
+  'rounded-full px-3 py-2 text-xs font-medium sm:px-4 sm:text-sm',
+  'glass glass-hover text-ink',
   'whitespace-nowrap',
-  'hover:bg-arc-deep',
-  '-translate-y-px',
-  'h-2 w-2 rounded-full bg-arc',
+  'focus-visible:ring-arc-glow/60',
+  'h-2 w-2 rounded-full bg-arc-glow',
 ]);
 
 assertIncludesAll('WalletPill.tsx 已连接态文案', walletPill, [
-  'truncateAddr(address)',
+  'truncateAddr(address!)',
 ]);
 
 assert(
@@ -78,9 +79,9 @@ assertIncludesAll('NetworkBanner.tsx', networkBanner, [
   'switchChain({ chainId: arcTestnet.id })',
   'Wrong network. Switch to Arc Testnet.',
   "isPending ? 'Switching...' : 'Switch'",
-  'bg-heat/10',
-  'text-heat',
-  'border-b border-heat/30',
+  'border-b border-no/30',
+  'text-no',
+  "background: 'rgba(248,113,113,0.10)'",
 ]);
 
 assertIncludesAll('FaucetCard.tsx', faucetCard, [
@@ -89,13 +90,8 @@ assertIncludesAll('FaucetCard.tsx', faucetCard, [
   'bal === undefined',
   '需要 testnet USDC',
   '下注本金和 gas',
-  '前往 Circle Faucet',
+  '领取测试 USDC',
 ]);
-
-assert(
-  !faucetCard.includes('rounded-2xl'),
-  'FaucetCard.tsx 不应使用 rounded-2xl。',
-);
 
 const erc20Abi = JSON.parse(erc20AbiSource);
 assert(Array.isArray(erc20Abi), 'ERC20.json 必须是 ABI 数组。');

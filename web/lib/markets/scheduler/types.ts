@@ -34,10 +34,22 @@ export interface ChainWriterLike {
   settleMarket(marketId: bigint): Promise<`0x${string}`>;
 }
 
+export interface SeedLiquidityResult {
+  status: 'seeded' | 'needs_funding' | 'seed_failed';
+  approveTxHash?: `0x${string}`;
+  betTxHashes?: `0x${string}`[];
+  error?: string;
+}
+
 export interface SeedLiquidityLike {
-  seed(marketId: bigint, outcomeCount: number): Promise<void>;
+  seed(marketId: bigint, outcomeCount: number): Promise<SeedLiquidityResult>;
+}
+
+export interface LensPreloadResult {
+  status: 'warmed' | 'warning';
+  warning?: string;
 }
 
 export interface LensPreloaderLike {
-  warm(target: LensPreloadTarget): Promise<void>;
+  warm(target: LensPreloadTarget): Promise<LensPreloadResult>;
 }

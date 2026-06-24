@@ -1,0 +1,35 @@
+1
+00:00:00,000 --> 00:00:10,000
+ArcPredict is a USDC prediction market built for Arc Testnet.
+
+2
+00:00:10,000 --> 00:00:23,000
+Users take a view on real outcomes while the app keeps settlement rules visible.
+
+3
+00:00:23,000 --> 00:00:39,000
+The crypto board uses Pyth-backed price deadlines for BTC, ETH, and SOL markets.
+
+4
+00:00:39,000 --> 00:00:54,000
+Each card shows the question, deadline, pool split, liquidity, and user position.
+
+5
+00:00:54,000 --> 00:01:10,000
+The World Cup board expands ArcPredict from price markets into event markets.
+
+6
+00:01:10,000 --> 00:01:27,000
+World Cup markets support home win, draw, away win, spreads, and winner outcomes.
+
+7
+00:01:27,000 --> 00:01:42,000
+Crypto keeps PredictionMarket and Pyth. Events use EventMarket and AdminEventOracle.
+
+8
+00:01:42,000 --> 00:01:55,000
+The MVP oracle uses a result proposal plus a 72-hour dispute window.
+
+9
+00:01:55,000 --> 00:02:00,000
+One interface for markets people can understand, trade, and settle on-chain.

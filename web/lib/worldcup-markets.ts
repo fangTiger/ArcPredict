@@ -14,6 +14,7 @@ import {
   type MarketCategory,
   type WorldCupStage,
 } from './market-kind';
+import type { EventMarketDeploymentId } from './markets/deployments';
 
 export type WorldCupMarketType = '1x2' | 'spread' | 'totals' | 'winner';
 
@@ -43,8 +44,14 @@ export type MarketThemeVisual = {
 
 export type WorldCupMarketRow = {
   id: bigint;
+  deploymentId?: EventMarketDeploymentId;
+  eventMarketAddress?: `0x${string}`;
+  oracleAddress?: `0x${string}`;
   marketKind: 'event';
   category: MarketCategory;
+  sourceId?: string;
+  externalKey?: string;
+  themeId?: string;
   matchId: string | null;
   stage: WorldCupStage;
   stageLabel: string;
@@ -68,6 +75,9 @@ export type WorldCupMarketRow = {
 
 export type EventMarketDashboardRow = {
   id: bigint;
+  deploymentId?: EventMarketDeploymentId;
+  eventMarketAddress?: `0x${string}`;
+  oracleAddress?: `0x${string}`;
   market: {
     eventId: `0x${string}`;
     outcomeCount: number;
@@ -149,6 +159,8 @@ const GENERIC_CHAIN_TEAM: WorldCupDisplayTeam = {
   nameZh: 'On-chain',
   nameEn: 'On-chain',
 };
+const CHAIN_TVL_QUESTION_PATTERN =
+  /^Will\s+(Ethereum|Arbitrum)\s+TVL\s+be\s+>=\s+\$([0-9]+(?:\.[0-9]+)?)B\s+by\s+(\d{4}-\d{2}-\d{2})\?$/iu;
 
 const winnerFavorites = [
   { teamId: 'BRA', probability: 14.2 },
@@ -921,6 +933,36 @@ function automatedHomeTeam(category: MarketCategory): WorldCupDisplayTeam {
   return category === 'macro' ? GENERIC_MACRO_TEAM : GENERIC_CHAIN_TEAM;
 }
 
+function thresholdUsdFromBillionsLabel(value: string): string {
+  const [wholePart, fractionPart = ''] = value.split('.');
+  const normalizedWhole = wholePart.replace(/^0+(?=\d)/u, '') || '0';
+  const normalizedFraction = `${fractionPart}000000000`.slice(0, 9);
+
+  return `${normalizedWhole}${normalizedFraction}`.replace(/^0+(?=\d)/u, '');
+}
+
+function automatedSourceIdentity(
+  category: MarketCategory,
+  question: string,
+): Pick<WorldCupMarketRow, 'sourceId' | 'externalKey'> {
+  if (category !== 'chain') {
+    return {};
+  }
+
+  const match = CHAIN_TVL_QUESTION_PATTERN.exec(question);
+  if (!match) {
+    return {};
+  }
+
+  const [, chainName, thresholdLabel, deadline] = match;
+  const chainId = chainName.toLowerCase() === 'ethereum' ? 'eth' : 'arb';
+
+  return {
+    sourceId: 'chain-event',
+    externalKey: `${chainId}:tvl:gte:${thresholdUsdFromBillionsLabel(thresholdLabel)}:${deadline}`,
+  };
+}
+
 function fallbackOutcomeLabels(outcomeCount: number): string[] {
   return Array.from({ length: Math.max(0, outcomeCount) }, (_, index) => `Outcome ${index + 1}`);
 }
@@ -987,6 +1029,7 @@ export function resolveWorldCupMarkets(
   return eventRows.map((row) => {
     const readableEventId = decodeReadableEventId(row.market.eventId);
     const category = inferEventCategory(row.market.question, readableEventId);
+    const sourceIdentity = automatedSourceIdentity(category, row.market.question);
     const marketType = inferMarketType(row.market.outcomeCount, row.market.question, readableEventId);
     const resolvedMarketType =
       category === 'worldcup' ? marketType : automatedMarketType(row.market.outcomeCount);
@@ -1025,8 +1068,12 @@ export function resolveWorldCupMarkets(
 
     return {
       id: row.id,
+      deploymentId: row.deploymentId,
+      eventMarketAddress: row.eventMarketAddress,
+      oracleAddress: row.oracleAddress,
       marketKind: 'event',
       category,
+      ...sourceIdentity,
       matchId: category === 'worldcup' ? match?.matchId ?? extractMatchId(readableEventId) : null,
       stage,
       stageLabel: category === 'worldcup' ? stageLabelForMatch(stage, match) : automatedStageLabel(category),

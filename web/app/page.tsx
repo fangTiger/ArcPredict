@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Abi } from 'viem';
 import { zeroAddress } from 'viem';
-import { useAccount, useReadContract } from 'wagmi';
+import { useAccount, useReadContract, useReadContracts } from 'wagmi';
 import { BetModal } from '@/components/BetModal';
 import { ArcBackground } from '@/components/ArcBackground';
 import { CryptoMarketCard } from '@/components/CryptoMarketCard';
@@ -22,13 +22,11 @@ import { PositionList } from '@/components/PositionList';
 import { PositionStripe } from '@/components/PositionStripe';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SiteHeader } from '@/components/SiteHeader';
+import { ThemeMarketBoard } from '@/components/ThemeMarketBoard';
 import { WorldCupMarketCard } from '@/components/WorldCupMarketCard';
 import EventMarketAbi from '@/lib/abis/EventMarket.json';
 import PredictionMarketAbi from '@/lib/abis/PredictionMarket.json';
-import {
-  EVENT_MARKET_ADDRESS,
-  PREDICTION_MARKET_ADDRESS,
-} from '@/lib/addresses';
+import { PREDICTION_MARKET_ADDRESS } from '@/lib/addresses';
 import { PYTH_PRICE_ID_TO_ASSET } from '@/lib/asset-price-map';
 import { arcTestnet } from '@/lib/chain';
 import type { DashboardRow } from '@/lib/derivePosition';
@@ -45,6 +43,12 @@ import {
   type MarketCategory,
   type WorldCupStageFilter,
 } from '../lib/market-kind';
+import { getThemePackById, listThemePacks } from '@/lib/themes';
+import { getThemePackMarkets, toThemeMarketBoardEntries } from '@/lib/themes/markets';
+import {
+  EVENT_MARKET_DEPLOYMENTS,
+  attachDeploymentToEventRow,
+} from '@/lib/markets/deployments';
 import {
   getUpcomingWorldCupMarkets,
   resolveWorldCupMarkets,
@@ -55,6 +59,7 @@ import {
 const predictionMarketAbi = PredictionMarketAbi as Abi;
 const eventMarketAbi = EventMarketAbi as Abi;
 const nowInSeconds = () => BigInt(Math.floor(Date.now() / 1000));
+const EVENT_DASHBOARD_LIMIT = 100n;
 
 type DashboardLatestResult = readonly [DashboardRow[], bigint];
 type EventDashboardLatestResult = readonly [EventMarketDashboardRow[], bigint];
@@ -124,7 +129,9 @@ function HomePageContent() {
   const showCategoryTabs = WORLDCUP_ENABLED;
   const effectiveCategory = showCategoryTabs ? category : 'crypto';
   const backgroundVariant = effectiveCategory === 'worldcup' ? 'pitch' : 'default';
-  const hasEventMarket = WORLDCUP_ENABLED && EVENT_MARKET_ADDRESS !== zeroAddress;
+  const hasEventMarket = WORLDCUP_ENABLED && EVENT_MARKET_DEPLOYMENTS.some(
+    (deployment) => deployment.eventMarketAddress !== zeroAddress,
+  );
 
   const { data, isLoading, isError, refetch } = useReadContract({
     address: PREDICTION_MARKET_ADDRESS,
@@ -134,12 +141,16 @@ function HomePageContent() {
     chainId: arcTestnet.id,
     query: { refetchInterval: 5_000 },
   });
-  const { data: eventData, refetch: refetchEvent } = useReadContract({
-    address: EVENT_MARKET_ADDRESS,
-    abi: eventMarketAbi,
-    functionName: 'getDashboardLatest',
-    args: [user, 100n],
-    chainId: arcTestnet.id,
+  const { data: eventReadResults, refetch: refetchEvent } = useReadContracts({
+    contracts: hasEventMarket
+      ? EVENT_MARKET_DEPLOYMENTS.map((deployment) => ({
+          address: deployment.eventMarketAddress,
+          abi: eventMarketAbi,
+          functionName: 'getDashboardLatest',
+          args: [user, EVENT_DASHBOARD_LIMIT],
+          chainId: arcTestnet.id,
+        }))
+      : [],
     query: {
       enabled: hasEventMarket,
       refetchInterval: 5_000,
@@ -147,9 +158,15 @@ function HomePageContent() {
   });
 
   const dashboardData = data as DashboardLatestResult | undefined;
-  const eventDashboardData = eventData as EventDashboardLatestResult | undefined;
   const rows = dashboardData?.[0] ?? [];
-  const eventRows = useMemo(() => eventDashboardData?.[0] ?? [], [eventDashboardData]);
+  const eventRows = useMemo(
+    () =>
+      EVENT_MARKET_DEPLOYMENTS.flatMap((deployment, index) => {
+        const result = eventReadResults?.[index]?.result as EventDashboardLatestResult | undefined;
+        return (result?.[0] ?? []).map((row) => attachDeploymentToEventRow(row, deployment));
+      }),
+    [eventReadResults],
+  );
   const activeMarkets = rows.filter((row) => OUTCOMES[row.market.outcome] === 'Unresolved').map((row) => ({
     ...row,
     pythPriceId: row.market.pythPriceId,
@@ -222,6 +239,20 @@ function HomePageContent() {
     [visibleCryptoMarkets, visibleMarketCount],
   );
   const canLoadMoreMarkets = visibleMarketCount < visibleMarketTotal;
+  const featuredTheme = useMemo(() => {
+    const activeThemeId = listThemePacks(new Date()).find((pack) => pack.status === 'active')?.themeId;
+    return activeThemeId ? getThemePackById(activeThemeId, new Date()) : undefined;
+  }, []);
+  const featuredThemeMarkets = useMemo(() => {
+    if (!featuredTheme) {
+      return [];
+    }
+
+    return toThemeMarketBoardEntries(
+      getThemePackMarkets(featuredTheme, upcomingEventMarkets),
+      now,
+    );
+  }, [featuredTheme, now, upcomingEventMarkets]);
 
   useEffect(() => {
     setVisibleMarketCount(MARKET_PAGE_SIZE);
@@ -362,6 +393,14 @@ function HomePageContent() {
             pendingResolution: rows.filter((r) => OUTCOMES[r.market.outcome] === 'Unresolved').length,
           }}
         />
+        {featuredTheme ? (
+          <div className="mb-6">
+            <ThemeMarketBoard
+              theme={featuredTheme}
+              markets={featuredThemeMarkets}
+            />
+          </div>
+        ) : null}
         <MarketFilterBar
           asset={asset}
           cadence={cadence}

@@ -1,0 +1,19 @@
+Hey, this is ArcPredict.
+
+In one sentence, ArcPredict is a prediction market for Arc Testnet: users take a view on real outcomes with USDC, and the app keeps the settlement rules visible instead of hiding them behind a black box.
+
+The first board is crypto. Markets are built around Pyth-backed price deadlines, so a user can look at BTC, ETH, or SOL, pick a side, see the pool, and understand what has to happen before the market resolves.
+
+The experience is intentionally simple. The card shows the question, the deadline, the current split between outcomes, liquidity, and the user's position. From there, betting, resolution, and claiming all stay inside the same flow.
+
+The new expansion is the World Cup board. This moves ArcPredict beyond price-only markets into event markets, where the outcome is discrete: a home win, a draw, an away win, a spread, or even a tournament winner.
+
+Under the hood, that means a parallel contract path. Crypto markets keep using PredictionMarket with Pyth. World Cup markets use EventMarket, which supports multiple outcomes, and AdminEventOracle for MVP settlement.
+
+The oracle model is pragmatic for this stage: an owner proposes the result, there is a seventy-two hour dispute window, and challenged outcomes can be reviewed before finalization. It is not pretending to be fully decentralized on day one, but it does make the trust assumptions explicit.
+
+For users, the important part is that the product feels like one app. Same USDC collateral, same Arc Testnet wallet flow, but different boards, different visuals, and different market logic where the sport actually needs it.
+
+The goal is a focused, believable prediction market: fast enough for a live campaign, transparent enough to audit, and flexible enough to grow from crypto prices into real-world events.
+
+That is ArcPredict: one interface for markets people can understand, trade, and settle on-chain.

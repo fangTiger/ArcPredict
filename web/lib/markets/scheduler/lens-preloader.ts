@@ -1,4 +1,6 @@
 import type { MarketCategory } from '../../market-kind';
+import { safeErrorMessage } from './safe-report';
+import type { LensPreloadResult } from './types';
 
 export interface LensPreloadTarget {
   eventId: `0x${string}`;
@@ -6,6 +8,7 @@ export interface LensPreloadTarget {
   question: string;
   externalKey: string;
   outcomes: { id: string; label: string }[];
+  themeId?: string;
 }
 
 export interface LensPreloaderOptions {
@@ -15,11 +18,21 @@ export interface LensPreloaderOptions {
 
 export function createLensPreloader(opts: LensPreloaderOptions) {
   return {
-    async warm(target: LensPreloadTarget): Promise<void> {
+    async warm(target: LensPreloadTarget): Promise<LensPreloadResult> {
       try {
-        await opts.warmFn(target);
-      } catch {
-        // best-effort：失败不阻塞 cron 主流程
+        const result = await opts.warmFn(target);
+        if (result.status === 'ok') {
+          return { status: 'warmed' };
+        }
+        return {
+          status: 'warning',
+          warning: 'Lens preload unavailable',
+        };
+      } catch (error) {
+        return {
+          status: 'warning',
+          warning: `Lens preload unavailable: ${safeErrorMessage(error, 'preload failed')}`,
+        };
       }
     },
   };

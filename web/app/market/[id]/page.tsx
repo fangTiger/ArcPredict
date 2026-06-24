@@ -12,21 +12,28 @@ import { EventBetModal } from '@/components/EventBetModal';
 import { AILensPanel } from '@/components/AILensPanel';
 import { MarketDetailCard } from '@/components/MarketDetailCard';
 import { NetworkBanner } from '@/components/NetworkBanner';
+import {
+  SettlementTimeline,
+  type SettlementEvidenceItem,
+} from '@/components/SettlementTimeline';
 import { SeedDisclosure, sumSeedContribution } from '@/components/SeedDisclosure';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SiteHeader } from '@/components/SiteHeader';
 import EventMarketAbi from '@/lib/abis/EventMarket.json';
 import PredictionMarketAbi from '@/lib/abis/PredictionMarket.json';
-import {
-  EVENT_MARKET_ADDRESS,
-  PREDICTION_MARKET_ADDRESS,
-} from '@/lib/addresses';
+import { PREDICTION_MARKET_ADDRESS } from '@/lib/addresses';
 import { FRONTEND_DEPLOY_BLOCK } from '@/lib/asset-price-map';
 import { fetchLogsPaged } from '@/lib/bet-event-scan';
 import { arcTestnet } from '@/lib/chain';
 import { WORLDCUP_ENABLED } from '@/lib/feature-flags';
 import { fmtUsdc } from '@/lib/format';
 import type { LensInput } from '@/lib/lens/schema';
+import { ORACLE_STATUS, adminOracleAbi } from '@/lib/markets/scheduler/abi';
+import {
+  DEFAULT_EVENT_MARKET_DEPLOYMENT,
+  attachDeploymentToEventRow,
+  eventMarketDeploymentById,
+} from '@/lib/markets/deployments';
 import { isPhase16Enabled } from '@/lib/phase16-flag';
 import { SEED_WALLETS } from '@/lib/seed-wallets';
 import { useMediaQuery } from '@/lib/use-media-query';
@@ -54,6 +61,7 @@ type EventBetSelection = {
   row: EventRow;
   outcomeIndex: number;
 };
+type EventOracleStatus = 'pending' | 'proposed' | 'challenged' | 'finalized';
 type SeedBetEvent = {
   user: `0x${string}`;
   amount: bigint;
@@ -190,6 +198,9 @@ export default function MarketDetailPage() {
   const searchParams = useSearchParams();
   const routeId = params.id;
   const kind = searchParams.get('kind') === 'event' ? 'event' : 'price';
+  const deploymentParam = searchParams.get('deployment');
+  const eventMarketDeployment =
+    eventMarketDeploymentById(deploymentParam) ?? DEFAULT_EVENT_MARKET_DEPLOYMENT;
   const requestedKind = kind;
   const idBn = parseMarketId(routeId);
   const { address } = useAccount();
@@ -199,12 +210,19 @@ export default function MarketDetailPage() {
   const [selectedSide, setSelectedSide] = useState(true);
   const [showMobileBet, setShowMobileBet] = useState(false);
   const [seedBetEvents, setSeedBetEvents] = useState<SeedBetEvent[] | undefined>(undefined);
+  const [eventOracleStatus, setEventOracleStatus] = useState<{
+    status: EventOracleStatus;
+    proposedAt?: number;
+    proposalTxHash?: `0x${string}`;
+  } | null>(null);
   const [lensGeneratedAt] = useState(() => Math.floor(Date.now() / 1000));
   const isDesktop = useMediaQuery('(min-width: 1024px)');
-  const hasEventMarket = WORLDCUP_ENABLED && EVENT_MARKET_ADDRESS !== zeroAddress;
+  const hasEventMarket = WORLDCUP_ENABLED && eventMarketDeployment.eventMarketAddress !== zeroAddress;
   const contractIdBn =
     requestedKind === 'event' && idBn !== null && hasEventMarket
-      ? resolveWorldCupOnchainMarketId(idBn)
+      ? eventMarketDeployment.id === 'worldcup-v1'
+        ? resolveWorldCupOnchainMarketId(idBn)
+        : idBn
       : idBn;
   const readArgs =
     contractIdBn === null ? undefined : [user, contractIdBn, contractIdBn + 1n];
@@ -227,7 +245,7 @@ export default function MarketDetailPage() {
     isError: isEventError,
     refetch: refetchEvent,
   } = useReadContract({
-    address: EVENT_MARKET_ADDRESS,
+    address: eventMarketDeployment.eventMarketAddress,
     abi: eventMarketAbi,
     functionName: 'getDashboard',
     args: readArgs,
@@ -241,9 +259,17 @@ export default function MarketDetailPage() {
   const dashboardData = data as DashboardResult | undefined;
   const eventDashboardData = eventData as EventDashboardResult | undefined;
   const row = dashboardData?.[0]?.[0];
+  const eventRowsWithDeployment = useMemo(
+    () =>
+      (eventDashboardData?.[0] ?? []).map((nextRow) =>
+        attachDeploymentToEventRow(nextRow, eventMarketDeployment),
+      ),
+    [eventDashboardData, eventMarketDeployment],
+  );
+  const rawEventRow = eventRowsWithDeployment[0];
   const resolvedEventRows = useMemo(
-    () => resolveWorldCupMarkets(eventDashboardData?.[0] ?? []),
-    [eventDashboardData],
+    () => resolveWorldCupMarkets(eventRowsWithDeployment),
+    [eventRowsWithDeployment],
   );
   const eventRow = useMemo(() => {
     if (requestedKind !== 'event' || idBn === null) {
@@ -271,6 +297,38 @@ export default function MarketDetailPage() {
         : 'World Cup';
   const detailTitle = kind === 'event' ? `${eventCategoryLabel} Market` : 'Market Details';
   const backHref = kind === 'event' ? `/?category=${eventRow?.category ?? 'worldcup'}` : '/';
+  const adminEventOracleHref = `${arcTestnet.blockExplorers.default.url}/address/${eventMarketDeployment.oracleAddress}`;
+  const eventSettlementEvidence = useMemo<SettlementEvidenceItem[]>(() => {
+    if (!eventRow) {
+      return [];
+    }
+
+    const nextEvidence: SettlementEvidenceItem[] = [
+      {
+        label: 'Event ID',
+        value: eventRow.eventId,
+      },
+      {
+        label: 'Oracle source',
+        value: 'AdminEventOracle',
+        href: adminEventOracleHref,
+      },
+      {
+        label: 'Question',
+        value: eventRow.question,
+      },
+    ];
+
+    if (eventOracleStatus?.proposalTxHash) {
+      nextEvidence.push({
+        label: 'Proposal tx',
+        value: eventOracleStatus.proposalTxHash,
+        href: `${arcTestnet.blockExplorers.default.url}/tx/${eventOracleStatus.proposalTxHash}`,
+      });
+    }
+
+    return nextEvidence;
+  }, [adminEventOracleHref, eventOracleStatus?.proposalTxHash, eventRow]);
   const showPhase16 = kind !== 'event' && isPhase16Enabled();
   const seedContribution = useMemo(
     () => sumSeedContribution(seedBetEvents ?? [], SEED_WALLETS),
@@ -288,6 +346,70 @@ export default function MarketDetailPage() {
       router.replace('/');
     }
   }, [kind, router]);
+
+  useEffect(() => {
+    if (requestedKind !== 'event' || !eventRow || !publicClient || !hasEventMarket) {
+      setEventOracleStatus(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadEventOracleStatus = async () => {
+      try {
+        const rawStatus = (await publicClient.readContract({
+          address: eventMarketDeployment.oracleAddress,
+          abi: adminOracleAbi,
+          functionName: 'getEventStatus',
+          args: [eventRow.eventId],
+        })) as number;
+        const status: EventOracleStatus =
+          rawStatus === ORACLE_STATUS.Proposed
+            ? 'proposed'
+            : rawStatus === ORACLE_STATUS.Challenged
+              ? 'challenged'
+              : rawStatus === ORACLE_STATUS.Finalized
+                ? 'finalized'
+                : 'pending';
+
+        let proposedAt: number | undefined;
+        let proposalTxHash: `0x${string}` | undefined;
+        if (status !== 'pending') {
+          const proposedEvents = await publicClient.getContractEvents({
+            address: eventMarketDeployment.oracleAddress,
+            abi: adminOracleAbi,
+            eventName: 'ResultProposed',
+            args: { eventId: eventRow.eventId },
+            fromBlock: eventMarketDeployment.fromBlock || FRONTEND_DEPLOY_BLOCK,
+            toBlock: 'latest',
+          });
+          const latest = proposedEvents.at(-1) as
+            | {
+                args?: { proposedAt?: bigint | number };
+                transactionHash?: `0x${string}`;
+              }
+            | undefined;
+          const rawProposedAt = latest?.args?.proposedAt;
+          proposedAt = rawProposedAt == null ? undefined : Number(rawProposedAt);
+          proposalTxHash = latest?.transactionHash;
+        }
+
+        if (!cancelled) {
+          setEventOracleStatus({ status, proposedAt, proposalTxHash });
+        }
+      } catch {
+        if (!cancelled) {
+          setEventOracleStatus(null);
+        }
+      }
+    };
+
+    void loadEventOracleStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [eventMarketDeployment, eventRow, hasEventMarket, publicClient, requestedKind]);
 
   useEffect(() => {
     if (!showPhase16 || idBn === null) {
@@ -440,6 +562,19 @@ export default function MarketDetailPage() {
                           onBet={(nextRow, outcomeIndex) => setEventBetting({ row: nextRow, outcomeIndex })}
                         />
                         <div className="mt-5">
+                          <SettlementTimeline
+                            kind="event"
+                            resolveAfter={Number(rawEventRow?.market.resolveAfter ?? eventRow.betDeadline)}
+                            settledOutcome={rawEventRow?.market.settledOutcome ?? eventRow.settledOutcome}
+                            oracleStatus={eventOracleStatus?.status ?? 'pending'}
+                            proposedAt={eventOracleStatus?.proposedAt}
+                            pendingPayout={eventRow.pendingPayout}
+                            claimed={eventRow.claimed_}
+                            sourceHref={adminEventOracleHref}
+                            evidence={eventSettlementEvidence}
+                          />
+                        </div>
+                        <div className="mt-5">
                           <AILensPanel input={buildEventLensInput(eventRow, lensGeneratedAt)} />
                         </div>
                       </>
@@ -450,6 +585,15 @@ export default function MarketDetailPage() {
                           row={row}
                           onBet={handlePriceBet}
                         />
+                        <div className="mt-5">
+                          <SettlementTimeline
+                            kind="price"
+                            resolveAfter={Number(row.market.resolveAfter)}
+                            outcome={row.market.outcome}
+                            pendingPayout={row.pendingPayout}
+                            claimed={row.claimed_}
+                          />
+                        </div>
                         <div className="mt-5">
                           <AILensPanel input={buildPriceLensInput(row, lensGeneratedAt)} />
                         </div>

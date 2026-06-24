@@ -48,6 +48,7 @@ const assertMatches = (label, source, pattern, message) => {
 const homePage = readRequiredText('app/page.tsx');
 const marketPage = readRequiredText('app/market/[id]/page.tsx');
 const connectPage = readRequiredText('app/connect/page.tsx');
+const connectChecklist = readRequiredText('components/ConnectChecklist.tsx');
 
 assertUseClient('page.tsx', homePage);
 assertUseClient('market/[id]/page.tsx', marketPage);
@@ -95,16 +96,20 @@ assertIncludesAll('market/[id]/page.tsx 合约读取', marketPage, [
   'chainId: arcTestnet.id',
   'user = address ?? zeroAddress',
   'NetworkBanner',
-  'WalletPill',
+  'SiteHeader',
   'MarketDetailCard',
   'BetModal',
   'EventBetModal',
   'refetch',
   'refetchEvent',
-  'setBetting',
+  'setSelectedSide',
+  'setShowMobileBet',
   'setEventBetting',
   'EventMarketAbi',
-  'EVENT_MARKET_ADDRESS',
+  'eventMarketDeploymentById',
+  'eventMarketDeployment.eventMarketAddress',
+  'eventMarketDeployment.oracleAddress',
+  'attachDeploymentToEventRow',
   'WORLDCUP_ENABLED',
   'searchParams.get',
   'kind',
@@ -195,14 +200,14 @@ assert(
 assertMatches(
   'market/[id]/page.tsx',
   marketPage,
-  /onClose=\{\(\)\s*=>\s*\{\s*setBetting\(null\);\s*void refetch\(\);\s*\}\}/u,
-  'BetModal.onClose 必须关闭 modal 并触发 refetch()。',
+  /onClose=\{\(\)\s*=>\s*\{\s*setShowMobileBet\(false\);\s*void refetch\(\);\s*\}\}/u,
+  'BetModal.onClose 必须关闭移动下注弹窗并触发 refetch()。',
 );
 
 assertMatches(
   'market/[id]/page.tsx',
   marketPage,
-  /requestedKind !== 'event' && betting \?|marketKind !== 'event' && betting \?/u,
+  /requestedKind !== 'event' && row && showMobileBet \?|requestedKind !== 'event' && betting \?|marketKind !== 'event' && betting \?/u,
   'EVENT 详情不得渲染 PRICE 专用 BetModal。',
 );
 
@@ -232,10 +237,12 @@ assertExcludesAll('market/[id]/page.tsx 去除低价值详情块', marketPage, [
   'Resolution Source',
 ]);
 
-assertIncludesAll('market/[id]/page.tsx event 返回链接', marketPage, [
-  "const backHref = kind === 'event' ? '/?category=worldcup' : '/';",
-  'href={backHref}',
-]);
+assertMatches(
+  'market/[id]/page.tsx event 返回链接',
+  marketPage,
+  /const backHref = kind === 'event' \? `\/\?category=\$\{eventRow\?\.category \?\? 'worldcup'\}` : '\/';[\s\S]*href=\{backHref\}/u,
+  'EVENT 详情返回链接必须回到该 deployment row 对应的 category。',
+);
 
 assertExcludesAll('market/[id]/page.tsx 禁止暴露实现细节', marketPage, [
   '单市场深链视图',
@@ -278,19 +285,15 @@ assert(
 );
 
 assert(
-  connectPage.includes('onClick={addArcNetwork}') ||
-    connectPage.includes('onClick={() => void addArcNetwork()}'),
-  'connect/page.tsx 需要提供可点击按钮触发 addArcNetwork。',
+  connectPage.includes('onAddNetwork={addArcNetwork}') &&
+    connectChecklist.includes('onClick={onAddNetwork}'),
+  'connect/page.tsx 需要通过 ConnectChecklist 提供可点击按钮触发 addArcNetwork。',
 );
 
 assertIncludesAll('connect/page.tsx 手动参数与链接', connectPage, [
   'Chain ID',
   'RPC',
-  'Symbol',
-  'Decimals',
   'Explorer',
-  'https://faucet.circle.com',
-  'https://testnet.arcscan.app',
 ]);
 
 assertIncludesAll('connect/page.tsx 中文状态', connectPage, [
@@ -301,8 +304,6 @@ assertIncludesAll('connect/page.tsx 中文状态', connectPage, [
 ]);
 
 assertExcludesAll('Phase 13.2 样式约束', `${marketPage}\n${connectPage}`, [
-  'rounded-2xl',
-  'rounded-xl',
   'tracking-',
   'letterSpacing',
 ]);

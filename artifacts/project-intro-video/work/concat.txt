@@ -1,0 +1,7 @@
+file '/Users/captain/python/ArcPredict/artifacts/project-intro-video/work/scene-00.mp4'
+file '/Users/captain/python/ArcPredict/artifacts/project-intro-video/work/scene-01.mp4'
+file '/Users/captain/python/ArcPredict/artifacts/project-intro-video/work/scene-02.mp4'
+file '/Users/captain/python/ArcPredict/artifacts/project-intro-video/work/scene-03.mp4'
+file '/Users/captain/python/ArcPredict/artifacts/project-intro-video/work/scene-04.mp4'
+file '/Users/captain/python/ArcPredict/artifacts/project-intro-video/work/scene-05.mp4'
+file '/Users/captain/python/ArcPredict/artifacts/project-intro-video/work/scene-06.mp4'

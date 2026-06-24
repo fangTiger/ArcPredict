@@ -33,7 +33,7 @@ function TeamBadge({
       <div className="flex items-center gap-3">
         {flagUrl ? (
           <span
-            className="inline-block h-6 w-9 rounded-[6px] border border-white/10 bg-cover bg-center shadow-sm"
+            className="inline-block h-6 w-9 rounded-[6px] border border-hair bg-cover bg-center shadow-sm"
             style={{ backgroundImage: `url(${flagUrl})` }}
             aria-hidden="true"
           />

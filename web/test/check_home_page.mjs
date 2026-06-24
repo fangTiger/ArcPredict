@@ -48,12 +48,14 @@ assert.equal(
 assertIncludesAll('page.tsx', pageSource, [
   'useAccount',
   'useReadContract',
+  'useReadContracts',
   'useState',
   'useMemo',
   'useRouter',
   'useSearchParams',
   'PREDICTION_MARKET_ADDRESS',
-  'EVENT_MARKET_ADDRESS',
+  'EVENT_MARKET_DEPLOYMENTS',
+  'attachDeploymentToEventRow',
   'PredictionMarketAbi',
   'EventMarketAbi',
   'PredictionMarketAbi as Abi',
@@ -129,8 +131,8 @@ assertMatches(
 assertMatches(
   'page.tsx',
   pageSource,
-  /useReadContract\(\{[\s\S]*address:\s*EVENT_MARKET_ADDRESS[\s\S]*functionName:\s*'getDashboardLatest'/u,
-  '首页必须并行准备 EventMarket getDashboardLatest 读取。',
+  /useReadContracts\(\{[\s\S]*contracts:\s*hasEventMarket[\s\S]*EVENT_MARKET_DEPLOYMENTS\.map\(\(deployment\) => \(\{[\s\S]*address:\s*deployment\.eventMarketAddress[\s\S]*functionName:\s*'getDashboardLatest'/u,
+  '首页必须并行准备每个 EventMarket deployment 的 getDashboardLatest 读取。',
 );
 
 assertMatches(

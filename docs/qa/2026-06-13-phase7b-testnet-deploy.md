@@ -103,3 +103,17 @@ EventMarket：
 - 调用 `finalizeResult`。
 - 对本次 `marketId = 96`、`outcomeIndex = 0`、`amount = 500000` 的持仓执行 `claim`。
 - 将 propose / finalize / claim tx 与 payout 对账追加到本文的 Phase 7c smoke 章节。
+
+## Phase 10.7 Step 1: propose
+
+- propose tx hash: `0xb3111bdd4210dde973778e91957696b3b584cbddf74765d9da77080822e5a1c0`
+- propose block number: `48364598`
+- propose block timestamp (unix): `1782243314`
+- propose block timestamp (UTC ISO): `2026-06-23T19:35:14Z`
+- oracle status before: Pending (`0`)
+- oracle status after: Proposed (`1`)
+- proposed outcome: 0 (ARG / home)
+- proposer wallet: `0xe9c7B76d09863309b4eF1ab71EB32d89b0F9e29E`
+- finalize earliest at (UTC ISO): `2026-06-26T19:35:14Z` (= proposeBlockTimestamp + 72h)
+- scheduled finalize LaunchAgent run at: `2026-06-26T19:40:14Z` UTC / `2026-06-27T03:40:14+0800` CST
+- next steps: 调 `finalizeResult(...)`，再调 `EventMarket.resolve(96)`，然后 `claim(96)` 领取那笔 0.5 USDC。

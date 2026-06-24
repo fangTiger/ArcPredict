@@ -94,21 +94,29 @@ const assertReadingAllowanceUsesFreshApproval = (label, source) => {
 };
 
 const betModal = readRequiredText('components/BetModal.tsx');
+const betForm = readRequiredText('components/BetForm.tsx');
 const eventBetModal = readRequiredText('components/EventBetModal.tsx');
 
 assertUseClient('BetModal.tsx', betModal);
+assertUseClient('BetForm.tsx', betForm);
 assertUseClient('EventBetModal.tsx', eventBetModal);
-assertReadHookHasChainId('BetModal.tsx', betModal, 'allowance');
-assertReadHookHasChainId('BetModal.tsx', betModal, 'balanceOf');
+assertReadHookHasChainId('BetForm.tsx', betForm, 'allowance');
+assertReadHookHasChainId('BetForm.tsx', betForm, 'balanceOf');
 assertReadHookHasChainId('EventBetModal.tsx', eventBetModal, 'allowance');
 assertReadHookHasChainId('EventBetModal.tsx', eventBetModal, 'balanceOf');
-assertSwitchChainReturns('BetModal.tsx', betModal);
-assertNeedsApproveUsesFreshApproval('BetModal.tsx', betModal);
-assertReadingAllowanceUsesFreshApproval('BetModal.tsx', betModal);
+assertSwitchChainReturns('BetForm.tsx', betForm);
+assertNeedsApproveUsesFreshApproval('BetForm.tsx', betForm);
+assertReadingAllowanceUsesFreshApproval('BetForm.tsx', betForm);
 assertNeedsApproveUsesFreshApproval('EventBetModal.tsx', eventBetModal);
 assertReadingAllowanceUsesFreshApproval('EventBetModal.tsx', eventBetModal);
 
-assertIncludesAll('BetModal.tsx hooks', betModal, [
+assertIncludesAll('BetModal.tsx 容器', betModal, [
+  'BetForm',
+  'onSuccess={onClose}',
+  'role="dialog"',
+]);
+
+assertIncludesAll('BetForm.tsx hooks', betForm, [
   'useAccount',
   'useReadContract',
   'useWriteContract',
@@ -116,7 +124,7 @@ assertIncludesAll('BetModal.tsx hooks', betModal, [
   'useSwitchChain',
 ]);
 
-assertIncludesAll('BetModal.tsx allowance', betModal, [
+assertIncludesAll('BetForm.tsx allowance', betForm, [
   "functionName: 'allowance'",
   'args: address ? [address, PREDICTION_MARKET_ADDRESS] : undefined',
   'query: { enabled: !!address',
@@ -124,13 +132,13 @@ assertIncludesAll('BetModal.tsx allowance', betModal, [
   '!hasFreshApproval',
 ]);
 
-assertIncludesAll('BetModal.tsx balance', betModal, [
+assertIncludesAll('BetForm.tsx balance', betForm, [
   "functionName: 'balanceOf'",
   'refetchBalance',
   'balanceRaw',
 ]);
 
-assertIncludesAll('BetModal.tsx 独立交易状态', betModal, [
+assertIncludesAll('BetForm.tsx 独立交易状态', betForm, [
   'const approveWrite = useWriteContract();',
   'const betWrite = useWriteContract();',
   'currentApproveHash',
@@ -144,7 +152,7 @@ assertIncludesAll('BetModal.tsx 独立交易状态', betModal, [
   'setCurrentBetHash(undefined)',
 ]);
 
-assertIncludesAll('BetModal.tsx approve 写入', betModal, [
+assertIncludesAll('BetForm.tsx approve 写入', betForm, [
   'address: USDC_ADDRESS',
   'abi: erc20Abi',
   "functionName: 'approve'",
@@ -152,7 +160,7 @@ assertIncludesAll('BetModal.tsx approve 写入', betModal, [
   'chainId: arcTestnet.id',
 ]);
 
-assertIncludesAll('BetModal.tsx bet 写入', betModal, [
+assertIncludesAll('BetForm.tsx bet 写入', betForm, [
   'address: PREDICTION_MARKET_ADDRESS',
   'abi: predictionMarketAbi',
   "functionName: 'bet'",
@@ -160,11 +168,11 @@ assertIncludesAll('BetModal.tsx bet 写入', betModal, [
   'chainId: arcTestnet.id',
 ]);
 
-assertIncludesAll('BetModal.tsx 链切换', betModal, [
+assertIncludesAll('BetForm.tsx 链切换', betForm, [
   'switchChainAsync({ chainId: arcTestnet.id })',
 ]);
 
-assertIncludesAll('BetModal.tsx UI 文案', betModal, [
+assertIncludesAll('BetForm.tsx UI 文案', betForm, [
   'Step 1/2: Approve USDC',
   'Step 2/2: Place Bet',
   'Your Stake',
@@ -172,7 +180,7 @@ assertIncludesAll('BetModal.tsx UI 文案', betModal, [
   '赔率随新下注变化',
 ]);
 
-assertIncludesAll('BetModal.tsx 最小下注与余额提示', betModal, [
+assertIncludesAll('BetForm.tsx 最小下注与余额提示', betForm, [
   'MIN_BET_RAW = 100000n',
   '0.1 USDC',
   '余额不足',
@@ -184,29 +192,27 @@ assertIncludesAll('BetModal.tsx 最小下注与余额提示', betModal, [
   'NO',
 ]);
 
-assertIncludesAll('BetModal.tsx Phase16 样式', betModal, [
-  'bg-paper',
+assertIncludesAll('BetForm.tsx Phase16 样式', betForm, [
   'border-hair',
-  'bg-canvas',
-  'bg-arc',
+  'bg-bg-2',
   'bg-heat/10',
   'text-ink',
   'text-ink-2',
 ]);
 
-assertIncludesAll('BetModal.tsx 地址切换重置授权', betModal, [
+assertIncludesAll('BetForm.tsx 地址切换重置授权', betForm, [
   'setHasFreshApproval(false);',
   '[address]',
 ]);
 
 assertMatches(
-  'BetModal.tsx',
-  betModal,
-  /if \(step !== 'betting' \|\| !currentBetHash \|\| !betReceipt\.isSuccess\) \{\s+return;\s+\}[\s\S]*?setCurrentBetHash\(undefined\);[\s\S]*?setStep\('success'\);[\s\S]*?setFeedback\('下注已提交成功。'\);[\s\S]*?void refetchAllowance\(\);[\s\S]*?void refetchBalance\(\);[\s\S]*?onClose\(\);/u,
-  '在 bet receipt 成功后必须直接调用 onClose()',
+  'BetForm.tsx',
+  betForm,
+  /if \(step !== 'betting' \|\| !currentBetHash \|\| !betReceipt\.isSuccess\) \{\s+return;\s+\}[\s\S]*?setCurrentBetHash\(undefined\);[\s\S]*?setStep\('success'\);[\s\S]*?setFeedback\('下注已提交成功。'\);[\s\S]*?void refetchAllowance\(\);[\s\S]*?void refetchBalance\(\);[\s\S]*?onSuccess\?\.\(\);/u,
+  '在 bet receipt 成功后必须通知上层成功回调',
 );
 
-assertIncludesAll('BetModal.tsx 切链后重新确认', betModal, [
+assertIncludesAll('BetForm.tsx 切链后重新确认', betForm, [
   'await switchChainAsync({ chainId: arcTestnet.id });',
   '切换到 Arc Testnet 后，请再次确认下注。',
 ]);
@@ -222,7 +228,7 @@ assertExcludesAll('BetModal.tsx 样式约束', betModal, [
   'bg-accent',
 ]);
 
-assertExcludesAll('BetModal.tsx 不应把未就绪读数当作 0', betModal, [
+assertExcludesAll('BetForm.tsx 不应把未就绪读数当作 0', betForm, [
   'const allowanceRaw = (allowance as bigint | undefined) ?? 0n;',
   'const balanceRaw = (balance as bigint | undefined) ?? 0n;',
   'const safeAmount = parsedAmount ?? 0n;',
@@ -242,9 +248,10 @@ assertIncludesAll('EventBetModal.tsx hooks', eventBetModal, [
 ]);
 
 assertIncludesAll('EventBetModal.tsx allowance spender', eventBetModal, [
+  'const rowEventMarketAddress = row.eventMarketAddress ?? EVENT_MARKET_ADDRESS;',
   "functionName: 'allowance'",
-  'args: address && eventMarketConfigured ? [address, EVENT_MARKET_ADDRESS] : undefined',
-  'EVENT_MARKET_ADDRESS !== zeroAddress',
+  'args: address && eventMarketConfigured ? [address, rowEventMarketAddress] : undefined',
+  'rowEventMarketAddress !== zeroAddress',
   'refetchAllowance',
   '!hasFreshApproval',
 ]);
@@ -253,12 +260,12 @@ assertIncludesAll('EventBetModal.tsx approve 写入', eventBetModal, [
   'address: USDC_ADDRESS',
   'abi: erc20Abi',
   "functionName: 'approve'",
-  'args: [EVENT_MARKET_ADDRESS, maxUint256]',
+  'args: [rowEventMarketAddress, maxUint256]',
   'chainId: arcTestnet.id',
 ]);
 
 assertIncludesAll('EventBetModal.tsx event bet 写入', eventBetModal, [
-  'address: EVENT_MARKET_ADDRESS',
+  'address: rowEventMarketAddress',
   'abi: eventMarketAbi',
   "functionName: 'bet'",
   'args: [row.id, outcomeIndex, parsedAmount]',

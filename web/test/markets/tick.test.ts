@@ -15,6 +15,7 @@ const makeDraft = (externalKey: string, outcomeCount = 2): MarketDraft => ({
   betDeadline: Math.floor(Date.now() / 1000) + 10_000,
   resolveAfter: Math.floor(Date.now() / 1000) + 20_000,
   resolveSourceMeta: {},
+  themeId: 'macro-weekly-radar',
 });
 
 const makeSource = (id: string, drafts: MarketDraft[]): MarketSource => ({
@@ -44,8 +45,14 @@ const fakeWriter = {
   settleMarket: vi.fn().mockResolvedValue(`0x${'1'.repeat(64)}`),
 };
 
-const fakeSeed = { seed: vi.fn().mockResolvedValue(undefined) };
-const fakePreloader = { warm: vi.fn().mockResolvedValue(undefined) };
+const fakeSeed = {
+  seed: vi.fn().mockResolvedValue({
+    status: 'seeded',
+    approveTxHash: `0x${'2'.repeat(64)}`,
+    betTxHashes: [`0x${'3'.repeat(64)}`, `0x${'4'.repeat(64)}`],
+  }),
+};
+const fakePreloader = { warm: vi.fn().mockResolvedValue({ status: 'warmed' }) };
 
 beforeEach(() => {
   resetRegistry();
@@ -85,8 +92,21 @@ describe('runTick', () => {
       question: draft.question,
       externalKey: draft.externalKey,
       outcomes: draft.outcomes,
+      themeId: draft.themeId,
     });
     expect(report.perSource['fred-macro'].opened).toBe(1);
+    expect(report.perSource['fred-macro'].seeded).toBe(1);
+    expect(report.perSource['fred-macro'].markets[0]).toMatchObject({
+      externalKey: draft.externalKey,
+      themeId: 'macro-weekly-radar',
+      openTxHash: `0x${'1'.repeat(64)}`,
+      seed: {
+        status: 'seeded',
+        approveTxHash: `0x${'2'.repeat(64)}`,
+        betTxHashes: [`0x${'3'.repeat(64)}`, `0x${'4'.repeat(64)}`],
+      },
+      lensPreload: { status: 'warmed' },
+    });
   });
 
   it('skips draft when eventId already on chain', async () => {
@@ -133,7 +153,9 @@ describe('runTick', () => {
       category: 'macro',
       enabled: true,
       async fetchUpcoming() {
-        throw new Error('boom');
+        throw new Error(
+          'boom AUTOMATION_PRIVATE_KEY=0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef Bearer super-secret sk-live-secret',
+        );
       },
       async resolve() {
         return ResolveStillOpen;
@@ -149,7 +171,10 @@ describe('runTick', () => {
       preloader: fakePreloader,
     });
 
-    expect(report.perSource.broken.error).toMatch(/boom/);
+    expect(report.perSource.broken.errors[0]).toMatch(/boom/);
+    expect(report.perSource.broken.errors[0]).not.toContain('AUTOMATION_PRIVATE_KEY');
+    expect(report.perSource.broken.errors[0]).not.toContain('super-secret');
+    expect(report.perSource.broken.errors[0]).not.toContain('sk-live-secret');
     expect(report.perSource.healthy).toBeDefined();
   });
 
@@ -173,5 +198,107 @@ describe('runTick', () => {
 
     expect(fakeWriter.openMarket).toHaveBeenCalledTimes(5);
     expect(report.perSource['fred-macro'].opened).toBe(5);
+  });
+
+  it('records needs_funding seed status and lens preload warnings without failing the source', async () => {
+    const draft = makeDraft('CPIAUCSL:2026-07-16', 2);
+    registerSource(makeSource('fred-macro', [draft]));
+    fakeReader.marketIdForEventId.mockResolvedValueOnce(null);
+    fakeReader.marketIdForEventId.mockResolvedValueOnce(43n);
+    fakeSeed.seed.mockResolvedValueOnce({
+      status: 'needs_funding',
+      error: 'automation wallet needs funding',
+    });
+    fakePreloader.warm.mockResolvedValueOnce({
+      status: 'warning',
+      warning: 'Lens preload unavailable',
+    });
+
+    const report = await runTick({
+      now: new Date(),
+      reader: fakeReader,
+      writer: fakeWriter,
+      seedLiquidity: fakeSeed,
+      preloader: fakePreloader,
+    });
+
+    expect(report.perSource['fred-macro'].opened).toBe(1);
+    expect(report.perSource['fred-macro'].seeded).toBe(0);
+    expect(report.perSource['fred-macro'].markets[0]).toMatchObject({
+      themeId: 'macro-weekly-radar',
+      seed: {
+        status: 'needs_funding',
+        error: 'automation wallet needs funding',
+      },
+      lensPreload: {
+        status: 'warning',
+        warning: 'Lens preload unavailable',
+      },
+    });
+  });
+
+  it('uses a per-source deployment runtime when sources live on different EventMarket contracts', async () => {
+    const macroDraft = makeDraft('CPIAUCSL:2026-07-15', 3);
+    const chainDraft = makeDraft('eth:tvl:gte:100:2026-09-17', 2);
+    registerSource(makeSource('fred-macro', [macroDraft]));
+    registerSource(makeSource('chain-event', [chainDraft]));
+
+    const macroReader = {
+      ...fakeReader,
+      marketIdForEventId: vi.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(41n),
+      pendingMarketsForSource: vi.fn().mockResolvedValue([]),
+    };
+    const chainReader = {
+      ...fakeReader,
+      marketIdForEventId: vi.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(42n),
+      pendingMarketsForSource: vi.fn().mockResolvedValue([]),
+    };
+    const macroWriter = {
+      ...fakeWriter,
+      openMarket: vi.fn().mockResolvedValue(`0x${'a'.repeat(64)}`),
+    };
+    const chainWriter = {
+      ...fakeWriter,
+      openMarket: vi.fn().mockResolvedValue(`0x${'b'.repeat(64)}`),
+    };
+    const macroSeed = {
+      seed: vi.fn().mockResolvedValue({ status: 'seeded', betTxHashes: [] }),
+    };
+    const chainSeed = {
+      seed: vi.fn().mockResolvedValue({ status: 'seeded', betTxHashes: [] }),
+    };
+
+    const report = await runTick({
+      now: new Date(),
+      runtimeForSource(source) {
+        if (source.id === 'fred-macro') {
+          return {
+            deploymentId: 'automated-v1',
+            reader: macroReader,
+            writer: macroWriter,
+            seedLiquidity: macroSeed,
+            preloader: fakePreloader,
+          };
+        }
+
+        return {
+          deploymentId: 'worldcup-v1',
+          reader: chainReader,
+          writer: chainWriter,
+          seedLiquidity: chainSeed,
+          preloader: fakePreloader,
+        };
+      },
+    });
+
+    expect(macroWriter.openMarket).toHaveBeenCalledWith(expect.objectContaining({
+      eventId: computeMarketId('fred-macro', macroDraft.externalKey),
+    }));
+    expect(chainWriter.openMarket).toHaveBeenCalledWith(expect.objectContaining({
+      eventId: computeMarketId('chain-event', chainDraft.externalKey),
+    }));
+    expect(fakeWriter.openMarket).not.toHaveBeenCalled();
+    expect(report.perSource['fred-macro'].deploymentId).toBe('automated-v1');
+    expect(report.perSource['chain-event'].deploymentId).toBe('worldcup-v1');
   });
 });

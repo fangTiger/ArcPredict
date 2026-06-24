@@ -3,14 +3,18 @@ import { createPublicClient, createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { mainnet, sepolia } from 'viem/chains';
 
+import { USDC_ADDRESS } from '../../../../../lib/addresses';
 import { arcTestnet } from '../../../../../lib/chain';
 import { bootstrapSources } from '../../../../../lib/markets/bootstrap';
+import { eventMarketDeploymentForSource } from '../../../../../lib/markets/deployments';
 import { createChainReader } from '../../../../../lib/markets/scheduler/chain-reader';
 import { createChainWriter } from '../../../../../lib/markets/scheduler/chain-writer';
 import { createLensPreloader } from '../../../../../lib/markets/scheduler/lens-preloader';
-import { runTick } from '../../../../../lib/markets/scheduler/tick';
+import { safeErrorMessage } from '../../../../../lib/markets/scheduler/safe-report';
+import { runTick, type SourceTickRuntime } from '../../../../../lib/markets/scheduler/tick';
 import { createSeedLiquidity } from '../../../../../lib/markets/scheduler/seed-liquidity';
 import { AUTOMATED_MARKET_SEED_USDC } from '../../../../../lib/markets/scheduler/seed-config';
+import type { MarketSource } from '../../../../../lib/markets/sources/base';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -54,30 +58,7 @@ async function handleTick(req: Request): Promise<Response> {
     const publicClient = createPublicClient({ chain, transport: http(rpcUrl) });
     const walletClient = createWalletClient({ chain, transport: http(rpcUrl), account });
 
-    const eventMarketAddress = requireEnv('NEXT_PUBLIC_EVENT_MARKET_ADDRESS') as `0x${string}`;
-    const oracleAddress = requireEnv('NEXT_PUBLIC_EVENT_ORACLE_ADDRESS') as `0x${string}`;
-    const usdcAddress = requireEnv('NEXT_PUBLIC_USDC_ADDRESS') as `0x${string}`;
-
-    const reader = createChainReader({
-      client: publicClient,
-      eventMarketAddress,
-      oracleAddress,
-      fromBlock: BigInt(process.env.MARKETS_FROM_BLOCK ?? '0'),
-    });
-    const writer = createChainWriter({
-      walletClient,
-      publicClient,
-      eventMarketAddress,
-      oracleAddress,
-      usdcAddress,
-    });
-    const seedLiquidity = createSeedLiquidity({
-      writer,
-      walletClient,
-      publicClient,
-      eventMarketAddress,
-      perMarketUsdc: AUTOMATED_MARKET_SEED_USDC,
-    });
+    const usdcAddress = (process.env.NEXT_PUBLIC_USDC_ADDRESS || USDC_ADDRESS) as `0x${string}`;
     const preloader = createLensPreloader({
       warmFn: async (target) => {
         try {
@@ -93,19 +74,58 @@ async function handleTick(req: Request): Promise<Response> {
         }
       },
     });
+    const runtimeCache = new Map<string, SourceTickRuntime>();
+    const runtimeForSource = (source: MarketSource): SourceTickRuntime => {
+      const deployment = eventMarketDeploymentForSource(source.id);
+      if (!deployment) {
+        throw new Error(`missing event market deployment for source: ${source.id}`);
+      }
+
+      const cached = runtimeCache.get(deployment.id);
+      if (cached) {
+        return cached;
+      }
+
+      const reader = createChainReader({
+        client: publicClient,
+        eventMarketAddress: deployment.eventMarketAddress,
+        oracleAddress: deployment.oracleAddress,
+        fromBlock: BigInt(process.env.MARKETS_FROM_BLOCK ?? deployment.fromBlock.toString()),
+      });
+      const writer = createChainWriter({
+        walletClient,
+        publicClient,
+        eventMarketAddress: deployment.eventMarketAddress,
+        oracleAddress: deployment.oracleAddress,
+        usdcAddress,
+      });
+      const seedLiquidity = createSeedLiquidity({
+        writer,
+        walletClient,
+        publicClient,
+        eventMarketAddress: deployment.eventMarketAddress,
+        perMarketUsdc: AUTOMATED_MARKET_SEED_USDC,
+      });
+      const runtime = {
+        deploymentId: deployment.id,
+        reader,
+        writer,
+        seedLiquidity,
+        preloader,
+      };
+      runtimeCache.set(deployment.id, runtime);
+      return runtime;
+    };
 
     const report = await runTick({
       now: new Date(),
-      reader,
-      writer,
-      seedLiquidity,
-      preloader,
+      runtimeForSource,
     });
 
     return NextResponse.json({ ok: true, report });
   } catch (err) {
     return NextResponse.json(
-      { ok: false, error: err instanceof Error ? err.message : String(err) },
+      { ok: false, error: safeErrorMessage(err, 'cron tick failed') },
       { status: 500 },
     );
   }

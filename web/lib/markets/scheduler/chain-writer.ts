@@ -95,5 +95,18 @@ export function createChainWriter(opts: ChainWriterOptions) {
       });
       return waitForReceipt(hash);
     },
+
+    async balanceUsdc(account: `0x${string}`): Promise<bigint | null> {
+      if (!publicClient) {
+        return null;
+      }
+
+      return publicClient.readContract({
+        address: usdcAddress,
+        abi: erc20Abi,
+        functionName: 'balanceOf',
+        args: [account],
+      }) as Promise<bigint>;
+    },
   };
 }

@@ -1,0 +1,20 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>ArcPredict</title>
+  <rect width="512" height="512" fill="#050614"/>
+  <defs>
+    <linearGradient id="arc" x1="112" y1="368" x2="384" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1652F0"/>
+      <stop offset="100%" stop-color="#4DA8FF"/>
+    </linearGradient>
+    <filter id="halo" x="160" y="-64" width="320" height="320" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="34"/>
+    </filter>
+  </defs>
+  <path d="M128 384 A224 224 0 0 1 384 128"
+        stroke="url(#arc)"
+        stroke-width="48"
+        stroke-linecap="round"/>
+  <circle cx="384" cy="128" r="84" fill="#4DA8FF" opacity="0.35" filter="url(#halo)"/>
+  <circle cx="384" cy="128" r="52" fill="#4DA8FF"/>
+  <circle cx="384" cy="128" r="20" fill="#FFFFFF"/>
+</svg>

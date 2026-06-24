@@ -9,6 +9,7 @@ export interface OutcomeOption {
 export interface MarketDraft {
   externalKey: ExternalKey;
   category: MarketCategory;
+  themeId?: string;
   question: string;
   outcomes: OutcomeOption[];
   betDeadline: number;

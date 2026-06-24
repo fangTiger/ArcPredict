@@ -66,7 +66,7 @@ function TeamBadge({ nameEn, shortCode, teamId }: WorldCupMarketRow['homeTeam'])
       >
         {flagUrl ? (
           <span
-            className="inline-block h-4 w-6 rounded-[4px] border border-white/10 bg-cover bg-center shadow-sm"
+            className="inline-block h-4 w-6 rounded-[4px] border border-hair bg-cover bg-center shadow-sm"
             style={{ backgroundImage: `url(${flagUrl})` }}
             aria-hidden="true"
           />
@@ -154,7 +154,8 @@ export function WorldCupMarketCard({
     row.betDeadline > now
       ? `${isWorldCupMarket ? '⚽ ' : ''}${fmtCountdown(row.betDeadline, now)}`
       : `${isWorldCupMarket ? '⚽ ' : ''}Closed`;
-  const detailHref = `/market/${row.id.toString()}?kind=event`;
+  const deploymentQuery = row.deploymentId ? `&deployment=${encodeURIComponent(row.deploymentId)}` : '';
+  const detailHref = `/market/${row.id.toString()}?kind=event${deploymentQuery}`;
   const isWinnerMarket = row.marketType === 'winner';
   const titleLabel =
     !isWorldCupMarket

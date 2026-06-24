@@ -16,6 +16,9 @@ const nodeRequire = Module.createRequire(import.meta.url);
 const moduleCache = new Map<string, unknown>();
 
 type LoadedWorldCupRow = {
+  deploymentId?: string;
+  eventMarketAddress?: `0x${string}`;
+  oracleAddress?: `0x${string}`;
   marketKind: string;
   category: string;
   matchId: string | null;
@@ -165,14 +168,23 @@ const makeEventRow = ({
   question,
   resolveAfter,
   outcomePools,
+  deploymentId,
+  eventMarketAddress,
+  oracleAddress,
 }: {
   eventId: `0x${string}`;
   outcomeCount: number;
   question: string;
   resolveAfter: bigint;
   outcomePools: bigint[];
+  deploymentId?: string;
+  eventMarketAddress?: `0x${string}`;
+  oracleAddress?: `0x${string}`;
 }) => ({
   id: 77n,
+  deploymentId,
+  eventMarketAddress,
+  oracleAddress,
   market: {
     eventId,
     outcomeCount,
@@ -729,6 +741,34 @@ describe('worldcup components', () => {
     expect(chainRow.category).toBe('chain');
     expect(chainRow.stageLabel).toBe('On-chain');
     expect(chainRow.outcomes.map((outcome) => outcome.label)).toEqual(['Yes', 'No']);
+  });
+
+  test('事件市场 row 会保留 deployment metadata 供详情页和下注使用', async () => {
+    setMatchMedia(false);
+    const [row] = resolveWorldCupMarkets([
+      makeEventRow({
+        deploymentId: 'automated-v1',
+        eventMarketAddress: '0x1111111111111111111111111111111111111111',
+        oracleAddress: '0x2222222222222222222222222222222222222222',
+        eventId: `0x${'55'.repeat(32)}` as `0x${string}`,
+        outcomeCount: 2,
+        question: 'Will Ethereum TVL be >= $100.00B by 2026-09-17?',
+        resolveAfter: secondsForIso('2026-09-17T00:00:00Z'),
+        outcomePools: [60_000_000n, 40_000_000n],
+      }),
+    ]);
+
+    expect(row.deploymentId).toBe('automated-v1');
+    expect(row.eventMarketAddress).toBe('0x1111111111111111111111111111111111111111');
+    expect(row.oracleAddress).toBe('0x2222222222222222222222222222222222222222');
+
+    await act(async () => {
+      root.render(React.createElement(WorldCupMarketCard, { row, onBet: vi.fn() }));
+      await Promise.resolve();
+    });
+
+    const link = host.querySelector<HTMLAnchorElement>('a[href^="/market/77"]');
+    expect(link?.getAttribute('href')).toBe('/market/77?kind=event&deployment=automated-v1');
   });
 
   test('自动事件市场会按题材派生静态主题图 metadata', () => {

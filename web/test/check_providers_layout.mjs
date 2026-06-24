@@ -46,11 +46,11 @@ async function main() {
   const layoutTokens = [
     'Providers',
     '<Providers>{children}</Providers>',
-    'lang="en"',
+    'lang="zh-CN"',
     'fonts.googleapis.com/css2?family=Geist',
     'Geist+Mono',
     'Instrument+Serif',
-    'bg-canvas text-ink antialiased',
+    'bg-bg-0 text-ink antialiased',
   ];
 
   for (const token of layoutTokens) {

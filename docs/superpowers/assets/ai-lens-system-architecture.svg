@@ -1,0 +1,179 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#071017"/>
+      <stop offset="1" stop-color="#0A1119"/>
+    </linearGradient>
+    <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#39E6DD"/>
+      <stop offset="1" stop-color="#7BB0FF"/>
+    </linearGradient>
+    <marker id="arrowCyan" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2 2L10 6L2 10" stroke="#39E6DD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2 2L10 6L2 10" stroke="#7CFFB2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrowRed" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2 2L10 6L2 10" stroke="#FF7777" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <filter id="shadow" x="-8%" y="-10%" width="116%" height="120%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#000000" flood-opacity="0.32"/>
+    </filter>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" stroke="#B9D4DF" stroke-opacity="0.055" stroke-width="1"/>
+    </pattern>
+    <style>
+      .sans { font-family: "Avenir Next", "Helvetica Neue", Helvetica, sans-serif; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+      .title { fill:#E6FBFF; font-size:52px; font-weight:780; letter-spacing:0; }
+      .subtitle { fill:#9AB5C2; font-size:22px; font-weight:500; }
+      .lane { fill:#DDFBFF; font-size:15px; font-weight:760; letter-spacing:.08em; }
+      .boxTitle { fill:#E6FBFF; font-size:21px; font-weight:760; }
+      .boxText { fill:#AEC7D1; font-size:15px; font-weight:520; }
+      .code { fill:#C8F9FF; font-size:14px; font-weight:650; }
+      .small { fill:#88A4B0; font-size:13px; font-weight:520; }
+      .label { fill:#A9C3CE; font-size:13px; font-weight:700; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect width="1600" height="900" fill="url(#grid)"/>
+  <circle cx="1328" cy="112" r="240" fill="#39E6DD" opacity="0.045"/>
+  <circle cx="114" cy="800" r="250" fill="#7BB0FF" opacity="0.05"/>
+
+  <g class="sans">
+    <text x="92" y="94" class="title">AI Lens Architecture</text>
+    <text x="94" y="132" class="subtitle">On-demand probability analysis for ArcPredict markets, implemented as a UI-sidecar.</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="72" y="166" width="1456" height="572" rx="28" fill="#0C1520" stroke="#FFFFFF" stroke-opacity="0.12"/>
+  </g>
+
+  <!-- lane headers -->
+  <g class="sans">
+    <rect x="104" y="200" width="260" height="38" rx="19" fill="#102333" stroke="#39E6DD" stroke-opacity="0.26"/>
+    <text x="128" y="225" class="lane">CLIENT UI</text>
+    <rect x="410" y="200" width="658" height="38" rx="19" fill="#102333" stroke="#39E6DD" stroke-opacity="0.26"/>
+    <text x="434" y="225" class="lane">NEXT ROUTE + LENS LIBRARY</text>
+    <rect x="1114" y="200" width="354" height="38" rx="19" fill="#102333" stroke="#39E6DD" stroke-opacity="0.26"/>
+    <text x="1138" y="225" class="lane">MODEL + DATA INPUTS</text>
+  </g>
+
+  <!-- client -->
+  <g class="sans">
+    <rect x="116" y="292" width="236" height="108" rx="16" fill="#111D2A" stroke="#FFFFFF" stroke-opacity="0.12"/>
+    <text x="138" y="326" class="boxTitle">Ask AI</text>
+    <text x="138" y="356" class="boxText">AILensCompact</text>
+    <text x="138" y="381" class="boxText">AILensPanel</text>
+
+    <rect x="116" y="514" width="236" height="108" rx="16" fill="#111D2A" stroke="#7CFFB2" stroke-opacity="0.22"/>
+    <text x="138" y="548" class="boxTitle">Lens UI result</text>
+    <text x="138" y="578" class="boxText">summary · gauge</text>
+    <text x="138" y="603" class="boxText">factors · sources</text>
+  </g>
+
+  <!-- api/core -->
+  <g class="sans">
+    <rect x="428" y="274" width="214" height="108" rx="16" fill="#101D2A" stroke="#39E6DD" stroke-opacity="0.3"/>
+    <text x="450" y="308" class="boxTitle">Route Handler</text>
+    <text x="450" y="340" class="mono code">POST /api/lens/[id]</text>
+    <text x="450" y="365" class="boxText">server-only credentials</text>
+
+    <rect x="700" y="274" width="214" height="108" rx="16" fill="#101D2A" stroke="#FFCB66" stroke-opacity="0.32"/>
+    <text x="722" y="308" class="boxTitle">Preflight</text>
+    <text x="722" y="340" class="boxText">daily budget</text>
+    <text x="722" y="365" class="boxText">rate limit · cooldown</text>
+
+    <rect x="428" y="448" width="214" height="118" rx="16" fill="#101D2A" stroke="#7CFFB2" stroke-opacity="0.3"/>
+    <text x="450" y="482" class="boxTitle">Cache lookup</text>
+    <text x="450" y="514" class="mono code">lens:{id}:{hash}</text>
+    <text x="450" y="540" class="boxText">shared TTL</text>
+
+    <rect x="700" y="448" width="214" height="118" rx="16" fill="#101D2A" stroke="#39E6DD" stroke-opacity="0.3"/>
+    <text x="722" y="482" class="boxTitle">Build context</text>
+    <text x="722" y="514" class="boxText">market metadata</text>
+    <text x="722" y="540" class="boxText">prices / facts snapshot</text>
+
+    <rect x="700" y="622" width="214" height="86" rx="16" fill="#101D2A" stroke="#FFCB66" stroke-opacity="0.32"/>
+    <text x="722" y="655" class="boxTitle">Validate output</text>
+    <text x="722" y="683" class="boxText">Zod schema + banned terms</text>
+
+    <rect x="428" y="622" width="214" height="86" rx="16" fill="#101D2A" stroke="#7CFFB2" stroke-opacity="0.3"/>
+    <text x="450" y="655" class="boxTitle">Write cache</text>
+    <text x="450" y="683" class="boxText">raw response + input summary</text>
+  </g>
+
+  <!-- external -->
+  <g class="sans">
+    <rect x="1136" y="274" width="262" height="92" rx="16" fill="#101D2A" stroke="#39E6DD" stroke-opacity="0.3"/>
+    <text x="1158" y="309" class="boxTitle">DeepSeek SDK</text>
+    <text x="1158" y="339" class="boxText">strict JSON result</text>
+
+    <rect x="1136" y="426" width="262" height="92" rx="16" fill="#101D2A" stroke="#39E6DD" stroke-opacity="0.22"/>
+    <text x="1158" y="461" class="boxTitle">Pyth price data</text>
+    <text x="1158" y="491" class="boxText">recent samples · volatility</text>
+
+    <rect x="1136" y="562" width="262" height="92" rx="16" fill="#101D2A" stroke="#39E6DD" stroke-opacity="0.22"/>
+    <text x="1158" y="597" class="boxTitle">Static facts table</text>
+    <text x="1158" y="627" class="mono code">worldcup-facts.json</text>
+  </g>
+
+  <!-- primary request path -->
+  <g stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M352 346H414" stroke="#39E6DD" marker-end="url(#arrowCyan)"/>
+    <path d="M642 328H686" stroke="#39E6DD" marker-end="url(#arrowCyan)"/>
+    <path d="M807 382V434" stroke="#39E6DD" marker-end="url(#arrowCyan)"/>
+    <path d="M700 507H656" stroke="#39E6DD" marker-end="url(#arrowCyan)"/>
+    <path d="M642 507H686" stroke="#39E6DD" stroke-dasharray="7 8" marker-end="url(#arrowCyan)"/>
+    <path d="M914 507H1022C1044 507 1062 489 1062 467V320C1062 298 1080 320 1122 320" stroke="#39E6DD" marker-end="url(#arrowCyan)"/>
+    <path d="M1136 334H1032C1014 334 1000 348 1000 366V642C1000 655 990 665 976 665H928" stroke="#39E6DD" stroke-dasharray="7 8" marker-end="url(#arrowCyan)"/>
+    <path d="M700 665H656" stroke="#7CFFB2" marker-end="url(#arrowGreen)"/>
+    <path d="M535 622V580" stroke="#7CFFB2" marker-end="url(#arrowGreen)"/>
+    <path d="M428 665H386C368 665 352 649 352 631V568" stroke="#7CFFB2" marker-end="url(#arrowGreen)"/>
+  </g>
+
+  <!-- data input pull lines -->
+  <g stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M914 486H1040C1062 486 1070 472 1122 472" stroke="#7BB0FF" marker-end="url(#arrowCyan)"/>
+    <path d="M914 526H1040C1062 526 1070 608 1122 608" stroke="#7BB0FF" marker-end="url(#arrowCyan)"/>
+  </g>
+
+  <!-- cache hit short-circuit -->
+  <g stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M428 548H390C370 548 352 560 352 568" stroke="#7CFFB2" stroke-dasharray="7 8" marker-end="url(#arrowGreen)"/>
+  </g>
+
+  <!-- labels -->
+  <g class="sans">
+    <rect x="373" y="316" width="46" height="22" rx="11" fill="#0C1520"/>
+    <text x="383" y="332" class="label">click</text>
+    <rect x="650" y="476" width="42" height="22" rx="11" fill="#0C1520"/>
+    <text x="659" y="492" class="label">MISS</text>
+    <rect x="365" y="517" width="62" height="22" rx="11" fill="#0C1520"/>
+    <text x="376" y="533" class="label">HIT</text>
+    <rect x="1010" y="292" width="90" height="22" rx="11" fill="#0C1520"/>
+    <text x="1022" y="308" class="label">LLM call</text>
+  </g>
+
+  <!-- guardrails -->
+  <g class="sans">
+    <rect x="92" y="762" width="800" height="70" rx="22" fill="#0C1520" stroke="#FFFFFF" stroke-opacity="0.1"/>
+    <text x="122" y="793" class="lane" fill="#7CFFB2">GUARDRAILS</text>
+    <text x="122" y="818" class="boxText">on-demand only · strict JSON schema · no betting advice · source transparency · daily budget cap</text>
+  </g>
+
+  <!-- contract isolation -->
+  <g class="sans">
+    <rect x="932" y="762" width="576" height="70" rx="22" fill="#1A1014" stroke="#FF7777" stroke-opacity="0.36"/>
+    <text x="962" y="793" class="lane" fill="#FFB6B6">CONTRACT ISOLATION</text>
+    <text x="962" y="818" class="boxText" fill="#EFB8B8">No writes to EventMarket, AdminEventOracle, or settlement logic.</text>
+    <path d="M1428 797H1478" stroke="#FF7777" stroke-width="2.6" stroke-dasharray="7 7" marker-end="url(#arrowRed)"/>
+  </g>
+
+  <g class="sans">
+    <text x="92" y="865" class="small">v1 storage: in-memory Map + cache/lens.json dump. KV/Redis can be swapped behind cache.ts later.</text>
+    <text x="1508" y="865" class="small" text-anchor="end">ArcPredict · AI Lens design · 2026-06-15</text>
+  </g>
+</svg>

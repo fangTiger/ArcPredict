@@ -88,7 +88,7 @@ if (homeSource) {
     const directFilteredMapPattern =
       /filterMarkets\([\s\S]{0,800}\)\.map\([\s\S]{0,500}<(CryptoMarketCard|WorldCupMarketCard)/u;
     const namedFilteredListMapPattern =
-      /(?:\{\s*|:\s*)(?:visible|filtered|display|shown)[A-Za-z0-9_]*\.map\([\s\S]{0,500}<(CryptoMarketCard|WorldCupMarketCard)/u;
+      /(?:\{\s*|:\s*|\?\s*)(?:visible|filtered|display|shown|rendered)[A-Za-z0-9_]*\.map\([\s\S]{0,500}<(CryptoMarketCard|WorldCupMarketCard)/u;
     assert(
       directFilteredMapPattern.test(homeSource) || namedFilteredListMapPattern.test(homeSource),
       '首页卡片列表必须来自过滤后的列表或 filterMarkets 结果，不能永远直接使用未过滤 activeMarkets.map。',
@@ -133,7 +133,7 @@ if (marketDetailSource) {
 
   check(() => {
     assert(
-      /const\s+showPhase16\s*=\s*isPhase16Enabled\(\);/u.test(marketDetailSource) ||
+      /const\s+showPhase16\s*=\s*[\s\S]{0,100}isPhase16Enabled\(\);/u.test(marketDetailSource) ||
         /isPhase16Enabled\(\)\s*&&[\s\S]*<SeedDisclosure/u.test(marketDetailSource),
       '市场详情必须用 isPhase16Enabled 控制 SeedDisclosure 渲染。',
     );

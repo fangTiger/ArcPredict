@@ -100,7 +100,8 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
 
   const { address, chainId } = useAccount();
   const { switchChainAsync } = useSwitchChain();
-  const eventMarketConfigured = EVENT_MARKET_ADDRESS !== zeroAddress;
+  const rowEventMarketAddress = row.eventMarketAddress ?? EVENT_MARKET_ADDRESS;
+  const eventMarketConfigured = rowEventMarketAddress !== zeroAddress;
 
   const {
     data: allowance,
@@ -109,7 +110,7 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
     address: USDC_ADDRESS,
     abi: erc20Abi,
     functionName: 'allowance',
-    args: address && eventMarketConfigured ? [address, EVENT_MARKET_ADDRESS] : undefined,
+    args: address && eventMarketConfigured ? [address, rowEventMarketAddress] : undefined,
     chainId: arcTestnet.id,
     query: { enabled: !!address && eventMarketConfigured, refetchInterval: 10_000 },
   });
@@ -215,7 +216,7 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
       try {
         setCurrentBetHash(undefined);
         const hash = await betWrite.writeContractAsync({
-          address: EVENT_MARKET_ADDRESS,
+          address: rowEventMarketAddress,
           abi: eventMarketAbi,
           functionName: 'bet',
           args: [row.id, outcomeIndex, parsedAmount],
@@ -238,6 +239,7 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
     parsedAmount,
     refetchAllowance,
     row.id,
+    rowEventMarketAddress,
     step,
   ]);
 
@@ -341,7 +343,7 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
           address: USDC_ADDRESS,
           abi: erc20Abi,
           functionName: 'approve',
-          args: [EVENT_MARKET_ADDRESS, maxUint256],
+          args: [rowEventMarketAddress, maxUint256],
           chainId: arcTestnet.id,
         });
         setCurrentApproveHash(hash);
@@ -360,7 +362,7 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
 
     try {
       const hash = await betWrite.writeContractAsync({
-        address: EVENT_MARKET_ADDRESS,
+        address: rowEventMarketAddress,
         abi: eventMarketAbi,
         functionName: 'bet',
         args: [row.id, outcomeIndex, parsedAmount],
