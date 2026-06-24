@@ -70,6 +70,8 @@ assertIncludesAll('page.tsx', pageSource, [
   'SiteHeader',
   'SiteFooter',
   'HomeHero',
+  'TodayBoard',
+  'MarketDiscoveryRail',
   'MarketFilterBar',
   'PositionStripe',
   'CryptoMarketCard',
@@ -78,6 +80,11 @@ assertIncludesAll('page.tsx', pageSource, [
   'BetModal',
   'filterMarkets',
   'PYTH_PRICE_ID_TO_ASSET',
+  'toRichMarketRef',
+  'selectTodayBoard',
+  'selectTrendingMarkets',
+  'selectClosingSoon',
+  'selectRecentlyResolved',
   'WORLDCUP_ENABLED',
   'category',
   'stage',
@@ -107,6 +114,11 @@ assertIncludesAll('page.tsx', pageSource, [
   'category={effectiveCategory}',
 ]);
 
+assert(
+  !pageSource.includes('/api/lens/'),
+  '首页 rich sections 不得自动触发 Lens POST。',
+);
+
 assertMatches(
   'page.tsx',
   pageSource,
@@ -126,6 +138,20 @@ assertMatches(
   pageSource,
   /filterMarkets\(\s*activeMarkets,\s*\{[\s\S]*category:\s*'crypto'[\s\S]*asset,[\s\S]*cadence,[\s\S]*priceIdToAsset:\s*PYTH_PRICE_ID_TO_ASSET/u,
   'Crypto 可见列表必须继续基于 activeMarkets 与 filterMarkets 计算。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /rows\.map\(\(row\)\s*=>\s*toRichMarketRef\(row,\s*now\)\)/u,
+  '首页 rich sections 必须基于已读 price rows 派生 rich refs。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /filterMarkets\(eventSourceMarkets[\s\S]*\)\.map\(\(row\)\s*=>\s*toRichMarketRef\(row,\s*now\)\)/u,
+  '首页 rich sections 必须基于已读 event rows 派生 rich refs。',
 );
 
 assertMatches(
@@ -161,6 +187,13 @@ assertMatches(
   pageSource,
   /<MarketFilterBar[\s\S]*category=\{category\}[\s\S]*stage=\{stage\}/u,
   '首页必须把 category/stage 传给 MarketFilterBar。',
+);
+
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /const todayBoard[\s\S]*selectTodayBoard\(richSectionMarkets,\s*now\)[\s\S]*const trendingMarkets[\s\S]*selectTrendingMarkets\(richSectionMarkets,\s*now\)[\s\S]*const closingSoonMarkets[\s\S]*selectClosingSoon\(richSectionMarkets,\s*now\)[\s\S]*const recentlyResolvedMarkets[\s\S]*selectRecentlyResolved\(richSectionMarkets\)/u,
+  '首页必须派生 Today Board、Trending、Closing Soon 和 Recently Resolved 数据。',
 );
 
 assertMatches(
@@ -276,8 +309,8 @@ assertMatches(
 assertMatches(
   'page.tsx',
   pageSource,
-  /<main id="markets"[\s\S]*<ArcBackground variant=\{backgroundVariant\} \/>[\s\S]*<HomeHero[\s\S]*category=\{effectiveCategory\}[\s\S]*<MarketFilterBar/u,
-  'HomeHero 必须作为 markets 内的低高度上下文条，贴近筛选区，而不是独立大首屏。',
+  /<main id="markets"[\s\S]*<ArcBackground variant=\{backgroundVariant\} \/>[\s\S]*<HomeHero[\s\S]*category=\{effectiveCategory\}[\s\S]*<TodayBoard[\s\S]*board=\{todayBoard\}[\s\S]*<ThemeMarketBoard[\s\S]*<MarketDiscoveryRail[\s\S]*<MarketFilterBar/u,
+  '首页 rich sections 必须按 Hero -> Today Board -> Theme -> Discovery -> Filter 的顺序组织。',
 );
 
 assertMatches(

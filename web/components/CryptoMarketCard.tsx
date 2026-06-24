@@ -10,6 +10,7 @@ import type { DashboardRow } from '@/lib/derivePosition';
 import { OUTCOMES, yesPercent } from '@/lib/derivePosition';
 import { fmtCountdown, fmtUsdc } from '@/lib/format';
 import type { LensInput } from '@/lib/lens/schema';
+import { toRichMarketRef } from '@/lib/market-richness';
 
 const nowInSeconds = () => BigInt(Math.floor(Date.now() / 1000));
 
@@ -114,6 +115,8 @@ export function CryptoMarketCard({
       : 'Betting closed'
     : `Settled ${outcome}`;
   const detailHref = `/market/${row.id.toString()}`;
+  const richMarket = toRichMarketRef(row, now);
+  const totalPool = m.yesPool + m.noPool;
   const lensInput: LensInput = {
     market: {
       id: row.id.toString(),
@@ -151,6 +154,18 @@ export function CryptoMarketCard({
               >
                 {cadenceLabel}
               </span>
+            </div>
+
+            <div className="mb-4 rounded-[22px] border border-hair bg-bg-1/55 px-4 py-3">
+              <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase text-ink-2">
+                <span className="rounded-full border border-hair px-2.5 py-1">{richMarket.activityLabel}</span>
+                <span className="rounded-full border border-arc-glow/25 bg-arc/10 px-2.5 py-1 text-arc-glow">
+                  {richMarket.probabilityLabel}
+                </span>
+              </div>
+              <div className="mt-3 text-sm leading-6 text-ink-2">
+                {richMarket.skewLabel}. Liquidity sits at {fmtUsdc(totalPool)} USDC.
+              </div>
             </div>
 
             <h3 className="mb-2 font-display text-[26px] leading-[1.18] text-ink">
@@ -199,6 +214,10 @@ export function CryptoMarketCard({
             <div className="flex items-center justify-between rounded-[12px] px-3 py-2">
               <span>NO pool</span>
               <span className="text-ink">{fmtUsdc(m.noPool)} USDC</span>
+            </div>
+            <div className="col-span-2 flex items-center justify-between rounded-[12px] border border-hair px-3 py-2">
+              <span>Market balance</span>
+              <span className="text-ink">{richMarket.skewLabel}</span>
             </div>
           </div>
 

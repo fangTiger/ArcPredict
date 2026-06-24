@@ -39,8 +39,18 @@ assertIncludesAll('HomeHero.tsx', heroSource, [
   'HeroParticleCanvas',
   'Predict the next tick',
   'Pick the next winner',
+  'Trade the next macro surprise',
+  'Track the next liquidity rotation',
+  'Crypto board',
+  'World Cup board',
+  'Macro board',
+  'On-chain board',
   'live-dot',
-  'category ===',
+  'Record<MarketCategory',
+]);
+
+assertExcludesAll('HomeHero.tsx copy 不能只做 worldcup/crypto 二分', heroSource, [
+  "const isWorldCup = category === 'worldcup';\n  const copy = isWorldCup",
 ]);
 
 assertExcludesAll('HomeHero.tsx', heroSource, [

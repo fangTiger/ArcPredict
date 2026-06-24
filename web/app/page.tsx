@@ -12,6 +12,10 @@ import { CryptoMarketCard } from '@/components/CryptoMarketCard';
 import { EventBetModal } from '@/components/EventBetModal';
 import { HomeHero } from '@/components/HomeHero';
 import {
+  MarketDiscoveryRail,
+  TodayBoard,
+} from '@/components/MarketDiscoveryRail';
+import {
   MarketFilterBar,
   filterMarkets,
   type AssetFilter,
@@ -37,6 +41,13 @@ import {
   nextVisibleMarketCount,
   sliceVisibleMarketRows,
 } from '@/lib/market-pagination';
+import {
+  selectClosingSoon,
+  selectRecentlyResolved,
+  selectTodayBoard,
+  selectTrendingMarkets,
+  toRichMarketRef,
+} from '@/lib/market-richness';
 import {
   MARKET_CATEGORIES,
   normalizeWorldCupStageFilter,
@@ -158,7 +169,10 @@ function HomePageContent() {
   });
 
   const dashboardData = data as DashboardLatestResult | undefined;
-  const rows = dashboardData?.[0] ?? [];
+  const rows = useMemo(
+    () => dashboardData?.[0] ?? [],
+    [dashboardData],
+  );
   const eventRows = useMemo(
     () =>
       EVENT_MARKET_DEPLOYMENTS.flatMap((deployment, index) => {
@@ -253,6 +267,35 @@ function HomePageContent() {
       now,
     );
   }, [featuredTheme, now, upcomingEventMarkets]);
+  const richSectionMarkets = useMemo(() => {
+    if (effectiveCategory === 'crypto') {
+      return rows.map((row) => toRichMarketRef(row, now));
+    }
+
+    return filterMarkets(eventSourceMarkets, {
+      category: effectiveCategory,
+      stage: effectiveCategory === 'worldcup' ? stage : 'all',
+      asset: 'all',
+      cadence: 'all',
+      priceIdToAsset: PYTH_PRICE_ID_TO_ASSET,
+    }).map((row) => toRichMarketRef(row, now));
+  }, [effectiveCategory, eventSourceMarkets, now, rows, stage]);
+  const todayBoard = useMemo(
+    () => selectTodayBoard(richSectionMarkets, now),
+    [richSectionMarkets, now],
+  );
+  const trendingMarkets = useMemo(
+    () => selectTrendingMarkets(richSectionMarkets, now).slice(0, 3),
+    [richSectionMarkets, now],
+  );
+  const closingSoonMarkets = useMemo(
+    () => selectClosingSoon(richSectionMarkets, now).slice(0, 3),
+    [richSectionMarkets, now],
+  );
+  const recentlyResolvedMarkets = useMemo(
+    () => selectRecentlyResolved(richSectionMarkets).slice(0, 3),
+    [richSectionMarkets],
+  );
 
   useEffect(() => {
     setVisibleMarketCount(MARKET_PAGE_SIZE);
@@ -393,6 +436,7 @@ function HomePageContent() {
             pendingResolution: rows.filter((r) => OUTCOMES[r.market.outcome] === 'Unresolved').length,
           }}
         />
+        <TodayBoard board={todayBoard} />
         {featuredTheme ? (
           <div className="mb-6">
             <ThemeMarketBoard
@@ -401,6 +445,11 @@ function HomePageContent() {
             />
           </div>
         ) : null}
+        <MarketDiscoveryRail
+          trending={trendingMarkets}
+          closingSoon={closingSoonMarkets}
+          recentlyResolved={recentlyResolvedMarkets}
+        />
         <MarketFilterBar
           asset={asset}
           cadence={cadence}

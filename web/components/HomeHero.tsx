@@ -11,6 +11,29 @@ type Props = {
   };
 };
 
+const HERO_COPY: Record<MarketCategory, { eyebrow: string; title: string; description: string }> = {
+  crypto: {
+    eyebrow: 'Crypto board',
+    title: 'Predict the next tick.',
+    description: 'Arc USDC pools · Pyth-backed deadlines · open positions.',
+  },
+  worldcup: {
+    eyebrow: 'World Cup board',
+    title: 'Pick the next winner.',
+    description: '1X2 / totals / winner markets · USDC-settled on Arc.',
+  },
+  macro: {
+    eyebrow: 'Macro board',
+    title: 'Trade the next macro surprise.',
+    description: 'CPI · Fed · jobs catalysts priced into live Arc markets.',
+  },
+  chain: {
+    eyebrow: 'On-chain board',
+    title: 'Track the next liquidity rotation.',
+    description: 'TVL · unlocks · bridge flow across active Arc markets.',
+  },
+};
+
 const NEW_CATEGORIES: { href: string; title: string; sub: string }[] = [
   { href: '/?category=macro', title: 'Macro', sub: 'CPI · Fed · NFP' },
   { href: '/?category=chain', title: 'On-chain', sub: 'TVL · unlocks' },
@@ -20,24 +43,14 @@ export function HomeHero({ category, stats }: Props) {
   const activeMarkets = stats?.activeMarkets.toString() ?? '--';
   const pendingResolution = stats?.pendingResolution.toString() ?? '--';
   const totalVolume = stats?.totalVolumeUsdc ?? '--';
-  const isWorldCup = category === 'worldcup';
-  const copy = isWorldCup
-    ? {
-        eyebrow: 'World Cup board',
-        title: 'Pick the next winner.',
-        description: '1X2 / totals / winner markets · USDC-settled on Arc.',
-      }
-    : {
-        eyebrow: 'Crypto board',
-        title: 'Predict the next tick.',
-        description: 'Arc USDC pools · Pyth-backed deadlines · open positions.',
-      };
+  const heroVariant = category === 'worldcup' ? 'worldcup' : 'crypto';
+  const copy = HERO_COPY[category];
 
   return (
     <section
-      className={`hero-arc-band ${isWorldCup ? 'hero-arc-worldcup' : 'hero-arc-crypto'} relative mb-5 overflow-hidden rounded-xl border border-hair`}
+      className={`hero-arc-band ${heroVariant === 'worldcup' ? 'hero-arc-worldcup' : 'hero-arc-crypto'} relative mb-5 overflow-hidden rounded-xl border border-hair`}
     >
-      <HeroParticleCanvas variant={isWorldCup ? 'worldcup' : 'crypto'} />
+      <HeroParticleCanvas variant={heroVariant} />
       <div className="hero-gradient-mask" aria-hidden="true" />
 
       <div className="hero-content relative grid gap-5 px-5 py-6 sm:px-7 sm:py-7 lg:grid-cols-12 lg:items-end">

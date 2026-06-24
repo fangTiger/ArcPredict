@@ -52,6 +52,11 @@ const marketCardShim = readRequiredText('components/MarketCard.tsx');
 const worldCupMarketCard = readRequiredText('components/WorldCupMarketCard.tsx');
 const worldCupOutcomePanel = readRequiredText('components/WorldCupOutcomePanel.tsx');
 const marketDetailCard = readRequiredText('components/MarketDetailCard.tsx');
+const themeMarketBoard = readRequiredText('components/ThemeMarketBoard.tsx');
+const marketDiscoveryRail = readRequiredText('components/MarketDiscoveryRail.tsx');
+const marketStoryPanel = readRequiredText('components/MarketStoryPanel.tsx');
+const activityTimeline = readRequiredText('components/ActivityTimeline.tsx');
+const relatedMarketsPanel = readRequiredText('components/RelatedMarketsPanel.tsx');
 const eventInfoPanel = readRequiredText('components/EventInfoPanel.tsx');
 const impliedProbabilityChart = readRequiredText('components/ImpliedProbabilityChart.tsx');
 const siteHeader = readRequiredText('components/SiteHeader.tsx');
@@ -118,6 +123,11 @@ assertIncludesAll('CryptoMarketCard.tsx', cryptoMarketCard, [
   'style={{ flex: yesFlex }}',
   'style={{ flex: noFlex }}',
   'betDeadline - now < 24n * 60n * 60n',
+  'toRichMarketRef',
+  'Market balance',
+  'richMarket.activityLabel',
+  'richMarket.skewLabel',
+  'fmtUsdc(totalPool)',
 ]);
 
 assertExcludesAll('CryptoMarketCard.tsx 需移除 article 导航方案', cryptoMarketCard, [
@@ -211,6 +221,11 @@ assertIncludesAll('WorldCupMarketCard.tsx', worldCupMarketCard, [
   'backgroundImage',
   '?kind=event',
   'View details',
+  'toRichMarketRef',
+  'themeVisual',
+  'Market balance',
+  'richMarket.activityLabel',
+  'richMarket.probabilityLabel',
 ]);
 
 assertExcludesAll('WorldCupMarketCard.tsx', worldCupMarketCard, ['BetModal', 'router.push']);
@@ -253,6 +268,47 @@ assertIncludesAll('MarketDetailCard.tsx', marketDetailCard, [
   'ImpliedProbabilityChart',
   'WorldCupOutcomePanel',
   'onBet',
+]);
+
+assertIncludesAll('ThemeMarketBoard.tsx', themeMarketBoard, [
+  "import React from 'react';",
+  'This week on ArcPredict',
+  'Open theme page',
+  'Theme pack is live. New markets land here as they open.',
+  'live market',
+  'Pack note',
+]);
+
+assertIncludesAll('MarketDiscoveryRail.tsx', marketDiscoveryRail, [
+  "import React from 'react';",
+  'Today board',
+  'Trending now',
+  'Closing soon',
+  'Recently resolved',
+  'strongest signal right now',
+]);
+
+assertIncludesAll('MarketStoryPanel.tsx', marketStoryPanel, [
+  "import React from 'react';",
+  'Market story',
+  'Why it matters',
+  'What moves it',
+  'What to watch',
+]);
+
+assertIncludesAll('ActivityTimeline.tsx', activityTimeline, [
+  "import React from 'react';",
+  'Activity timeline',
+  'ActivityTimelineItem',
+  'shadow-[0_0_18px_rgba(77,168,255,0.85)]',
+]);
+
+assertIncludesAll('RelatedMarketsPanel.tsx', relatedMarketsPanel, [
+  "import React from 'react';",
+  'Related markets',
+  'ideas',
+  'market.probabilityLabel',
+  'market.activityLabel',
 ]);
 
 assertExcludesAll('MarketDetailCard.tsx', marketDetailCard, [
@@ -339,6 +395,11 @@ for (const [label, source] of [
   ['WorldCupMarketCard.tsx', worldCupMarketCard],
   ['WorldCupOutcomePanel.tsx', worldCupOutcomePanel],
   ['MarketDetailCard.tsx', marketDetailCard],
+  ['ThemeMarketBoard.tsx', themeMarketBoard],
+  ['MarketDiscoveryRail.tsx', marketDiscoveryRail],
+  ['MarketStoryPanel.tsx', marketStoryPanel],
+  ['ActivityTimeline.tsx', activityTimeline],
+  ['RelatedMarketsPanel.tsx', relatedMarketsPanel],
   ['EventInfoPanel.tsx', eventInfoPanel],
   ['ImpliedProbabilityChart.tsx', impliedProbabilityChart],
   ['SiteHeader.tsx', siteHeader],

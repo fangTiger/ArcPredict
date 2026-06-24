@@ -9,9 +9,12 @@ import { useAccount, usePublicClient, useReadContract } from 'wagmi';
 import { BetForm } from '@/components/BetForm';
 import { BetModal } from '@/components/BetModal';
 import { EventBetModal } from '@/components/EventBetModal';
+import { ActivityTimeline, type ActivityTimelineItem } from '@/components/ActivityTimeline';
 import { AILensPanel } from '@/components/AILensPanel';
 import { MarketDetailCard } from '@/components/MarketDetailCard';
+import { MarketStoryPanel } from '@/components/MarketStoryPanel';
 import { NetworkBanner } from '@/components/NetworkBanner';
+import { RelatedMarketsPanel } from '@/components/RelatedMarketsPanel';
 import {
   SettlementTimeline,
   type SettlementEvidenceItem,
@@ -25,9 +28,15 @@ import { PREDICTION_MARKET_ADDRESS } from '@/lib/addresses';
 import { FRONTEND_DEPLOY_BLOCK } from '@/lib/asset-price-map';
 import { fetchLogsPaged } from '@/lib/bet-event-scan';
 import { arcTestnet } from '@/lib/chain';
+import { OUTCOMES } from '@/lib/derivePosition';
 import { WORLDCUP_ENABLED } from '@/lib/feature-flags';
 import { fmtUsdc } from '@/lib/format';
 import type { LensInput } from '@/lib/lens/schema';
+import {
+  deriveMarketStory,
+  selectRelatedMarkets,
+  toRichMarketRef,
+} from '@/lib/market-richness';
 import { ORACLE_STATUS, adminOracleAbi } from '@/lib/markets/scheduler/abi';
 import {
   DEFAULT_EVENT_MARKET_DEPLOYMENT,
@@ -123,6 +132,89 @@ function buildEventLensInput(row: EventRow, generatedAt: number): LensInput {
     context: { facts: [] },
     generated_at: generatedAt,
   };
+}
+
+function formatUtcLine(value: bigint): string {
+  return `${new Date(Number(value) * 1000).toISOString().slice(0, 16).replace('T', ' ')} UTC`;
+}
+
+function buildPriceActivityTimeline(row: MarketRow): ActivityTimelineItem[] {
+  const claimLabel =
+    row.pendingPayout > 0n && !row.claimed_
+      ? 'Payout is ready to claim from the current wallet path.'
+      : OUTCOMES[row.market.outcome] === 'Unresolved'
+        ? 'Settlement starts after the market reaches its resolution timestamp.'
+        : 'Settlement is complete and the market now sits in archive mode.';
+
+  return [
+    {
+      id: 'market-live',
+      label: 'Market live',
+      detail: 'This price board stays connected to the existing YES / NO bet flow on Arc.',
+    },
+    {
+      id: 'betting-closes',
+      label: 'Betting closes',
+      detail: `Final bets lock at ${formatUtcLine(row.market.betDeadline)}.`,
+    },
+    {
+      id: 'resolution-window',
+      label: 'Resolution window',
+      detail: `The market resolves from ${formatUtcLine(row.market.resolveAfter)} onward.`,
+    },
+    {
+      id: 'claim-window',
+      label: 'Claim window',
+      detail: claimLabel,
+    },
+  ];
+}
+
+function buildEventActivityTimeline(
+  row: EventRow,
+  oracleStatus: {
+    status: EventOracleStatus;
+    proposedAt?: number;
+    proposalTxHash?: `0x${string}`;
+  } | null,
+): ActivityTimelineItem[] {
+  const oracleDetail =
+    oracleStatus?.status === 'proposed' && oracleStatus.proposedAt
+      ? `Oracle proposal is live from ${new Date(oracleStatus.proposedAt * 1000).toISOString().slice(0, 16).replace('T', ' ')} UTC.`
+      : oracleStatus?.status === 'challenged'
+        ? 'Oracle review is in the challenged state, so traders should watch the final settlement path.'
+        : oracleStatus?.status === 'finalized'
+          ? 'Oracle settlement is finalized and the board has moved into payout mode.'
+          : 'Oracle confirmation is still pending after betting closes.';
+  const claimLabel =
+    row.pendingPayout > 0n && !row.claimed_
+      ? 'Payout is claimable now from the current event market path.'
+      : row.claimed_
+        ? 'The current wallet has already claimed its payout for this board.'
+        : 'Claim status stays locked until the event outcome is finalized.';
+
+  return [
+    {
+      id: 'market-live',
+      label: 'Market live',
+      detail: 'This event board keeps the existing outcome buttons and event bet modal untouched.',
+    },
+    {
+      id: 'betting-closes',
+      label: 'Betting closes',
+      detail: `Final bets lock at ${formatUtcLine(row.betDeadline)}.`,
+    },
+    {
+      id: 'oracle-status',
+      label: 'Oracle status',
+      detail: oracleDetail,
+    },
+    {
+      id: 'claim-window',
+      label: 'Claim window',
+      detail: claimLabel,
+    },
+  ];
 }
 
 function PositionSummary({ row }: { row: MarketRow }) {
@@ -334,6 +426,43 @@ export default function MarketDetailPage() {
     () => sumSeedContribution(seedBetEvents ?? [], SEED_WALLETS),
     [seedBetEvents],
   );
+  const detailMarketRef = useMemo(() => {
+    if (requestedKind === 'event' && eventRow) {
+      return toRichMarketRef(eventRow, BigInt(Math.floor(Date.now() / 1000)));
+    }
+
+    if (row) {
+      return toRichMarketRef(row, BigInt(Math.floor(Date.now() / 1000)));
+    }
+
+    return null;
+  }, [eventRow, requestedKind, row]);
+  const detailStory = useMemo(
+    () => (detailMarketRef ? deriveMarketStory(detailMarketRef) : null),
+    [detailMarketRef],
+  );
+  const relatedMarkets = useMemo(() => {
+    if (!detailMarketRef || !eventRow || eventRow.category !== 'worldcup') {
+      return [];
+    }
+
+    const candidateMarkets = WORLDCUP_SKELETON_MARKETS.map((candidate) =>
+      toRichMarketRef(candidate, BigInt(Math.floor(Date.now() / 1000))),
+    );
+
+    return selectRelatedMarkets(detailMarketRef, [detailMarketRef, ...candidateMarkets]).slice(0, 4);
+  }, [detailMarketRef, eventRow]);
+  const activityTimelineItems = useMemo(() => {
+    if (requestedKind === 'event' && eventRow) {
+      return buildEventActivityTimeline(eventRow, eventOracleStatus);
+    }
+
+    if (row) {
+      return buildPriceActivityTimeline(row);
+    }
+
+    return [];
+  }, [eventOracleStatus, eventRow, requestedKind, row]);
   const handlePriceBet = (_id: bigint, side: boolean) => {
     setSelectedSide(side);
     if (!isDesktop) {
@@ -562,6 +691,17 @@ export default function MarketDetailPage() {
                           onBet={(nextRow, outcomeIndex) => setEventBetting({ row: nextRow, outcomeIndex })}
                         />
                         <div className="mt-5">
+                          {detailStory ? <MarketStoryPanel story={detailStory} /> : null}
+                        </div>
+                        <div className="mt-5">
+                          <ActivityTimeline items={activityTimelineItems} />
+                        </div>
+                        {relatedMarkets.length > 0 ? (
+                          <div className="mt-5">
+                            <RelatedMarketsPanel markets={relatedMarkets} />
+                          </div>
+                        ) : null}
+                        <div className="mt-5">
                           <SettlementTimeline
                             kind="event"
                             resolveAfter={Number(rawEventRow?.market.resolveAfter ?? eventRow.betDeadline)}
@@ -585,6 +725,12 @@ export default function MarketDetailPage() {
                           row={row}
                           onBet={handlePriceBet}
                         />
+                        <div className="mt-5">
+                          {detailStory ? <MarketStoryPanel story={detailStory} /> : null}
+                        </div>
+                        <div className="mt-5">
+                          <ActivityTimeline items={activityTimelineItems} />
+                        </div>
                         <div className="mt-5">
                           <SettlementTimeline
                             kind="price"

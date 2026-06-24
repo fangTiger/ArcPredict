@@ -8,6 +8,7 @@ import { MarketCategoryIcon } from '@/components/MarketCategoryIcon';
 import { flagIconUrlForTeam } from '@/lib/flag-icons';
 import { fmtCountdown, fmtUsdc } from '@/lib/format';
 import type { LensInput } from '@/lib/lens/schema';
+import { toRichMarketRef } from '@/lib/market-richness';
 import { useMediaQuery } from '@/lib/use-media-query';
 import {
   EVENT_UNRESOLVED_OUTCOME,
@@ -158,6 +159,7 @@ export function WorldCupMarketCard({
   const deploymentQuery = row.deploymentId ? `&deployment=${encodeURIComponent(row.deploymentId)}` : '';
   const detailHref = `/market/${row.id.toString()}?kind=event${deploymentQuery}`;
   const isWinnerMarket = row.marketType === 'winner';
+  const richMarket = toRichMarketRef(row, now);
   const titleLabel =
     !isWorldCupMarket
       ? row.question
@@ -204,6 +206,16 @@ export function WorldCupMarketCard({
               {!isWorldCupMarket || isWinnerMarket ? `Closes ${formatUnixTime(row.betDeadline)}` : kickoffLabel}
             </span>
           </div>
+
+          {row.themeVisual ? (
+            <div className="mb-4 rounded-[22px] border border-hair bg-bg-1/55 px-4 py-3">
+              <div className="font-mono text-[11px] uppercase text-arc-glow">{row.themeVisual.title}</div>
+              <div className="mt-2 text-sm leading-6 text-ink-2">
+                {row.themeVisual.subtitle} · {richMarket.activityLabel}
+              </div>
+              <div className="mt-2 text-[11px] uppercase text-ink-3">{richMarket.probabilityLabel}</div>
+            </div>
+          ) : null}
 
           {!isWorldCupMarket ? (
             <div className="mb-4 rounded-lg border border-hair bg-bg-1/50 px-4 py-3">
@@ -266,7 +278,7 @@ export function WorldCupMarketCard({
         )
       }
       renderFooter={() => (
-        <div className="mt-[18px] grid grid-cols-1 gap-3 border-t border-dashed border-hair pt-[14px] font-mono text-xs text-ink-2 sm:grid-cols-[repeat(3,minmax(0,1fr))_auto]">
+        <div className="mt-[18px] grid grid-cols-1 gap-3 border-t border-dashed border-hair pt-[14px] font-mono text-xs text-ink-2 sm:grid-cols-[repeat(4,minmax(0,1fr))_auto]">
           <div>
             <div className="mb-1 text-[11px] uppercase">Liquidity</div>
             <div className="font-medium text-ink">{liquidityLabel}</div>
@@ -278,6 +290,10 @@ export function WorldCupMarketCard({
           <div>
             <div className="mb-1 text-[11px] uppercase">Closes in</div>
             <div className="font-medium text-ink">{countdownLabel}</div>
+          </div>
+          <div>
+            <div className="mb-1 text-[11px] uppercase">Market balance</div>
+            <div className="font-medium text-ink">{richMarket.skewLabel}</div>
           </div>
           <div className="flex items-end sm:justify-end">
             <Link

@@ -20,7 +20,7 @@ const theme: ThemePack = {
 };
 
 describe('ThemeMarketBoard', () => {
-  it('renders a share entry and direct market links when markets are available', () => {
+  it('renders a lead theme section and direct market links when markets are available', () => {
     render(
       React.createElement(ThemeMarketBoard, {
         theme,
@@ -40,7 +40,9 @@ describe('ThemeMarketBoard', () => {
     expect(screen.getByText(theme.description)).toBeInTheDocument();
     expect(screen.getByLabelText(/Weekly Theme Pack icon/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/On-chain icon/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /share theme/i })).toHaveAttribute(
+    expect(screen.getByText(/This week on ArcPredict/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 live market/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /open theme page/i })).toHaveAttribute(
       'href',
       '/theme/arc-summer-onchain',
     );
@@ -54,6 +56,8 @@ describe('ThemeMarketBoard', () => {
   it('renders a graceful empty state when no pack markets are available yet', () => {
     render(React.createElement(ThemeMarketBoard, { theme, markets: [] }));
 
-    expect(screen.getByText(/No markets are live in this pack yet\./i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Theme pack is live\. New markets land here as they open\./i),
+    ).toBeInTheDocument();
   });
 });

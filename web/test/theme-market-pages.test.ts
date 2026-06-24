@@ -11,11 +11,18 @@ function readRequired(relativePath: string): string {
 }
 
 describe('theme market page integration', () => {
-  it('wires the home page to ThemeMarketBoard', () => {
+  it('wires the home page to ThemeMarketBoard and rich discovery sections', () => {
     const source = readRequired('app/page.tsx');
 
     expect(source).toContain('ThemeMarketBoard');
+    expect(source).toContain('MarketDiscoveryRail');
     expect(source).toContain('getThemePackById');
+    expect(source).toContain('selectTodayBoard');
+    expect(source).toContain('selectTrendingMarkets');
+    expect(source).toContain('selectClosingSoon');
+    expect(source).toContain('selectRecentlyResolved');
+    expect(source).toContain('toRichMarketRef');
+    expect(source).not.toContain('/api/lens/');
   });
 
   it('defines a dedicated /theme/[themeId] page', () => {
@@ -32,7 +39,7 @@ describe('theme market page integration', () => {
     expect(source).toContain('isError && boardMarkets.length === 0');
   });
 
-  it('uses the latest proposal event and explorer link in the market detail trust flow', () => {
+  it('uses the latest proposal event and rich archive panels in the market detail flow', () => {
     const source = readRequired('app/market/[id]/page.tsx');
 
     expect(source).not.toContain('const first = proposedEvents[0]');
@@ -42,5 +49,11 @@ describe('theme market page integration', () => {
     expect(source).toContain('evidence=');
     expect(source).toContain('eventRow.eventId');
     expect(source).toContain('eventMarketDeployment.oracleAddress');
+    expect(source).toContain('MarketStoryPanel');
+    expect(source).toContain('RelatedMarketsPanel');
+    expect(source).toContain('ActivityTimeline');
+    expect(source).toContain('deriveMarketStory');
+    expect(source).toContain('selectRelatedMarkets');
+    expect(source).toContain('toRichMarketRef');
   });
 });
