@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { MarketCategoryIcon } from '@/components/MarketCategoryIcon';
 import { useLiveScore } from '@/lib/event-source';
 import { flagIconUrlForTeam } from '@/lib/flag-icons';
 import type { WorldCupMarketRow } from '@/lib/worldcup-markets';
@@ -113,12 +114,15 @@ export function EventInfoPanel({ row }: { row: WorldCupMarketRow }) {
         className="glass rounded-3xl p-6"
       >
         <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="text-xs uppercase text-arc-glow">
-              Event Info
+          <div className="flex items-start gap-3">
+            <MarketCategoryIcon category={row.category} label={eventCategoryLabel(row.category)} />
+            <div>
+              <div className="text-xs uppercase text-arc-glow">
+                Event Info
+              </div>
+              <h3 className="mt-2 text-lg font-semibold text-ink">{eventCategoryLabel(row.category)}</h3>
+              <p className="mt-1 text-sm text-ink-2">Closes · {formatKickoff(new Date(Number(row.betDeadline * 1000n)).toISOString())} UTC</p>
             </div>
-            <h3 className="mt-2 text-lg font-semibold text-ink">{eventCategoryLabel(row.category)}</h3>
-            <p className="mt-1 text-sm text-ink-2">Closes · {formatKickoff(new Date(Number(row.betDeadline * 1000n)).toISOString())} UTC</p>
           </div>
         </div>
 

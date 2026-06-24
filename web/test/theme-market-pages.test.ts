@@ -25,6 +25,13 @@ describe('theme market page integration', () => {
     expect(source).toContain('getThemePackById');
   });
 
+  it('does not block the theme page behind a perpetual contract loading state', () => {
+    const source = readRequired('app/theme/[themeId]/page.tsx');
+
+    expect(source).not.toContain(') : isLoading ? (');
+    expect(source).toContain('isError && boardMarkets.length === 0');
+  });
+
   it('uses the latest proposal event and explorer link in the market detail trust flow', () => {
     const source = readRequired('app/market/[id]/page.tsx');
 

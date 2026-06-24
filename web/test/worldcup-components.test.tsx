@@ -848,7 +848,7 @@ describe('worldcup components', () => {
     expect(host.textContent).not.toContain('Home VS Away');
   });
 
-  test('自动事件卡片会渲染主题图层', async () => {
+  test('自动事件卡片使用小型分类图标，不再渲染 AI 风格主题大图', async () => {
     setMatchMedia(false);
     const [row] = resolveWorldCupMarkets([
       makeEventRow({
@@ -866,9 +866,11 @@ describe('worldcup components', () => {
     });
 
     const visual = host.querySelector<HTMLElement>('[data-market-theme-visual]');
-    expect(visual).not.toBeNull();
-    expect(visual?.style.backgroundImage).toContain('/market-themes/chain-ethereum-tvl.png');
-    expect(visual?.getAttribute('aria-label')).toContain('On-chain');
+    const icon = host.querySelector<HTMLElement>('[data-market-category-icon="chain"]');
+
+    expect(visual).toBeNull();
+    expect(icon).not.toBeNull();
+    expect(icon?.getAttribute('aria-label')).toContain('On-chain');
   });
 
   test('readable knockout eventId 命中 placeholder seed 时，会优先使用 question 中的真实球队', () => {

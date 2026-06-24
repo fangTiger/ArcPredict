@@ -38,6 +38,8 @@ describe('ThemeMarketBoard', () => {
 
     expect(screen.getByText(theme.title)).toBeInTheDocument();
     expect(screen.getByText(theme.description)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Weekly Theme Pack icon/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/On-chain icon/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /share theme/i })).toHaveAttribute(
       'href',
       '/theme/arc-summer-onchain',

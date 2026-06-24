@@ -1,6 +1,23 @@
 import React from 'react';
 import type { ThemePack } from '../lib/themes';
 import type { ThemeMarketBoardEntry } from '../lib/themes/markets';
+import { MarketCategoryIcon } from './MarketCategoryIcon';
+
+function categoryFromLabel(label: string) {
+  if (label === 'Macro') {
+    return 'macro' as const;
+  }
+
+  if (label === 'On-chain') {
+    return 'chain' as const;
+  }
+
+  if (label === 'World Cup') {
+    return 'worldcup' as const;
+  }
+
+  return 'crypto' as const;
+}
 
 function renderMarket(market: ThemeMarketBoardEntry) {
   return React.createElement(
@@ -15,9 +32,18 @@ function renderMarket(market: ThemeMarketBoardEntry) {
       'div',
       { className: 'flex items-center justify-between gap-3' },
       React.createElement(
-        'span',
-        { className: 'font-mono text-[11px] uppercase text-arc-glow' },
-        market.categoryLabel,
+        'div',
+        { className: 'inline-flex items-center gap-2' },
+        React.createElement(MarketCategoryIcon, {
+          category: categoryFromLabel(market.categoryLabel),
+          label: market.categoryLabel,
+          size: 'sm',
+        }),
+        React.createElement(
+          'span',
+          { className: 'font-mono text-[11px] uppercase text-arc-glow' },
+          market.categoryLabel,
+        ),
       ),
       React.createElement(
         'span',
@@ -51,21 +77,26 @@ export function ThemeMarketBoard({
       },
       React.createElement(
         'div',
-        { className: 'max-w-2xl' },
+        { className: 'flex max-w-2xl items-start gap-3' },
+        React.createElement(MarketCategoryIcon, { category: 'theme' }),
         React.createElement(
           'div',
-          { className: 'text-xs uppercase text-arc-glow' },
-          'Weekly Theme Pack',
-        ),
-        React.createElement(
-          'h2',
-          { className: 'mt-2 font-display text-3xl text-ink' },
-          theme.title,
-        ),
-        React.createElement(
-          'p',
-          { className: 'mt-2 text-sm leading-6 text-ink-2' },
-          theme.description,
+          null,
+          React.createElement(
+            'div',
+            { className: 'text-xs uppercase text-arc-glow' },
+            'Weekly Theme Pack',
+          ),
+          React.createElement(
+            'h2',
+            { className: 'mt-2 font-display text-3xl text-ink' },
+            theme.title,
+          ),
+          React.createElement(
+            'p',
+            { className: 'mt-2 text-sm leading-6 text-ink-2' },
+            theme.description,
+          ),
         ),
       ),
       React.createElement(

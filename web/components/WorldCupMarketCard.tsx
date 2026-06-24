@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { AILensCompact } from '@/components/AILensCompact';
 import { BaseMarketCard } from '@/components/BaseMarketCard';
+import { MarketCategoryIcon } from '@/components/MarketCategoryIcon';
 import { flagIconUrlForTeam } from '@/lib/flag-icons';
 import { fmtCountdown, fmtUsdc } from '@/lib/format';
 import type { LensInput } from '@/lib/lens/schema';
@@ -205,33 +206,17 @@ export function WorldCupMarketCard({
           </div>
 
           {!isWorldCupMarket ? (
-            <div className="mb-4 overflow-hidden rounded-lg border border-arc-glow/40 bg-arc/10">
-              {row.themeVisual ? (
-                <div
-                  data-market-theme-visual=""
-                  aria-label={row.themeVisual.alt}
-                  className="relative aspect-[16/9] bg-cover bg-center"
-                  style={{
-                    backgroundImage: `linear-gradient(90deg, rgba(5,6,20,0.86) 0%, rgba(5,6,20,0.28) 58%, rgba(5,6,20,0.08) 100%), url(${row.themeVisual.imageUrl})`,
-                  }}
-                >
-                  <div className="absolute inset-x-4 bottom-3">
-                    <div className="font-mono text-[10px] uppercase text-arc-glow">
-                      {row.themeVisual.subtitle}
-                    </div>
-                    <div className="mt-1 truncate font-display text-xl leading-none text-ink">
-                      {row.themeVisual.title}
-                    </div>
+            <div className="mb-4 rounded-lg border border-hair bg-bg-1/50 px-4 py-3">
+              <div className="flex items-start gap-3">
+                <MarketCategoryIcon category={row.category} label={eventCategoryLabel(row.category)} />
+                <div className="min-w-0">
+                  <div className="font-mono text-[11px] uppercase text-arc-glow">
+                    {eventCategoryLabel(row.category)} event
                   </div>
-                </div>
-              ) : null}
-              <div className="px-4 py-3">
-                <div className="font-mono text-[11px] uppercase text-arc-glow">
-                  {eventCategoryLabel(row.category)} event
-                </div>
-                <h3 className="mt-2 font-display text-[24px] leading-[1.15] text-ink">{titleLabel}</h3>
-                <div className="mt-2 font-mono text-xs text-ink-2">
-                  {row.outcomes.length} outcomes · closes {formatUnixTime(row.betDeadline)}
+                  <h3 className="mt-2 font-display text-[24px] leading-[1.15] text-ink">{titleLabel}</h3>
+                  <div className="mt-2 font-mono text-xs text-ink-2">
+                    {row.outcomes.length} outcomes · closes {formatUnixTime(row.betDeadline)}
+                  </div>
                 </div>
               </div>
             </div>

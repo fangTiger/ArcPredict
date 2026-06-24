@@ -11,6 +11,7 @@ import {
 } from '@/lib/worldcup-markets';
 import { EventInfoPanel } from './EventInfoPanel';
 import { ImpliedProbabilityChart } from './ImpliedProbabilityChart';
+import { MarketCategoryIcon } from './MarketCategoryIcon';
 import { ResolveCountdown } from './ResolveCountdown';
 import { WorldCupOutcomePanel } from './WorldCupOutcomePanel';
 
@@ -67,11 +68,16 @@ export function MarketDetailCard(
     return (
       <article className="glass rounded-3xl p-6">
         <div className="mb-4 flex flex-col gap-3 border-b border-hair pb-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <span className="font-mono text-xs text-ink-2">
-              {row.stageLabel} · #{row.id.toString()}
-            </span>
-            <div className="mt-2 text-lg font-medium leading-7 text-ink">{row.question}</div>
+          <div className="flex items-start gap-3">
+            {row.category !== 'worldcup' ? (
+              <MarketCategoryIcon category={row.category} label={eventCategoryLabel(row.category)} />
+            ) : null}
+            <div>
+              <span className="font-mono text-xs text-ink-2">
+                {row.stageLabel} · #{row.id.toString()}
+              </span>
+              <div className="mt-2 text-lg font-medium leading-7 text-ink">{row.question}</div>
+            </div>
           </div>
 
           <div className="rounded-2xl border border-hair px-4 py-3 text-sm text-ink-2">
@@ -79,28 +85,6 @@ export function MarketDetailCard(
             <div className="mt-2 font-mono text-sm text-ink num-glow">{row.outcomes.length} outcomes</div>
           </div>
         </div>
-
-        {row.themeVisual ? (
-          <div
-            data-market-detail-theme-visual=""
-            aria-label={row.themeVisual.alt}
-            className="mb-5 overflow-hidden rounded-2xl border border-arc-glow/30 bg-cover bg-center"
-            style={{
-              backgroundImage: `linear-gradient(90deg, rgba(5,6,20,0.88) 0%, rgba(5,6,20,0.42) 54%, rgba(5,6,20,0.12) 100%), url(${row.themeVisual.imageUrl})`,
-            }}
-          >
-            <div className="flex min-h-[180px] items-end px-5 py-5">
-              <div>
-                <div className="font-mono text-[11px] uppercase text-arc-glow">
-                  {row.themeVisual.subtitle}
-                </div>
-                <div className="mt-2 font-display text-3xl leading-none text-ink">
-                  {row.themeVisual.title}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
 
         <div className="mb-5 grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border border-hair px-4 py-3">

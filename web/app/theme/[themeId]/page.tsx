@@ -33,7 +33,7 @@ export default function ThemePackPage() {
     () => getThemePackById(params.themeId, new Date()),
     [params.themeId],
   );
-  const { data: eventReadResults, isLoading, isError } = useReadContracts({
+  const { data: eventReadResults, isError } = useReadContracts({
     contracts: EVENT_MARKET_DEPLOYMENTS.map((deployment) => ({
       address: deployment.eventMarketAddress,
       abi: eventMarketAbi,
@@ -88,11 +88,7 @@ export default function ThemePackPage() {
           <section className="glass rounded-3xl p-6 text-sm text-ink-2">
             Theme pack not found.
           </section>
-        ) : isLoading ? (
-          <section className="glass rounded-3xl p-6 text-sm text-ink-2">
-            Loading theme markets...
-          </section>
-        ) : isError ? (
+        ) : isError && boardMarkets.length === 0 ? (
           <section className="rounded-3xl border border-no/35 bg-no/10 p-6 text-sm text-no">
             Theme markets are unavailable right now. Please try again shortly.
           </section>
