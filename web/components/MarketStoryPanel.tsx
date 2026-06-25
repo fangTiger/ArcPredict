@@ -4,7 +4,7 @@ import type { MarketStory } from '@/lib/market-richness';
 function StoryBlock({ title, body }: { title: string; body: string }) {
   return React.createElement(
     'div',
-    { className: 'rounded-2xl border border-hair bg-bg-1/45 px-4 py-4' },
+    { className: 'rounded-xl border border-hair bg-bg-0 px-4 py-4' },
     React.createElement(
       'div',
       { className: 'font-mono text-[11px] uppercase text-ink-3' },
@@ -21,15 +21,15 @@ function StoryBlock({ title, body }: { title: string; body: string }) {
 export function MarketStoryPanel({ story }: { story: MarketStory }) {
   return React.createElement(
     'section',
-    { className: 'glass rounded-3xl p-6' },
+    { className: 'rounded-xl border border-hair bg-bg-1 p-5' },
     React.createElement(
       'div',
-      { className: 'font-mono text-[11px] uppercase text-arc-glow' },
+      { className: 'font-mono text-[11px] uppercase text-ink-3' },
       story.eyebrow,
     ),
     React.createElement(
       'h2',
-      { className: 'mt-2 font-display text-2xl text-ink' },
+      { className: 'mt-2 text-xl font-semibold text-ink' },
       'Market story',
     ),
     React.createElement(

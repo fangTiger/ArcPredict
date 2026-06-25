@@ -8,7 +8,7 @@ function RelatedMarketItem({ market }: { market: RichMarketRef }) {
     {
       href: market.href,
       className:
-        'block rounded-2xl border border-hair bg-bg-1/45 px-4 py-4 transition hover:border-arc-glow/40 hover:bg-bg-1/70',
+        'block rounded-xl border border-hair bg-bg-0 px-4 py-4 transition hover:border-arc/20 hover:bg-white',
     },
     React.createElement(
       'div',
@@ -18,7 +18,7 @@ function RelatedMarketItem({ market }: { market: RichMarketRef }) {
         { className: 'min-w-0' },
         React.createElement(
           'div',
-          { className: 'font-mono text-[11px] uppercase text-arc-glow' },
+          { className: 'font-mono text-[11px] uppercase text-ink-3' },
           market.categoryLabel,
         ),
         React.createElement(
@@ -53,13 +53,13 @@ export function RelatedMarketsPanel({ markets }: { markets: RichMarketRef[] }) {
 
   return React.createElement(
     'section',
-    { className: 'glass rounded-3xl p-6' },
+    { className: 'rounded-xl border border-hair bg-bg-1 p-5' },
     React.createElement(
       'div',
       { className: 'flex items-center justify-between gap-3' },
       React.createElement(
         'h2',
-        { className: 'font-display text-2xl text-ink' },
+        { className: 'text-xl font-semibold text-ink' },
         'Related markets',
       ),
       React.createElement(

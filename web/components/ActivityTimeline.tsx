@@ -13,10 +13,10 @@ export function ActivityTimeline({ items }: { items: ActivityTimelineItem[] }) {
 
   return React.createElement(
     'section',
-    { className: 'glass rounded-3xl p-6' },
+    { className: 'rounded-xl border border-hair bg-bg-1 p-5' },
     React.createElement(
       'h2',
-      { className: 'font-display text-2xl text-ink' },
+      { className: 'text-xl font-semibold text-ink' },
       'Activity timeline',
     ),
     React.createElement(
@@ -31,7 +31,7 @@ export function ActivityTimeline({ items }: { items: ActivityTimelineItem[] }) {
             { className: 'flex flex-col items-center' },
             React.createElement('span', {
               className:
-                'mt-1 h-3 w-3 rounded-full bg-arc-glow shadow-[0_0_18px_rgba(77,168,255,0.85)]',
+                'mt-1 h-3 w-3 rounded-full bg-arc',
             }),
             index < items.length - 1
               ? React.createElement('span', {
@@ -42,10 +42,10 @@ export function ActivityTimeline({ items }: { items: ActivityTimelineItem[] }) {
           ),
           React.createElement(
             'div',
-            { className: 'min-w-0 rounded-2xl border border-hair bg-bg-1/45 px-4 py-3' },
+            { className: 'min-w-0 rounded-xl border border-hair bg-bg-0 px-4 py-3' },
             React.createElement(
               'div',
-              { className: 'font-mono text-[11px] uppercase text-arc-glow' },
+              { className: 'font-mono text-[11px] uppercase text-ink-3' },
               item.label,
             ),
             React.createElement(

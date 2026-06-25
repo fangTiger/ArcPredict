@@ -36,7 +36,7 @@ function leadCategoryLabel(theme: ThemePack): string {
   return 'Crypto';
 }
 
-function marketCountLabel(count: number): string {
+function marketCountLabel(count: number) {
   return `${count} live market${count === 1 ? '' : 's'}`;
 }
 
@@ -47,7 +47,7 @@ function renderMarket(market: ThemeMarketBoardEntry) {
       key: market.id,
       href: market.href,
       className:
-        'rounded-[26px] border border-hair bg-bg-1/45 px-4 py-4 transition hover:border-arc-glow/40 hover:bg-bg-1/70',
+        'rounded-xl border border-hair bg-bg-0 px-4 py-4 transition hover:border-arc/20 hover:bg-white',
     },
     React.createElement(
       'div',
@@ -62,7 +62,7 @@ function renderMarket(market: ThemeMarketBoardEntry) {
         }),
         React.createElement(
           'span',
-          { className: 'font-mono text-[11px] uppercase text-arc-glow' },
+          { className: 'font-mono text-[11px] uppercase text-ink-3' },
           market.categoryLabel,
         ),
       ),
@@ -77,7 +77,7 @@ function renderMarket(market: ThemeMarketBoardEntry) {
     ),
     React.createElement(
       'div',
-      { className: 'mt-4 text-base font-medium leading-7 text-ink' },
+      { className: 'mt-4 text-base font-semibold leading-7 text-ink' },
       market.title,
     ),
   );
@@ -94,7 +94,7 @@ export function ThemeMarketBoard({
 
   return React.createElement(
     'section',
-    { className: 'glass rounded-3xl p-6' },
+    { className: 'rounded-xl border border-hair bg-bg-1 p-5' },
     React.createElement(
       'div',
       { className: 'grid gap-4 border-b border-hair pb-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)]' },
@@ -102,7 +102,7 @@ export function ThemeMarketBoard({
         'div',
         {
           className:
-            'rounded-[28px] border border-hair bg-[radial-gradient(circle_at_top_left,rgba(97,255,189,0.14),transparent_40%),linear-gradient(180deg,rgba(14,18,41,0.95),rgba(7,10,25,0.98))] px-5 py-5',
+            'rounded-xl border border-hair bg-bg-0 px-5 py-5',
         },
         React.createElement(
           'div',
@@ -113,12 +113,12 @@ export function ThemeMarketBoard({
             { className: 'min-w-0' },
             React.createElement(
               'div',
-              { className: 'font-mono text-[11px] uppercase text-arc-glow' },
+              { className: 'font-mono text-[11px] uppercase text-ink-3' },
               'This week on ArcPredict',
             ),
             React.createElement(
               'h2',
-              { className: 'mt-2 font-display text-3xl text-ink' },
+              { className: 'mt-2 text-2xl font-semibold text-ink' },
               theme.title,
             ),
             React.createElement(
@@ -140,7 +140,7 @@ export function ThemeMarketBoard({
             'span',
             {
               className:
-                'rounded-full border border-arc-glow/25 bg-arc/10 px-2.5 py-1 uppercase text-arc-glow',
+                'rounded-full border border-hair bg-bg-1 px-2.5 py-1 uppercase text-ink-2',
             },
             leadLabel,
           ),
@@ -153,7 +153,7 @@ export function ThemeMarketBoard({
       ),
       React.createElement(
         'div',
-        { className: 'rounded-[28px] border border-hair bg-bg-1/45 px-5 py-5' },
+        { className: 'rounded-xl border border-hair bg-bg-0 px-5 py-5' },
         React.createElement(
           'div',
           { className: 'font-mono text-[11px] uppercase text-ink-3' },
@@ -169,7 +169,7 @@ export function ThemeMarketBoard({
           {
             href: `/theme/${theme.themeId}`,
             className:
-              'mt-5 inline-flex rounded-full border border-arc-glow/35 bg-arc/10 px-4 py-2 text-sm text-arc-glow transition hover:border-arc-glow/55 hover:bg-arc/15 hover:text-ink',
+              'mt-5 inline-flex rounded-full border border-hair bg-bg-1 px-4 py-2 text-sm text-ink transition hover:border-arc/20',
           },
           'Open theme page',
         ),
@@ -180,7 +180,7 @@ export function ThemeMarketBoard({
           'div',
           {
             className:
-              'mt-5 rounded-[26px] border border-dashed border-hair px-4 py-5 text-sm text-ink-2',
+              'mt-5 rounded-xl border border-dashed border-hair bg-bg-0 px-4 py-5 text-sm text-ink-2',
           },
           'Theme pack is live. New markets land here as they open.',
         )

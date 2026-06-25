@@ -31,9 +31,9 @@ const cadenceClosingLabelMap = {
 } as const;
 
 const assetAccentClassName: Record<string, string> = {
-  BTC: 'bg-[#F7931A]',
-  ETH: 'bg-[#627EEA]',
-  SOL: 'bg-[linear-gradient(135deg,#9945FF_0%,#14F195_100%)]',
+  BTC: 'bg-[#FDE7D1]',
+  ETH: 'bg-[#E2E8FF]',
+  SOL: 'bg-[#DCFCE7]',
 };
 
 function groupThousands(value: string): string {
@@ -132,73 +132,74 @@ export function CryptoMarketCard({
   return (
     <BaseMarketCard
       renderHeader={() => (
-        <>
-          <Link
-            href={detailHref}
-            className="block rounded-[12px] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-arc/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
-          >
-            <div className="mb-[18px] flex items-center justify-between gap-3">
-              <div className="inline-flex items-center gap-[10px]">
-                <span
-                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full font-mono text-[11px] font-semibold text-bg-1 ${assetAccentClassName[asset] ?? 'bg-ink'}`}
-                >
-                  {asset}
-                </span>
-                <span className="font-mono text-xs text-ink-2">#{row.id.toString()}</span>
-              </div>
-
+        <Link
+          href={detailHref}
+          className="block rounded-[12px] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-arc/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
+        >
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
               <span
-                className={`rounded-[12px] px-[10px] py-1 text-[11px] font-semibold uppercase ${
-                  isClosingSoon ? 'bg-heat/10 text-heat' : 'bg-arc/15 text-arc-glow'
-                }`}
+                className={`inline-flex h-9 min-w-9 items-center justify-center rounded-lg border border-hair px-2 font-mono text-[11px] font-semibold text-ink ${assetAccentClassName[asset] ?? 'bg-bg-2'}`}
               >
-                {cadenceLabel}
+                {asset}
               </span>
-            </div>
-
-            <div className="mb-4 rounded-[22px] border border-hair bg-bg-1/55 px-4 py-3">
-              <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase text-ink-2">
-                <span className="rounded-full border border-hair px-2.5 py-1">{richMarket.activityLabel}</span>
-                <span className="rounded-full border border-arc-glow/25 bg-arc/10 px-2.5 py-1 text-arc-glow">
-                  {richMarket.probabilityLabel}
-                </span>
-              </div>
-              <div className="mt-3 text-sm leading-6 text-ink-2">
-                {richMarket.skewLabel}. Liquidity sits at {fmtUsdc(totalPool)} USDC.
+              <div>
+                <div className="text-[11px] uppercase text-ink-3">Crypto market</div>
+                <div className="font-mono text-xs text-ink-2">#{row.id.toString()}</div>
               </div>
             </div>
 
-            <h3 className="mb-2 font-display text-[26px] leading-[1.18] text-ink">
-              {asset}/USD <span className="mx-1 text-arc-glow">≥</span>{' '}
-              <span className="num-glow whitespace-nowrap text-arc-glow">
-                {formatThresholdValue(m.threshold, m.thresholdExpo)}
-              </span>{' '}
-              by {formatShortDate(m.resolveAfter)}
-            </h3>
+            <span
+              className={`rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase ${
+                isClosingSoon
+                  ? 'border-heat/25 bg-heat/10 text-heat'
+                  : 'border-hair bg-bg-2 text-ink-2'
+              }`}
+            >
+              {cadenceLabel}
+            </span>
+          </div>
 
-            <div className="mb-5 font-mono text-xs text-ink-2">
-              Resolves {formatUtcTimestamp(m.resolveAfter)}
-            </div>
-          </Link>
-        </>
+          <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] uppercase text-ink-3">
+            <span className="rounded-full border border-hair bg-bg-2 px-2.5 py-1">
+              {richMarket.activityLabel}
+            </span>
+            <span className="rounded-full border border-hair bg-bg-2 px-2.5 py-1">
+              {richMarket.probabilityLabel}
+            </span>
+            <span className="rounded-full border border-hair bg-bg-2 px-2.5 py-1">
+              {richMarket.skewLabel}
+            </span>
+          </div>
+
+          <h3 className="text-[17px] font-semibold leading-6 text-ink">
+            {asset}/USD <span className="mx-1 text-arc">≥</span>
+            <span className="whitespace-nowrap text-arc">
+              {formatThresholdValue(m.threshold, m.thresholdExpo)}
+            </span>{' '}
+            by {formatShortDate(m.resolveAfter)}
+          </h3>
+
+          <p className="mt-2 text-sm leading-6 text-ink-2">
+            {richMarket.skewLabel}. Liquidity sits at {fmtUsdc(totalPool)} USDC and resolves {formatUtcTimestamp(m.resolveAfter)}.
+          </p>
+        </Link>
       )}
       renderOutcomes={() => (
         <>
-          <div className="mb-4">
-            <div className="mb-2 flex items-end justify-between gap-4">
+          <div className="mb-4 rounded-xl border border-hair bg-bg-0 p-4">
+            <div className="mb-3 flex items-end justify-between gap-4">
               <div className="flex items-end gap-1.5 text-yes">
-                <span className="num-glow font-display text-[28px] leading-none">{yesPct.toFixed(0)}</span>
-                <span>%</span>
+                <span className="text-[28px] font-semibold leading-none">{yesPct.toFixed(0)}</span>
                 <span className="pb-0.5 text-xs uppercase">YES</span>
               </div>
               <div className="flex items-end gap-1.5 text-no">
+                <span className="text-[28px] font-semibold leading-none">{noPct.toFixed(0)}</span>
                 <span className="pb-0.5 text-xs uppercase">NO</span>
-                <span className="num-glow font-display text-[28px] leading-none">{noPct.toFixed(0)}</span>
-                <span>%</span>
               </div>
             </div>
 
-            <div className="h-1.5 overflow-hidden rounded-full bg-no/15">
+            <div className="h-2 overflow-hidden rounded-full bg-bg-2">
               <div
                 className="h-full rounded-full bg-yes transition-[width]"
                 style={{ width: `${yesPct}%` }}
@@ -207,15 +208,15 @@ export function CryptoMarketCard({
           </div>
 
           <div className="mb-5 grid grid-cols-2 gap-3 font-mono text-xs text-ink-2">
-            <div className="flex items-center justify-between rounded-[12px] px-3 py-2">
+            <div className="flex items-center justify-between rounded-xl border border-hair bg-bg-0 px-3 py-2.5">
               <span>YES pool</span>
               <span className="text-ink">{fmtUsdc(m.yesPool)} USDC</span>
             </div>
-            <div className="flex items-center justify-between rounded-[12px] px-3 py-2">
+            <div className="flex items-center justify-between rounded-xl border border-hair bg-bg-0 px-3 py-2.5">
               <span>NO pool</span>
               <span className="text-ink">{fmtUsdc(m.noPool)} USDC</span>
             </div>
-            <div className="col-span-2 flex items-center justify-between rounded-[12px] border border-hair px-3 py-2">
+            <div className="col-span-2 flex items-center justify-between rounded-xl border border-hair bg-bg-0 px-3 py-2.5">
               <span>Market balance</span>
               <span className="text-ink">{richMarket.skewLabel}</span>
             </div>
@@ -232,7 +233,7 @@ export function CryptoMarketCard({
                   onClick={() => onBet(row.id, true)}
                   disabled={!bettingOpen}
                   style={{ flex: yesFlex }}
-                  className="rounded-2xl border border-yes/40 bg-yes/15 px-3 py-2.5 text-sm font-semibold text-yes transition hover:bg-yes/25 hover:shadow-[inset_0_0_24px_rgba(52,211,153,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-45"
+                  className="rounded-lg border border-yes/25 bg-yes/10 px-3 py-2.5 text-sm font-semibold text-yes transition hover:bg-yes/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   YES · {pct.toFixed(0)}%
                 </button>
@@ -241,7 +242,7 @@ export function CryptoMarketCard({
                   onClick={() => onBet(row.id, false)}
                   disabled={!bettingOpen}
                   style={{ flex: noFlex }}
-                  className="rounded-2xl border border-no/40 bg-no/15 px-3 py-2.5 text-sm font-semibold text-no transition hover:bg-no/25 hover:shadow-[inset_0_0_24px_rgba(248,113,113,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-45"
+                  className="rounded-lg border border-no/25 bg-no/10 px-3 py-2.5 text-sm font-semibold text-no transition hover:bg-no/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   NO · {(100 - pct).toFixed(0)}%
                 </button>
@@ -251,7 +252,7 @@ export function CryptoMarketCard({
         </>
       )}
       renderFooter={() => (
-        <div className="mt-[18px] flex items-center justify-between gap-4 border-t border-dashed border-hair pt-[14px] font-mono text-xs text-ink-2">
+        <div className="mt-4 flex items-center justify-between gap-4 border-t border-hair pt-3 font-mono text-xs text-ink-2">
           <span className={`font-medium ${isClosingSoon ? 'text-heat' : 'text-ink'}`}>
             {countdownLabel}
           </span>

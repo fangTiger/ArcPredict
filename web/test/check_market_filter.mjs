@@ -152,23 +152,32 @@ assert.deepEqual(idsOfWorldCup('winner'), [104], 'Stage=winner 必须只返回�
 assert.deepEqual(idsOfWorldCup('final'), [], '缺少对应阶段时必须返回空数组。');
 
 for (const token of [
-  'border-y border-hair',
-  'my-10',
-  'w-px h-6 bg-hair',
-  'text-ink-2',
-  'hover:bg-arc/5',
-  'hover:border-arc-glow/30',
-  'bg-arc/15 text-arc-glow',
-  'World Cup',
-  'Crypto',
-  'Stage',
+  'Browse',
+  'Trending',
+  'Ending Soon',
   'showCategoryTabs',
   'onCategoryChange',
   'onStageChange',
+  'World Cup',
+  'Crypto',
+  'Stage',
   'R16',
   'Winner',
+  'rounded-xl border border-hair bg-bg-1 px-3 py-3',
+  'border-ink/15 bg-bg-0 text-ink',
 ]) {
-  assert(marketFilterSource.includes(token), `MarketFilterBar.tsx 缺少 Phase16 样式: ${token}`);
+  assert(marketFilterSource.includes(token), `MarketFilterBar.tsx 缺少新市场浏览样式: ${token}`);
+}
+
+for (const token of [
+  'border-y border-hair',
+  'my-10',
+  'w-px h-6 bg-hair',
+  'hover:border-arc-glow/30',
+  'bg-arc/15 text-arc-glow',
+  'shadow-[0_0_24px_-8px_rgba(77,168,255,0.6)]',
+]) {
+  assert(!marketFilterSource.includes(token), `MarketFilterBar.tsx 不应保留旧霓虹筛选样式: ${token}`);
 }
 
 console.log('market filter 检查通过');

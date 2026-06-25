@@ -58,7 +58,7 @@ export function AILensCompact({ input, fetchImpl }: Props) {
         <button
           type="button"
           onClick={trigger}
-          className={`glass inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-ink transition hover:text-arc-glow ${focusRingClassName}`}
+          className={`inline-flex items-center gap-1 rounded-full border border-hair bg-bg-0 px-2.5 py-1 text-ink transition hover:border-arc/20 hover:text-arc ${focusRingClassName}`}
           aria-label="Run AI probability analysis"
         >
           ✨ Ask AI

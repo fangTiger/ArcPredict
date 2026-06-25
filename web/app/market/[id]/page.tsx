@@ -220,19 +220,19 @@ function buildEventActivityTimeline(
 function PositionSummary({ row }: { row: MarketRow }) {
   return (
     <div className="grid gap-3 text-sm">
-      <div className="flex items-center justify-between rounded-2xl border border-hair px-3 py-2">
+      <div className="flex items-center justify-between rounded-xl border border-hair bg-bg-0 px-3 py-2.5">
         <span className="text-ink-2">YES 份额</span>
-        <span className="font-mono text-ink num-glow">{fmtUsdc(row.yesStake)} USDC</span>
+        <span className="font-mono text-ink">{fmtUsdc(row.yesStake)} USDC</span>
       </div>
-      <div className="flex items-center justify-between rounded-2xl border border-hair px-3 py-2">
+      <div className="flex items-center justify-between rounded-xl border border-hair bg-bg-0 px-3 py-2.5">
         <span className="text-ink-2">NO 份额</span>
-        <span className="font-mono text-ink num-glow">{fmtUsdc(row.noStake)} USDC</span>
+        <span className="font-mono text-ink">{fmtUsdc(row.noStake)} USDC</span>
       </div>
-      <div className="flex items-center justify-between rounded-2xl border border-hair px-3 py-2">
+      <div className="flex items-center justify-between rounded-xl border border-hair bg-bg-0 px-3 py-2.5">
         <span className="text-ink-2">待领取</span>
-        <span className="font-mono text-ink num-glow">{fmtUsdc(row.pendingPayout)} USDC</span>
+        <span className="font-mono text-ink">{fmtUsdc(row.pendingPayout)} USDC</span>
       </div>
-      <div className="flex items-center justify-between rounded-2xl border border-hair px-3 py-2">
+      <div className="flex items-center justify-between rounded-xl border border-hair bg-bg-0 px-3 py-2.5">
         <span className="text-ink-2">领取状态</span>
         <span className="font-mono text-ink">{row.claimed_ ? '已领取' : '未领取'}</span>
       </div>
@@ -615,7 +615,7 @@ export default function MarketDetailPage() {
         <NetworkBanner />
         <SiteHeader />
         <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 text-ink sm:px-6 lg:px-8">
-          <section className="glass mx-auto max-w-3xl rounded-3xl p-6 text-sm text-ink-2">
+          <section className="mx-auto max-w-3xl rounded-xl border border-hair bg-bg-1 p-6 text-sm text-ink-2">
             World Cup markets are disabled. Returning to the home page...
           </section>
         </main>
@@ -643,40 +643,40 @@ export default function MarketDetailPage() {
         </div>
 
           {idBn === null ? (
-            <section className="rounded-3xl border border-no/35 bg-no/10 p-6 text-sm text-no">
+            <section className="rounded-xl border border-no/25 bg-no/5 p-6 text-sm text-no">
               Invalid market id. Go back and choose another market.
             </section>
           ) : detailLoading ? (
-            <section className="glass rounded-3xl p-6 text-sm text-ink-2">
+            <section className="rounded-xl border border-hair bg-bg-1 p-6 text-sm text-ink-2">
               Loading market details...
             </section>
           ) : detailError ? (
-            <section className="rounded-3xl border border-no/35 bg-no/10 p-6 text-sm text-no">
+            <section className="rounded-xl border border-no/25 bg-no/5 p-6 text-sm text-no">
               {marketMissing ? 'Market not found. Go back and choose another market.' : 'Could not load market details. Check the network and try again.'}
             </section>
           ) : requestedKind === 'event' && !eventRow ? (
-            <section className="glass rounded-3xl p-6 text-sm text-ink-2">
+            <section className="rounded-xl border border-hair bg-bg-1 p-6 text-sm text-ink-2">
               Market not found. The EventMarket address may still be missing, or this skeleton market does not exist.
             </section>
           ) : requestedKind !== 'event' && !row ? (
-            <section className="glass rounded-3xl p-6 text-sm text-ink-2">
+            <section className="rounded-xl border border-hair bg-bg-1 p-6 text-sm text-ink-2">
               Market not found. It may not be published yet or is outside the current range.
             </section>
           ) : (
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
               <div className="space-y-6 lg:col-span-8">
-                <section className="glass rounded-3xl p-6">
+                <section className="rounded-xl border border-hair bg-bg-1 p-6">
                   <div className="flex flex-col gap-4 border-b border-hair pb-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="max-w-2xl">
                       <div className="font-mono text-xs text-ink-2">Market ID #{idBn.toString()}</div>
-                      <h1 className="mt-2 font-display text-2xl text-ink">{detailTitle}</h1>
+                      <h1 className="mt-2 text-2xl font-semibold text-ink">{detailTitle}</h1>
                       <p className="mt-2 text-sm leading-6 text-ink-2">
                         {kind === 'event'
                           ? `Review the market, pick an outcome, and place a ${eventCategoryLabel} bet from this page.`
                           : 'Review the question, pool state, and betting actions from a direct market link.'}
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-hair px-4 py-3 text-sm text-ink-2">
+                    <div className="rounded-xl border border-hair bg-bg-0 px-4 py-3 text-sm text-ink-2">
                       <div className="font-medium text-ink">Network: {arcTestnet.name}</div>
                       <div className="mt-1">Wallet: {walletStatus}</div>
                     </div>
@@ -759,8 +759,8 @@ export default function MarketDetailPage() {
 
               <aside className="space-y-6 lg:col-span-4">
                 {row && requestedKind !== 'event' ? (
-                  <section className="glass sticky top-24 hidden rounded-3xl p-6 lg:block">
-                    <h2 className="font-display text-xl text-ink">立即下注</h2>
+                  <section className="sticky top-24 hidden rounded-xl border border-hair bg-bg-1 p-6 lg:block">
+                    <h2 className="text-xl font-semibold text-ink">立即下注</h2>
                     <div className="mt-4">
                       <PositionSummary row={row} />
                     </div>
@@ -770,8 +770,8 @@ export default function MarketDetailPage() {
                         onClick={() => setSelectedSide(true)}
                         className={
                           selectedSide
-                            ? `rounded-xl border border-yes/40 bg-yes/15 py-2 text-yes ${focusRingClassName}`
-                            : `rounded-xl border border-hair py-2 text-ink-2 hover:text-ink ${focusRingClassName}`
+                            ? `rounded-lg border border-yes/25 bg-yes/10 py-2 text-yes ${focusRingClassName}`
+                            : `rounded-lg border border-hair bg-bg-0 py-2 text-ink-2 hover:text-ink ${focusRingClassName}`
                         }
                       >
                         YES
@@ -781,8 +781,8 @@ export default function MarketDetailPage() {
                         onClick={() => setSelectedSide(false)}
                         className={
                           !selectedSide
-                            ? `rounded-xl border border-no/40 bg-no/15 py-2 text-no ${focusRingClassName}`
-                            : `rounded-xl border border-hair py-2 text-ink-2 hover:text-ink ${focusRingClassName}`
+                            ? `rounded-lg border border-no/25 bg-no/10 py-2 text-no ${focusRingClassName}`
+                            : `rounded-lg border border-hair bg-bg-0 py-2 text-ink-2 hover:text-ink ${focusRingClassName}`
                         }
                       >
                         NO
@@ -799,18 +799,18 @@ export default function MarketDetailPage() {
                   </section>
                 ) : null}
 
-                <section className="glass rounded-3xl p-6">
-                  <h2 className="font-display text-xl text-ink">Market status</h2>
+                <section className="rounded-xl border border-hair bg-bg-1 p-6">
+                  <h2 className="text-xl font-semibold text-ink">Market status</h2>
                   <div className="mt-4 space-y-3 text-sm text-ink-2">
-                    <div className="flex items-center justify-between rounded-2xl border border-hair px-4 py-3">
+                    <div className="flex items-center justify-between rounded-xl border border-hair bg-bg-0 px-4 py-3">
                       <span className="text-ink-2">Market ID</span>
-                      <span className="font-mono text-ink num-glow">{idBn.toString()}</span>
+                      <span className="font-mono text-ink">{idBn.toString()}</span>
                     </div>
-                    <div className="flex items-center justify-between rounded-2xl border border-hair px-4 py-3">
+                    <div className="flex items-center justify-between rounded-xl border border-hair bg-bg-0 px-4 py-3">
                       <span className="text-ink-2">Network</span>
                       <span className="font-mono text-ink">{arcTestnet.name}</span>
                     </div>
-                    <div className="flex items-center justify-between rounded-2xl border border-hair px-4 py-3">
+                    <div className="flex items-center justify-between rounded-xl border border-hair bg-bg-0 px-4 py-3">
                       <span className="text-ink-2">Wallet</span>
                       <span className="font-mono text-ink">{walletStatus}</span>
                     </div>
@@ -821,8 +821,7 @@ export default function MarketDetailPage() {
           )}
         {row && requestedKind !== 'event' ? (
           <div
-            className="fixed inset-x-0 bottom-0 z-30 p-4 backdrop-blur-md lg:hidden"
-            style={{ background: 'rgba(5,6,20,0.85)', borderTop: '1px solid rgba(155,163,199,0.12)' }}
+            className="fixed inset-x-0 bottom-0 z-30 border-t border-hair bg-bg-0 p-4 lg:hidden"
           >
             <div className="mb-2 grid grid-cols-2 gap-2">
               <button
@@ -830,8 +829,8 @@ export default function MarketDetailPage() {
                 onClick={() => setSelectedSide(true)}
                 className={
                   selectedSide
-                    ? `rounded-xl border border-yes/40 bg-yes/15 py-2 text-yes ${focusRingClassName}`
-                    : `rounded-xl border border-hair py-2 text-ink-2 hover:text-ink ${focusRingClassName}`
+                    ? `rounded-lg border border-yes/25 bg-yes/10 py-2 text-yes ${focusRingClassName}`
+                    : `rounded-lg border border-hair bg-bg-1 py-2 text-ink-2 hover:text-ink ${focusRingClassName}`
                 }
               >
                 YES
@@ -841,8 +840,8 @@ export default function MarketDetailPage() {
                 onClick={() => setSelectedSide(false)}
                 className={
                   !selectedSide
-                    ? `rounded-xl border border-no/40 bg-no/15 py-2 text-no ${focusRingClassName}`
-                    : `rounded-xl border border-hair py-2 text-ink-2 hover:text-ink ${focusRingClassName}`
+                    ? `rounded-lg border border-no/25 bg-no/10 py-2 text-no ${focusRingClassName}`
+                    : `rounded-lg border border-hair bg-bg-1 py-2 text-ink-2 hover:text-ink ${focusRingClassName}`
                 }
               >
                 NO
@@ -851,7 +850,7 @@ export default function MarketDetailPage() {
             <button
               type="button"
               onClick={() => setShowMobileBet(true)}
-              className={`w-full rounded-2xl border border-arc-glow/40 bg-arc/15 px-4 py-3 text-base font-semibold text-arc-glow transition hover:bg-arc/25 ${focusRingClassName}`}
+              className={`w-full rounded-xl border border-arc/20 bg-bg-1 px-4 py-3 text-base font-semibold text-ink transition hover:border-arc/30 hover:text-arc ${focusRingClassName}`}
             >
               立即下注 · {selectedSide ? 'YES' : 'NO'}
             </button>

@@ -54,6 +54,7 @@ import {
   type MarketCategory,
   type WorldCupStageFilter,
 } from '../lib/market-kind';
+import { fmtUsdc } from '@/lib/format';
 import { getThemePackById, listThemePacks } from '@/lib/themes';
 import { getThemePackMarkets, toThemeMarketBoardEntries } from '@/lib/themes/markets';
 import {
@@ -205,6 +206,18 @@ function HomePageContent() {
     () => getUpcomingWorldCupMarkets(eventSourceMarkets, now),
     [eventSourceMarkets, now],
   );
+  const totalOpenInterestUsdc = useMemo(() => {
+    const priceLiquidity = activeMarkets.reduce(
+      (total, nextRow) => total + nextRow.market.yesPool + nextRow.market.noPool,
+      0n,
+    );
+    const eventLiquidity = eventSourceMarkets.reduce(
+      (total, nextRow) => total + nextRow.liquidity,
+      0n,
+    );
+
+    return `${fmtUsdc(priceLiquidity + eventLiquidity)} USDC`;
+  }, [activeMarkets, eventSourceMarkets]);
   const pricePositionRows = useMemo(
     () => activeMarkets.map((row) => ({ ...row, marketKind: 'price' as const })),
     [activeMarkets],
@@ -432,7 +445,7 @@ function HomePageContent() {
           category={effectiveCategory}
           stats={{
             activeMarkets: activeMarkets.length + upcomingEventMarkets.length,
-            totalVolumeUsdc: '—',
+            totalVolumeUsdc: totalOpenInterestUsdc,
             pendingResolution: rows.filter((r) => OUTCOMES[r.market.outcome] === 'Unresolved').length,
           }}
         />
