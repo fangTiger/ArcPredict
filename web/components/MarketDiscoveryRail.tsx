@@ -14,7 +14,7 @@ function RailItem({ market }: { market: RichMarketRef }) {
     {
       href: market.href,
       className:
-        'block rounded-xl border border-hair bg-bg-0 px-4 py-3 transition hover:border-arc/20 hover:bg-white',
+        'block rounded-2xl border border-hair bg-bg-1/45 px-4 py-3 transition hover:border-arc-glow/40 hover:bg-bg-1/70',
     },
     React.createElement(
       'div',
@@ -24,7 +24,7 @@ function RailItem({ market }: { market: RichMarketRef }) {
         { className: 'min-w-0' },
         React.createElement(
           'div',
-          { className: 'font-mono text-[11px] uppercase text-ink-3' },
+          { className: 'font-mono text-[11px] uppercase text-arc-glow' },
           market.categoryLabel,
         ),
         React.createElement(
@@ -59,7 +59,7 @@ export function TodayBoard({ board }: { board: TodayBoardSelection }) {
 
   return React.createElement(
     'section',
-    { className: 'mb-6 rounded-xl border border-hair bg-bg-1 p-5' },
+    { className: 'glass mb-6 rounded-3xl p-6' },
     React.createElement(
       'div',
       { className: 'mb-4 flex items-center justify-between gap-3' },
@@ -68,12 +68,12 @@ export function TodayBoard({ board }: { board: TodayBoardSelection }) {
         null,
         React.createElement(
           'div',
-          { className: 'font-mono text-[11px] uppercase text-ink-3' },
+          { className: 'font-mono text-[11px] uppercase text-arc-glow' },
           'Today board',
         ),
         React.createElement(
           'h2',
-          { className: 'mt-2 text-xl font-semibold text-ink' },
+          { className: 'mt-2 font-display text-2xl text-ink' },
           'Markets with the strongest signal right now.',
         ),
       ),
@@ -91,16 +91,16 @@ export function TodayBoard({ board }: { board: TodayBoardSelection }) {
         {
           href: board.hero.href,
           className:
-            'rounded-xl border border-hair bg-bg-0 p-5 transition hover:border-arc/20 hover:bg-white',
+            'rounded-[28px] border border-hair bg-[radial-gradient(circle_at_top_left,rgba(77,168,255,0.22),transparent_45%),linear-gradient(180deg,rgba(17,21,48,0.92),rgba(9,12,28,0.96))] p-5 transition hover:border-arc-glow/45 hover:shadow-[0_20px_60px_-40px_rgba(77,168,255,0.8)]',
         },
         React.createElement(
           'div',
-          { className: 'flex flex-wrap items-center gap-2 text-[11px] uppercase text-ink-3' },
+          { className: 'flex flex-wrap items-center gap-2 text-[11px] uppercase text-ink-2' },
           React.createElement(
             'span',
             {
               className:
-                'rounded-full border border-hair bg-bg-1 px-2.5 py-1 text-ink-2',
+                'rounded-full border border-arc-glow/25 bg-arc/10 px-2.5 py-1 text-arc-glow',
             },
             board.hero.categoryLabel,
           ),
@@ -108,7 +108,7 @@ export function TodayBoard({ board }: { board: TodayBoardSelection }) {
         ),
         React.createElement(
           'h3',
-          { className: 'mt-4 text-[22px] font-semibold leading-[1.2] text-ink' },
+          { className: 'mt-4 font-display text-[28px] leading-[1.12] text-ink' },
           board.hero.title,
         ),
         React.createElement(
@@ -156,13 +156,13 @@ export function MarketDiscoveryRail({
     groups.map((group) =>
       React.createElement(
         'div',
-        { key: group.title, className: 'rounded-xl border border-hair bg-bg-1 p-5' },
+        { key: group.title, className: 'glass rounded-3xl p-5' },
         React.createElement(
           'div',
           { className: 'flex items-center justify-between gap-3' },
           React.createElement(
             'h3',
-            { className: 'text-lg font-semibold text-ink' },
+            { className: 'font-display text-xl text-ink' },
             group.title,
           ),
           React.createElement(

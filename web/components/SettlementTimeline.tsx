@@ -236,7 +236,7 @@ export function SettlementTimeline(props: SettlementTimelineProps) {
 
   return React.createElement(
     'section',
-    { className: 'rounded-xl border border-hair bg-bg-1 p-5' },
+    { className: 'glass rounded-3xl p-6' },
     React.createElement(
       'div',
       { className: 'mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between' },

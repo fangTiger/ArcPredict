@@ -19,13 +19,13 @@ export function PositionList({
   const userRows = toPositionItems(filteredRows);
 
   return (
-    <section className="rounded-xl border border-hair bg-bg-1 p-5 shadow-[0_16px_30px_-24px_rgba(15,23,42,0.12)] sm:p-6">
+    <section className="glass rounded-3xl p-5 sm:p-6">
       <div className="flex items-center justify-between border-b border-hair pb-4">
         <div>
-          <h2 className="text-xl font-semibold text-ink">My Positions</h2>
+          <h2 className="font-display text-xl text-ink">My Positions</h2>
           <p className="mt-1 text-sm text-ink-2">Markets still waiting for settlement.</p>
         </div>
-        <span className="font-mono text-sm text-ink-2">{userRows.length}</span>
+        <span className="font-mono text-sm text-ink-2 num-glow">{userRows.length}</span>
       </div>
 
       <div>
@@ -51,14 +51,14 @@ export function PositionList({
               </div>
               <div className="text-sm leading-6 text-ink">{r.question}</div>
               <div className="mt-2">
-                <div className="font-mono text-[11px] uppercase text-ink-3">
+                <div className="font-mono text-[11px] uppercase tracking-wider text-ink-3">
                   Position Details
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {r.details.map((detail) => (
                     <span
                       key={`${r.id.toString()}-${detail.label}`}
-                      className="rounded-full border border-hair bg-bg-0 px-3 py-1 font-mono text-xs text-ink-2"
+                      className="rounded-full border border-hair px-3 py-1 font-mono text-xs text-ink-2 num-glow"
                     >
                       {detail.label} · {fmtUsdc(detail.amount)} USDC
                     </span>
@@ -68,10 +68,10 @@ export function PositionList({
             </div>
 
             <div className="shrink-0 text-left sm:text-right">
-              <div className="font-mono text-[11px] uppercase text-ink-3">
+              <div className="font-mono text-[11px] uppercase tracking-wider text-ink-3">
                 Position Value
               </div>
-              <div className="font-mono text-sm text-ink">{fmtUsdc(r.totalStake)} USDC</div>
+              <div className="font-mono text-sm text-ink num-glow">{fmtUsdc(r.totalStake)} USDC</div>
             </div>
           </article>
         ))}

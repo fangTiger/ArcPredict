@@ -208,14 +208,14 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
   };
 
   return (
-    <section className="rounded-xl border border-hair bg-bg-1 p-5 shadow-[0_16px_30px_-24px_rgba(15,23,42,0.12)] sm:p-6">
+    <section className="glass rounded-3xl p-5 sm:p-6">
       <div className="border-b border-hair pb-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold text-ink">已结算市场</h2>
+            <h2 className="font-display text-xl text-ink">已结算市场</h2>
             <p className="mt-1 text-sm text-ink-2">已结算结果与待领取金额会在这里汇总显示。</p>
           </div>
-          <span className="font-mono text-sm text-ink-2">{resolved.length}</span>
+          <span className="font-mono text-sm text-ink-2 num-glow">{resolved.length}</span>
         </div>
       </div>
 
@@ -250,7 +250,7 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
                   <span className="font-mono text-[11px] uppercase tracking-wider text-ink-3">
                     待领取
                   </span>
-                  <span className="font-mono text-ink">{fmtUsdc(r.pendingPayout)} USDC</span>
+                  <span className="font-mono text-ink num-glow">{fmtUsdc(r.pendingPayout)} USDC</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-mono text-[11px] uppercase tracking-wider text-ink-3">
@@ -277,7 +277,7 @@ export function ResolvedList({ rows }: { rows: DashboardRow[] }) {
                   type="button"
                   onClick={() => claim(r.id)}
                   disabled={isClaiming || isSubmitted}
-                  className="w-full rounded-xl border border-arc/20 bg-bg-0 px-3 py-2.5 text-sm font-medium text-ink transition hover:border-arc/30 hover:text-arc focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-2xl border border-arc-glow/40 bg-arc/15 px-3 py-2 text-sm font-medium text-arc-glow transition hover:bg-arc/25 hover:shadow-[inset_0_0_24px_rgba(77,168,255,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isClaiming
                     ? '领取提交中...'

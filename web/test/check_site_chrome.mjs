@@ -36,17 +36,16 @@ assertIncludesAll('layout.tsx', layout, [
 assertIncludesAll('SiteHeader.tsx', siteHeader, [
   'WalletPill',
   'ArcPredict',
-  'Browse markets',
-  'Search by market, team, or theme',
-  'Market index',
   'Arc Testnet',
   '5042002',
+  'arc-ring-pulse',
   'sticky top-0 z-50',
   'border-b border-hair',
-  'bg-bg-0/95',
-  'px-4 sm:px-6',
+  'px-5 sm:px-8',
+  'hidden sm:inline',
+  'hidden md:inline',
   'shrink-0',
-  'px-3',
+  'px-2 sm:px-3',
   'All Positions',
   'Positions',
 ]);
@@ -54,7 +53,6 @@ assertIncludesAll('SiteHeader.tsx', siteHeader, [
 assertIncludesAll('WalletPill.tsx', walletPill, [
   'Connect Wallet',
   'Switch to Arc',
-  'border border-hair bg-bg-1',
 ]);
 
 for (const [label, source] of [
@@ -65,9 +63,6 @@ for (const [label, source] of [
     assert(!source.includes(token), `${label} 不应再显示中文顶部文案: ${token}`);
   }
 }
-
-assert(!siteHeader.includes('backdropFilter'), 'SiteHeader.tsx 不应继续依赖玻璃模糊。');
-assert(!walletPill.includes('glass'), 'WalletPill.tsx 不应继续使用 glass pill。');
 
 assertIncludesAll('SiteFooter.tsx', siteFooter, [
   'Built on Arc Testnet',
@@ -88,9 +83,7 @@ assertIncludesAll('ArcBackground.tsx', arcBackground, [
   'variant',
   'pitch',
   'data-arc-background-variant',
-  'rgba(22,82,240,0.08)',
+  'rgba(155,163,199,0.04)',
 ]);
-
-assert(!arcBackground.includes('blob-a'), 'ArcBackground.tsx 不应再使用大面积漂浮 blob。');
 
 console.log('site chrome 检查通过');

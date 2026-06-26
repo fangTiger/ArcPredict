@@ -36,13 +36,13 @@ function OutcomeTile({
       <div className="mb-2 flex items-start justify-between gap-3">
         <div className="text-sm font-semibold text-ink">{label}</div>
         {onSelect ? (
-          <span className="rounded-full border border-hair bg-bg-2 px-2 py-0.5 text-[10px] font-semibold uppercase text-ink-2">
+          <span className="rounded-full border border-arc-glow/30 bg-arc/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-arc-glow">
             {bettingOpen ? 'Bet' : 'Closed'}
           </span>
         ) : null}
       </div>
-      <div className="mb-1 font-mono text-lg text-ink">{oddsLabel(odds)}</div>
-      <div className="font-mono text-[11px] uppercase text-ink-2">
+      <div className="mb-1 font-mono text-lg text-arc-glow num-glow">{oddsLabel(odds)}</div>
+      <div className="font-mono text-[11px] uppercase text-ink-2 num-glow">
         implied {probabilityLabel(probability)}
       </div>
     </>
@@ -54,7 +54,7 @@ function OutcomeTile({
         type="button"
         onClick={onSelect}
         disabled={!bettingOpen}
-        className="rounded-xl border border-hair bg-bg-0 px-3 py-3 text-left transition hover:border-arc/20 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-55"
+        className="rounded-2xl border border-hair px-3 py-3 text-left transition hover:border-arc-glow/30 hover:bg-arc/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0 disabled:cursor-not-allowed disabled:opacity-55"
       >
         {content}
       </button>
@@ -62,7 +62,7 @@ function OutcomeTile({
   }
 
   return (
-    <div className="rounded-xl border border-hair bg-bg-0 px-3 py-3">
+    <div className="rounded-2xl border border-hair px-3 py-3">
       {content}
     </div>
   );
@@ -95,7 +95,7 @@ export function WorldCupOutcomePanel({
         : `Show all ${outcomes.length} teams`;
 
     return (
-      <div className="rounded-xl border border-hair bg-bg-1 p-4">
+      <div className="glass rounded-3xl p-6">
         <div
           className={`grid gap-2 ${expanded ? 'grid-cols-2' : 'grid-cols-1'} ${expanded && isMobile ? 'max-h-80 overflow-y-auto pr-1' : ''}`}
           data-scrollable-outcomes={expanded && isMobile ? 'true' : undefined}
@@ -119,7 +119,7 @@ export function WorldCupOutcomePanel({
           <button
             type="button"
             onClick={() => setExpanded((current) => !current)}
-            className="mt-3 inline-flex rounded-full border border-hair bg-bg-0 px-4 py-2 text-sm font-medium text-ink transition hover:border-arc/20 hover:text-arc focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
+            className="mt-3 inline-flex rounded-full border border-hair px-4 py-2 text-sm font-medium text-ink transition hover:border-arc-glow/30 hover:text-arc-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
           >
             {expandLabel}
           </button>
@@ -134,7 +134,7 @@ export function WorldCupOutcomePanel({
     const otherOdds = otherProbability <= 0 ? Number.POSITIVE_INFINITY : Number((100 / otherProbability).toFixed(2));
 
     return (
-      <div className="rounded-xl border border-hair bg-bg-1 p-4">
+      <div className="glass rounded-3xl p-6">
         <div className="grid grid-cols-2 gap-2">
           <OutcomeTile
             label="Home Win"
@@ -152,7 +152,7 @@ export function WorldCupOutcomePanel({
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="inline-flex rounded-full border border-hair bg-bg-0 px-4 py-2 text-sm font-medium text-ink transition hover:border-arc/20 hover:text-arc focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
+            className="inline-flex rounded-full border border-hair px-4 py-2 text-sm font-medium text-ink transition hover:border-arc-glow/30 hover:text-arc-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
           >
             Expand
           </button>
@@ -164,7 +164,7 @@ export function WorldCupOutcomePanel({
   const gridClassName = marketType === 'spread' || marketType === 'totals' ? 'grid-cols-2' : 'grid-cols-3';
 
   return (
-    <div className="rounded-xl border border-hair bg-bg-1 p-4">
+    <div className="glass rounded-3xl p-6">
       <div className={`grid ${gridClassName} gap-2`}>
         {outcomes.map((outcome, outcomeIndex) => (
           <OutcomeTile
@@ -185,7 +185,7 @@ export function WorldCupOutcomePanel({
         <button
           type="button"
           onClick={() => setExpanded(false)}
-          className="mt-3 inline-flex rounded-full border border-hair bg-bg-0 px-4 py-2 text-sm font-medium text-ink transition hover:border-arc/20 hover:text-arc focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
+          className="mt-3 inline-flex rounded-full border border-hair px-4 py-2 text-sm font-medium text-ink transition hover:border-arc-glow/30 hover:text-arc-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
         >
           Collapse
         </button>

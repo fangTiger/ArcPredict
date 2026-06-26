@@ -4,6 +4,10 @@ import type { ThemePack } from '../lib/themes';
 import type { ThemeMarketBoardEntry } from '../lib/themes/markets';
 import { MarketCategoryIcon } from './MarketCategoryIcon';
 
+const PREVIEW_MARKET_LIMIT = 3;
+
+type ThemeMarketBoardVariant = 'full' | 'preview';
+
 function categoryFromLabel(label: string) {
   if (label === 'Macro') {
     return 'macro' as const;
@@ -36,7 +40,7 @@ function leadCategoryLabel(theme: ThemePack): string {
   return 'Crypto';
 }
 
-function marketCountLabel(count: number) {
+function marketCountLabel(count: number): string {
   return `${count} live market${count === 1 ? '' : 's'}`;
 }
 
@@ -47,11 +51,11 @@ function renderMarket(market: ThemeMarketBoardEntry) {
       key: market.id,
       href: market.href,
       className:
-        'rounded-xl border border-hair bg-bg-0 px-4 py-4 transition hover:border-arc/20 hover:bg-white',
+        'group grid gap-3 rounded-[20px] border border-hair bg-bg-1/35 px-4 py-3 transition hover:border-arc-glow/40 hover:bg-bg-1/60 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center',
     },
     React.createElement(
       'div',
-      { className: 'flex items-center justify-between gap-3' },
+      { className: 'min-w-0' },
       React.createElement(
         'div',
         { className: 'inline-flex items-center gap-2' },
@@ -62,23 +66,23 @@ function renderMarket(market: ThemeMarketBoardEntry) {
         }),
         React.createElement(
           'span',
-          { className: 'font-mono text-[11px] uppercase text-ink-3' },
+          { className: 'font-mono text-[11px] uppercase text-arc-glow' },
           market.categoryLabel,
         ),
       ),
       React.createElement(
-        'span',
-        {
-          className:
-            'rounded-full border border-hair px-2.5 py-1 text-[10px] uppercase text-ink-2',
-        },
-        market.statusLabel,
+        'div',
+        { className: 'mt-2 text-sm font-medium leading-6 text-ink transition group-hover:text-arc-glow sm:truncate' },
+        market.title,
       ),
     ),
     React.createElement(
-      'div',
-      { className: 'mt-4 text-base font-semibold leading-7 text-ink' },
-      market.title,
+      'span',
+      {
+        className:
+          'justify-self-start rounded-full border border-hair px-2.5 py-1 text-[10px] uppercase text-ink-2 sm:justify-self-end',
+      },
+      market.statusLabel,
     ),
   );
 }
@@ -86,15 +90,21 @@ function renderMarket(market: ThemeMarketBoardEntry) {
 export function ThemeMarketBoard({
   theme,
   markets,
+  variant = 'full',
 }: {
   theme: ThemePack;
   markets: ThemeMarketBoardEntry[];
+  variant?: ThemeMarketBoardVariant;
 }) {
   const leadLabel = leadCategoryLabel(theme);
+  const themeHref = `/theme/${theme.themeId}`;
+  const previewMarkets = variant === 'preview' ? markets.slice(0, PREVIEW_MARKET_LIMIT) : markets;
+  const hiddenMarketCount = markets.length - previewMarkets.length;
+  const isPreviewLimited = hiddenMarketCount > 0;
 
   return React.createElement(
     'section',
-    { className: 'rounded-xl border border-hair bg-bg-1 p-5' },
+    { className: 'glass rounded-3xl p-6' },
     React.createElement(
       'div',
       { className: 'grid gap-4 border-b border-hair pb-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)]' },
@@ -102,7 +112,7 @@ export function ThemeMarketBoard({
         'div',
         {
           className:
-            'rounded-xl border border-hair bg-bg-0 px-5 py-5',
+            'rounded-[28px] border border-hair bg-[radial-gradient(circle_at_top_left,rgba(97,255,189,0.14),transparent_40%),linear-gradient(180deg,rgba(14,18,41,0.95),rgba(7,10,25,0.98))] px-5 py-5',
         },
         React.createElement(
           'div',
@@ -113,12 +123,12 @@ export function ThemeMarketBoard({
             { className: 'min-w-0' },
             React.createElement(
               'div',
-              { className: 'font-mono text-[11px] uppercase text-ink-3' },
+              { className: 'font-mono text-[11px] uppercase text-arc-glow' },
               'This week on ArcPredict',
             ),
             React.createElement(
               'h2',
-              { className: 'mt-2 text-2xl font-semibold text-ink' },
+              { className: 'mt-2 font-display text-3xl text-ink' },
               theme.title,
             ),
             React.createElement(
@@ -140,7 +150,7 @@ export function ThemeMarketBoard({
             'span',
             {
               className:
-                'rounded-full border border-hair bg-bg-1 px-2.5 py-1 uppercase text-ink-2',
+                'rounded-full border border-arc-glow/25 bg-arc/10 px-2.5 py-1 uppercase text-arc-glow',
             },
             leadLabel,
           ),
@@ -153,7 +163,7 @@ export function ThemeMarketBoard({
       ),
       React.createElement(
         'div',
-        { className: 'rounded-xl border border-hair bg-bg-0 px-5 py-5' },
+        { className: 'rounded-[28px] border border-hair bg-bg-1/45 px-5 py-5' },
         React.createElement(
           'div',
           { className: 'font-mono text-[11px] uppercase text-ink-3' },
@@ -167,9 +177,9 @@ export function ThemeMarketBoard({
         React.createElement(
           Link,
           {
-            href: `/theme/${theme.themeId}`,
+            href: themeHref,
             className:
-              'mt-5 inline-flex rounded-full border border-hair bg-bg-1 px-4 py-2 text-sm text-ink transition hover:border-arc/20',
+              'mt-5 inline-flex rounded-full border border-arc-glow/35 bg-arc/10 px-4 py-2 text-sm text-arc-glow transition hover:border-arc-glow/55 hover:bg-arc/15 hover:text-ink',
           },
           'Open theme page',
         ),
@@ -180,14 +190,49 @@ export function ThemeMarketBoard({
           'div',
           {
             className:
-              'mt-5 rounded-xl border border-dashed border-hair bg-bg-0 px-4 py-5 text-sm text-ink-2',
+              'mt-5 rounded-[26px] border border-dashed border-hair px-4 py-5 text-sm text-ink-2',
           },
           'Theme pack is live. New markets land here as they open.',
         )
       : React.createElement(
-          'div',
-          { className: 'mt-5 grid gap-3 lg:grid-cols-2' },
-          markets.map(renderMarket),
+          React.Fragment,
+          null,
+          React.createElement(
+            'div',
+            { className: 'mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between' },
+            React.createElement(
+              'div',
+              { className: 'min-w-0' },
+              React.createElement(
+                'div',
+                { className: 'font-mono text-[11px] uppercase text-ink-3' },
+                'Live watchlist',
+              ),
+              React.createElement(
+                'div',
+                { className: 'mt-1 text-sm text-ink-2' },
+                isPreviewLimited
+                  ? `Showing ${previewMarkets.length} of ${markets.length}`
+                  : `${markets.length} market${markets.length === 1 ? '' : 's'} in this pack`,
+              ),
+            ),
+            isPreviewLimited
+              ? React.createElement(
+                  Link,
+                  {
+                    href: themeHref,
+                    className:
+                      'inline-flex shrink-0 rounded-full border border-arc-glow/35 bg-arc/10 px-4 py-2 text-sm text-arc-glow transition hover:border-arc-glow/55 hover:bg-arc/15 hover:text-ink',
+                  },
+                  `View all ${markets.length} markets`,
+                )
+              : null,
+          ),
+          React.createElement(
+            'div',
+            { className: 'mt-3 grid gap-2' },
+            previewMarkets.map(renderMarket),
+          ),
         ),
   );
 }

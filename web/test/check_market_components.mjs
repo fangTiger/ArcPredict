@@ -95,8 +95,9 @@ assertIncludesAll('BaseMarketCard.tsx', baseMarketCard, [
   'renderOutcomes',
   'renderFooter',
   'className',
-  'rounded-xl border border-hair bg-bg-1 p-4',
-  'shadow-[0_16px_30px_-24px_rgba(15,23,42,0.12)]',
+  'rounded-3xl glass glass-hover p-6',
+  'hover:-translate-y-0.5',
+  'relative z-10',
 ]);
 
 assertIncludesAll('CryptoMarketCard.tsx', cryptoMarketCard, [
@@ -110,9 +111,11 @@ assertIncludesAll('CryptoMarketCard.tsx', cryptoMarketCard, [
   'fmtUsdc',
   'fmtCountdown',
   'OUTCOMES',
+  'font-display',
   'border-hair',
   'Closes in',
   'View details',
+  'Monthly · closing',
   'now < m.betDeadline',
   'bettingOpen',
   'YES ·',
@@ -132,10 +135,6 @@ assertExcludesAll('CryptoMarketCard.tsx 需移除 article 导航方案', cryptoM
   'role="link"',
   'tabIndex={0}',
   'router.push(detailHref)',
-  'font-display',
-  'num-glow',
-  'glass',
-  'rounded-3xl',
 ]);
 
 assertMatches(
@@ -198,6 +197,7 @@ assertMatches(
 
 assertExcludesAll('CryptoMarketCard.tsx', cryptoMarketCard, [
   'ResolveCountdown',
+  'bg-surface',
   '下注已关闭',
   'Seed disclosure on market page',
 ]);
@@ -218,6 +218,7 @@ assertIncludesAll('WorldCupMarketCard.tsx', worldCupMarketCard, [
   'kickoffLabel',
   'liquidityLabel',
   'positionLabel',
+  'backgroundImage',
   '?kind=event',
   'View details',
   'toRichMarketRef',
@@ -227,15 +228,7 @@ assertIncludesAll('WorldCupMarketCard.tsx', worldCupMarketCard, [
   'richMarket.probabilityLabel',
 ]);
 
-assertExcludesAll('WorldCupMarketCard.tsx', worldCupMarketCard, [
-  'BetModal',
-  'router.push',
-  'font-display',
-  'num-glow',
-  'glass',
-  'rounded-3xl',
-  "boxShadow: '0 0 0 1px",
-]);
+assertExcludesAll('WorldCupMarketCard.tsx', worldCupMarketCard, ['BetModal', 'router.push']);
 
 assertIncludesAll('WorldCupOutcomePanel.tsx', worldCupOutcomePanel, [
   'onSelectOutcome',
@@ -251,7 +244,6 @@ assertIncludesAll('WorldCupOutcomePanel.tsx', worldCupOutcomePanel, [
   'isMobile',
   'overflow-y-auto',
   'max-h-',
-  'rounded-xl border border-hair bg-bg-1 p-4',
 ]);
 
 assertIncludesAll('MarketDetailCard.tsx', marketDetailCard, [
@@ -260,6 +252,7 @@ assertIncludesAll('MarketDetailCard.tsx', marketDetailCard, [
   'yesPercent',
   'fmtUsdc',
   'OUTCOMES',
+  'glass rounded-3xl p-6',
   'border-hair',
   'MarketCategoryIcon',
   'category={row.category}',
@@ -277,13 +270,6 @@ assertIncludesAll('MarketDetailCard.tsx', marketDetailCard, [
   'onBet',
 ]);
 
-assertExcludesAll('MarketDetailCard.tsx', marketDetailCard, [
-  'glass',
-  'rounded-3xl',
-  'font-display',
-  'num-glow',
-]);
-
 assertIncludesAll('ThemeMarketBoard.tsx', themeMarketBoard, [
   "import React from 'react';",
   'This week on ArcPredict',
@@ -291,7 +277,6 @@ assertIncludesAll('ThemeMarketBoard.tsx', themeMarketBoard, [
   'Theme pack is live. New markets land here as they open.',
   'live market',
   'Pack note',
-  'rounded-xl border border-hair bg-bg-1 p-5',
 ]);
 
 assertIncludesAll('MarketDiscoveryRail.tsx', marketDiscoveryRail, [
@@ -301,7 +286,6 @@ assertIncludesAll('MarketDiscoveryRail.tsx', marketDiscoveryRail, [
   'Closing soon',
   'Recently resolved',
   'strongest signal right now',
-  'rounded-xl border border-hair bg-bg-1',
 ]);
 
 assertIncludesAll('MarketStoryPanel.tsx', marketStoryPanel, [
@@ -310,14 +294,13 @@ assertIncludesAll('MarketStoryPanel.tsx', marketStoryPanel, [
   'Why it matters',
   'What moves it',
   'What to watch',
-  'rounded-xl border border-hair bg-bg-1 p-5',
 ]);
 
 assertIncludesAll('ActivityTimeline.tsx', activityTimeline, [
   "import React from 'react';",
   'Activity timeline',
   'ActivityTimelineItem',
-  'rounded-xl border border-hair bg-bg-1 p-5',
+  'shadow-[0_0_18px_rgba(77,168,255,0.85)]',
 ]);
 
 assertIncludesAll('RelatedMarketsPanel.tsx', relatedMarketsPanel, [
@@ -326,7 +309,6 @@ assertIncludesAll('RelatedMarketsPanel.tsx', relatedMarketsPanel, [
   'ideas',
   'market.probabilityLabel',
   'market.activityLabel',
-  'rounded-xl border border-hair bg-bg-1 p-5',
 ]);
 
 assertExcludesAll('MarketDetailCard.tsx', marketDetailCard, [
@@ -392,7 +374,6 @@ assertIncludesAll('SiteHeader.tsx', siteHeader, [
   'WalletPill',
   'All Positions',
   'Positions',
-  'Browse markets',
 ]);
 
 assertMatches(
@@ -407,6 +388,7 @@ assertExcludesAll('SiteHeader.tsx 全部持仓入口移动端不可隐藏', site
 ]);
 
 for (const [label, source] of [
+  ['ResolveCountdown.tsx', resolveCountdown],
   ['BaseMarketCard.tsx', baseMarketCard],
   ['CryptoMarketCard.tsx', cryptoMarketCard],
   ['MarketCard.tsx', marketCardShim],
@@ -418,9 +400,11 @@ for (const [label, source] of [
   ['MarketStoryPanel.tsx', marketStoryPanel],
   ['ActivityTimeline.tsx', activityTimeline],
   ['RelatedMarketsPanel.tsx', relatedMarketsPanel],
+  ['EventInfoPanel.tsx', eventInfoPanel],
+  ['ImpliedProbabilityChart.tsx', impliedProbabilityChart],
   ['SiteHeader.tsx', siteHeader],
 ]) {
-  assertExcludesAll(label, source, ['rounded-3xl', 'glass glass-hover', 'num-glow']);
+  assertExcludesAll(label, source, ['rounded-xl', 'tracking-', 'letterSpacing']);
 }
 
 console.log('market components 检查通过');

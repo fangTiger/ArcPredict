@@ -30,12 +30,12 @@ export function PositionStripe({
   const remainingCount = Math.max(0, activePositionCount - userRows.length);
 
   return (
-    <section className="mt-5 rounded-xl border border-hair bg-bg-1 px-4 py-3 shadow-[0_16px_30px_-24px_rgba(15,23,42,0.12)]">
+    <section className="rounded-xl border border-hair bg-bg-1/55 backdrop-blur px-4 py-3 mt-5">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-base font-semibold text-ink">持仓 · {activePositionCount}</h2>
+        <h2 className="font-display text-base text-ink">持仓 · {activePositionCount}</h2>
         <Link
           href={allPositionsHref}
-          className="shrink-0 rounded-full border border-hair bg-bg-0 px-3 py-1.5 text-xs font-medium text-ink-2 transition hover:border-arc/20 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
+          className="shrink-0 rounded-full border border-hair px-3 py-1.5 text-xs font-medium text-ink-2 transition hover:border-arc-glow/30 hover:text-arc-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0"
         >
           查看全部 →
         </Link>
@@ -46,7 +46,7 @@ export function PositionStripe({
           {userRows.map((row) => (
             <article
               key={row.id.toString()}
-              className="flex min-w-[260px] max-w-[320px] flex-1 items-center justify-between gap-3 rounded-xl border border-hair bg-bg-0 px-3 py-2.5"
+              className="flex min-w-[260px] max-w-[320px] flex-1 items-center justify-between gap-3 rounded-lg border border-hair bg-bg-0/45 px-3 py-2"
             >
               <div className="min-w-0">
                 <div className="mb-1 flex min-w-0 items-center gap-2">
@@ -62,8 +62,8 @@ export function PositionStripe({
               </div>
 
               <div className="shrink-0 text-right">
-                <div className="font-mono text-[10px] uppercase text-ink-3">Stake</div>
-                <div className="font-mono text-sm text-ink">{fmtUsdc(row.totalStake)} USDC</div>
+                <div className="font-mono text-[10px] uppercase tracking-wider text-ink-3">Stake</div>
+                <div className="font-mono text-sm text-ink num-glow">{fmtUsdc(row.totalStake)} USDC</div>
               </div>
             </article>
           ))}
@@ -71,7 +71,7 @@ export function PositionStripe({
           {remainingCount > 0 ? (
             <Link
               href={allPositionsHref}
-              className="flex min-w-[160px] items-center justify-center rounded-xl border border-dashed border-hair bg-bg-0 px-3 py-2 text-sm text-ink-2 transition hover:border-arc/20 hover:text-ink"
+              className="flex min-w-[160px] items-center justify-center rounded-lg border border-dashed border-hair px-3 py-2 text-sm text-ink-2 transition hover:border-arc-glow/30 hover:text-arc-glow"
             >
               还有 {remainingCount} 条
             </Link>

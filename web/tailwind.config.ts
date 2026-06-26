@@ -5,24 +5,37 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        'bg-0': '#f5f7fb',
-        'bg-1': '#ffffff',
-        'bg-2': '#eef2f6',
-        ink: '#101828',
-        'ink-2': '#475467',
-        'ink-3': '#667085',
+        // 背景层
+        'bg-0': '#050614',
+        'bg-1': '#0A0B1E',
+        'bg-2': '#12142B',
+        // 文字层
+        ink: '#F0F2FF',
+        'ink-2': '#9BA3C7',
+        'ink-3': '#5B6188',
+        // 品牌主光源
         arc: '#1652F0',
-        'arc-glow': '#2559D6',
+        'arc-glow': '#4DA8FF',
         'arc-deep': '#0B2DB8',
-        yes: '#15803D',
-        no: '#B42318',
-        heat: '#B54708',
-        hair: 'rgba(15,23,42,0.10)',
+        // 副渐变
+        violet: '#6D5BFF',
+        // 语义色（深色环境调亮）
+        yes: '#34D399',
+        no: '#F87171',
+        heat: '#FF8A4C',
+        // 分隔
+        hair: 'rgba(155,163,199,0.12)',
       },
       fontFamily: {
         sans: ['Geist', 'system-ui', 'sans-serif'],
         display: ['Instrument Serif', 'Georgia', 'serif'],
         mono: ['Geist Mono', 'monospace'],
+      },
+      backgroundImage: {
+        aurora:
+          'linear-gradient(135deg, #1652F0 0%, #6D5BFF 50%, #4DA8FF 100%)',
+        'aurora-text':
+          'linear-gradient(135deg, #4DA8FF 0%, #6D5BFF 100%)',
       },
     },
   },

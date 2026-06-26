@@ -28,44 +28,50 @@ const assertExcludesAll = (label, source, tokens) => {
 };
 
 const heroSource = readRequiredText('components/HomeHero.tsx');
+const canvasSource = readRequiredText('components/HeroParticleCanvas.tsx');
 const globalStyles = readRequiredText('app/globals.css');
 
 assertIncludesAll('HomeHero.tsx', heroSource, [
   'MarketCategory',
-  'Record<MarketCategory',
-  'Browse live prediction markets',
-  'Open markets',
-  'Open interest',
-  'Pending',
-  'Arc Testnet',
-  'Quick links',
-  'Crypto',
-  'World Cup',
-  'Macro',
-  'On-chain',
-  'Record<MarketCategory',
-]);
-
-assertExcludesAll('HomeHero.tsx', heroSource, [
-  'HeroParticleCanvas',
   'hero-arc-band',
   'hero-content',
   'hero-gradient-mask',
-  'hero-title',
-  'live-dot',
+  'HeroParticleCanvas',
   'Predict the next tick',
   'Pick the next winner',
   'Trade the next macro surprise',
   'Track the next liquidity rotation',
+  'Crypto board',
+  'World Cup board',
+  'Macro board',
+  'On-chain board',
+  'live-dot',
+  'Record<MarketCategory',
+]);
+
+assertExcludesAll('HomeHero.tsx copy 不能只做 worldcup/crypto 二分', heroSource, [
+  "const isWorldCup = category === 'worldcup';\n  const copy = isWorldCup",
+]);
+
+assertExcludesAll('HomeHero.tsx', heroSource, [
+  'market-context-band',
+  'market-context-ribbon',
+  'market-context-visual',
+  'market-context-photo',
+  'market-context-signal-line',
+]);
+
+assertIncludesAll('HeroParticleCanvas.tsx', canvasSource, [
+  "'use client'",
+  'requestAnimationFrame',
+  'devicePixelRatio',
+  'prefers-reduced-motion',
+  'IntersectionObserver',
+  'ResizeObserver',
+  'quadraticCurveTo',
 ]);
 
 assertIncludesAll('globals.css', globalStyles, [
-  '.glass {',
-  '.glass-hover {',
-  '@keyframes arc-ring-pulse',
-]);
-
-assertExcludesAll('globals.css', globalStyles, [
   '.hero-arc-band',
   '.hero-canvas',
   '.hero-gradient-mask',
@@ -73,6 +79,16 @@ assertExcludesAll('globals.css', globalStyles, [
   '.hero-title',
   '.live-dot',
   '@keyframes live-pulse',
+]);
+
+assertExcludesAll('globals.css', globalStyles, [
+  '.market-context-band',
+  '.market-context-ribbon',
+  '.market-context-visual',
+  '.market-context-photo',
+  '.market-context-signal-line',
+  '@keyframes context-line-pan',
+  '@keyframes context-signal-pulse',
 ]);
 
 console.log('home hero 检查通过');

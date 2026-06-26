@@ -65,10 +65,9 @@ const baseButtonClassName =
   'rounded-full border px-3.5 py-[7px] text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-glow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-0';
 
 const activeButtonClassName =
-  `${baseButtonClassName} border-ink/15 bg-bg-0 text-ink shadow-[0_1px_2px_rgba(15,23,42,0.08)]`;
+  `${baseButtonClassName} border-arc-glow/40 bg-arc/15 text-arc-glow shadow-[0_0_24px_-8px_rgba(77,168,255,0.6)]`;
 const inactiveButtonClassName =
-  `${baseButtonClassName} border-transparent bg-bg-2 text-ink-2 hover:border-hair hover:bg-bg-0 hover:text-ink`;
-const topicStrip = ['Trending', 'Ending Soon', 'New'] as const;
+  `${baseButtonClassName} border-hair text-ink-2 hover:border-arc-glow/30 hover:text-ink hover:bg-arc/5`;
 
 function buttonClassName(active: boolean): string {
   return active ? activeButtonClassName : inactiveButtonClassName;
@@ -164,96 +163,80 @@ export function MarketFilterBar({
   };
 
   return (
-    <div className="rounded-xl border border-hair bg-bg-1 px-3 py-3">
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div className="text-[11px] uppercase text-ink-3">Browse</div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {topicStrip.map((topic) => (
-                <span
-                  key={topic}
-                  className="rounded-full border border-hair bg-bg-2 px-3 py-1 text-xs text-ink-2"
-                >
-                  {topic}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {showCategoryTabs ? (
-            <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Market categories">
-              {categoryOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  role="tab"
-                  onClick={() => handleCategoryChange(option.value)}
-                  className={buttonClassName(option.value === category)}
-                  aria-selected={option.value === category}
-                >
-                  {categoryLabel(option.value)}
-                </button>
-              ))}
-            </div>
-          ) : null}
+    <div className="my-10 border-y border-hair px-2 py-3">
+      {showCategoryTabs ? (
+        <div className="mb-4 flex flex-wrap items-center gap-2" role="tablist" aria-label="Market categories">
+          {categoryOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="tab"
+              onClick={() => handleCategoryChange(option.value)}
+              className={buttonClassName(option.value === category)}
+              aria-selected={option.value === category}
+            >
+              {categoryLabel(option.value)}
+            </button>
+          ))}
         </div>
+      ) : null}
 
-        {category === 'worldcup' ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-medium uppercase text-ink-3">Stage</span>
+      {category === 'worldcup' ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium uppercase text-ink-2">Stage</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {stageOptions.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => handleStageChange(option)}
+                className={buttonClassName(option === stage)}
+                aria-pressed={option === stage}
+              >
+                {stageLabel(option)}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : category === 'crypto' ? (
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium uppercase text-ink-2">Asset</span>
             <div className="flex flex-wrap items-center gap-2">
-              {stageOptions.map((option) => (
+              {assetOptions.map((option) => (
                 <button
                   key={option}
                   type="button"
-                  onClick={() => handleStageChange(option)}
-                  className={buttonClassName(option === stage)}
-                  aria-pressed={option === stage}
+                  onClick={() => onChange({ asset: option, cadence })}
+                  className={buttonClassName(option === asset)}
+                  aria-pressed={option === asset}
                 >
-                  {stageLabel(option)}
+                  {assetLabel(option)}
                 </button>
               ))}
             </div>
           </div>
-        ) : category === 'crypto' ? (
-          <div className="grid gap-3 lg:grid-cols-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs font-medium uppercase text-ink-3">Asset</span>
-              <div className="flex flex-wrap items-center gap-2">
-                {assetOptions.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => onChange({ asset: option, cadence })}
-                    className={buttonClassName(option === asset)}
-                    aria-pressed={option === asset}
-                  >
-                    {assetLabel(option)}
-                  </button>
-                ))}
-              </div>
-            </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs font-medium uppercase text-ink-3">Cadence</span>
-              <div className="flex flex-wrap items-center gap-2">
-                {cadenceOptions.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => onChange({ asset, cadence: option })}
-                    className={buttonClassName(option === cadence)}
-                    aria-pressed={option === cadence}
-                  >
-                    {cadenceLabel(option)}
-                  </button>
-                ))}
-              </div>
+          <div className="w-px h-6 bg-hair" aria-hidden="true" />
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium uppercase text-ink-2">Cadence</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {cadenceOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => onChange({ asset, cadence: option })}
+                  className={buttonClassName(option === cadence)}
+                  aria-pressed={option === cadence}
+                >
+                  {cadenceLabel(option)}
+                </button>
+              ))}
             </div>
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }

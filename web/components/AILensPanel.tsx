@@ -58,11 +58,11 @@ export function AILensPanel({ input, fetchImpl }: Props) {
 
   if (state.kind === 'idle') {
     return (
-      <section className="rounded-xl border border-hair bg-bg-1 p-8 text-center">
+      <section className="glass rounded-xl p-8 text-center">
         <button
           type="button"
           onClick={trigger}
-          className={`inline-flex items-center gap-2 rounded-full border border-hair bg-bg-0 px-5 py-2.5 text-sm font-semibold text-ink transition hover:border-arc/20 ${focusRingClassName}`}
+          className={`inline-flex items-center gap-2 rounded-full border border-arc-glow/40 bg-arc/20 px-5 py-2.5 text-sm font-semibold text-ink transition hover:border-arc-glow hover:bg-arc/25 ${focusRingClassName}`}
           aria-label="Generate AI Lens probability analysis"
         >
           ✨ Generate AI Lens
@@ -77,7 +77,7 @@ export function AILensPanel({ input, fetchImpl }: Props) {
 
   if (state.kind === 'loading') {
     return (
-      <section className="rounded-xl border border-hair bg-bg-1 p-6" role="status" aria-live="polite">
+      <section className="glass rounded-xl p-6" role="status" aria-live="polite">
         <p className="text-sm text-ink-2">Analyzing…</p>
       </section>
     );
@@ -85,7 +85,7 @@ export function AILensPanel({ input, fetchImpl }: Props) {
 
   if (state.kind === 'error') {
     return (
-      <section className="rounded-xl border border-hair bg-bg-1 p-6" role="alert">
+      <section className="glass rounded-xl p-6" role="alert">
         <p className="text-sm text-no">AI Lens unavailable. {state.message}</p>
         <button
           type="button"
@@ -102,7 +102,7 @@ export function AILensPanel({ input, fetchImpl }: Props) {
   const out = state.output;
 
   return (
-    <section className="space-y-5 rounded-xl border border-hair bg-bg-1 p-6" role="status" aria-live="polite">
+    <section className="glass space-y-5 rounded-xl p-6" role="status" aria-live="polite">
       <header className="space-y-2">
         <p className="text-sm leading-6 text-ink">{out.summary}</p>
         <p className="text-[11px] text-ink-3">
