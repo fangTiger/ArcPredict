@@ -1,25 +1,41 @@
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <title>ArcPredict</title>
   <defs>
-    <linearGradient id="g" x1="0" y1="1" x2="1" y2="0">
+    <linearGradient id="g-arc" x1="4" y1="18" x2="20" y2="4" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1652F0" />
+      <stop offset="100%" stop-color="#2563FF" />
+    </linearGradient>
+    <linearGradient id="g-signal" x1="6" y1="17" x2="19" y2="7" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#1652F0" />
       <stop offset="100%" stop-color="#4DA8FF" />
     </linearGradient>
-    <filter id="halo" x="-150%" y="-150%" width="400%" height="400%">
-      <feGaussianBlur stdDeviation="2" />
+    <filter id="node-glow" x="-180%" y="-180%" width="460%" height="460%">
+      <feGaussianBlur stdDeviation="1.5" />
     </filter>
   </defs>
   <style>
-    /* 浅色浏览器标签栏：实色避免发光丢失 */
     @media (prefers-color-scheme: light) {
-      .stroke-line { stroke: #0B2DB8 !important; }
-      .dot-halo, .dot-mid { fill: #0B2DB8 !important; }
-      .dot-core { fill: #ffffff !important; }
+      .outer-arc,
+      .probability-line { stroke: #0B2DB8 !important; }
+      .signal-halo,
+      .signal-node { fill: #0B2DB8 !important; }
+      .aperture-cut { stroke: #ffffff !important; }
+      .signal-core { fill: #ffffff !important; }
     }
   </style>
-  <path class="stroke-line" d="M 4 18 A 14 14 0 0 1 18 4"
-        stroke="url(#g)" stroke-width="2.5" stroke-linecap="round" fill="none" />
-  <circle class="dot-halo" cx="18" cy="4" r="5" fill="#4DA8FF" opacity="0.35" filter="url(#halo)" />
-  <circle class="dot-mid"  cx="18" cy="4" r="2.5" fill="#4DA8FF" />
-  <circle class="dot-core" cx="18" cy="4" r="1" fill="#FFFFFF" />
+  <path class="outer-arc"
+        data-logo-part="outer-arc"
+        d="M5 17.25A12.5 12.5 0 0 1 19 4.75"
+        stroke="url(#g-arc)" stroke-width="3.15" stroke-linecap="round" fill="none" />
+  <path class="aperture-cut"
+        data-logo-part="aperture-cut"
+        d="M5.6 17.1L7.5 14.95"
+        stroke="#050614" stroke-width="2.2" stroke-linecap="round" fill="none" />
+  <path class="probability-line"
+        data-logo-part="probability-line"
+        d="M6.35 16.35L9.55 12.55L12.15 14.35L18.35 7.55"
+        stroke="url(#g-signal)" stroke-width="2.65" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <circle class="signal-halo" cx="18.35" cy="7.55" r="3.25" fill="#4DA8FF" opacity="0.16" filter="url(#node-glow)" />
+  <circle class="signal-node" data-logo-part="signal-node" cx="18.35" cy="7.55" r="1.85" fill="#4DA8FF" />
+  <circle class="signal-core" cx="18.35" cy="7.55" r="0.7" fill="#F0F2FF" />
 </svg>
