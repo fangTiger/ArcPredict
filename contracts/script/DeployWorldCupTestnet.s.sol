@@ -9,11 +9,11 @@ import {EventMarket} from "../src/EventMarket.sol";
 contract DeployWorldCupTestnet is Script {
     using stdJson for string;
 
-    uint256 internal constant EXPECTED_MARKET_COUNT = 98;
+    uint256 internal constant EXPECTED_MARKET_COUNT = 146;
     bytes32 internal constant FINAL_1_EVENT_ID = 0x2b902d6a9c3a763f380d5c1af8475ea4efa1142488ebc730dc7c1c8851b061b1;
     string internal constant DEFAULT_SEED_PATH = "script/data/worldcup-seed.json";
     uint256 internal constant DEFAULT_FIRST_KICKOFF_DELAY_SECONDS = 1 days;
-    uint8 internal constant WINNER_OUTCOME_COUNT = 32;
+    uint8 internal constant WINNER_OUTCOME_COUNT = 48;
     uint64 internal constant BET_DEADLINE_OFFSET = 5 minutes;
     uint64 internal constant RESOLVE_AFTER_OFFSET = 150 minutes;
     uint64 internal constant WINNER_RESOLVE_AFTER_OFFSET = 30 days;
@@ -88,7 +88,7 @@ contract DeployWorldCupTestnet is Script {
             revert UnexpectedTimestamp(finalMarketId, finalKickoff + RESOLVE_AFTER_OFFSET, finalMarket.resolveAfter);
         }
 
-        bytes32 winnerEventId = _eventId("winner", "worldcup-2022");
+        bytes32 winnerEventId = _eventId("winner", "worldcup-2026");
         (uint256 winnerMarketId,) = _findMarketByEventId(eventMarket, winnerEventId);
 
         console2.log(unicode"AdminEventOracle 地址", address(adminEventOracle));
@@ -176,7 +176,7 @@ contract DeployWorldCupTestnet is Script {
         }
 
         eventMarket.createMarket(
-            _eventId("winner", "worldcup-2022"),
+            _eventId("winner", "worldcup-2026"),
             WINNER_OUTCOME_COUNT,
             _checkedTimestamp(targetFirstKickoff - BET_DEADLINE_OFFSET),
             _checkedTimestamp(targetFirstKickoff + WINNER_RESOLVE_AFTER_OFFSET),

@@ -16,6 +16,7 @@ const webRoot = cwd.endsWith('/web') ? cwd : resolve(repoRoot, 'web');
 const layoutPath = resolve(webRoot, 'app/layout.tsx');
 const helperPath = resolve(webRoot, 'lib/flag-icons.ts');
 const cardPath = resolve(webRoot, 'components/WorldCupMarketCard.tsx');
+const worldCupSeedPath = resolve(webRoot, 'lib/worldcup-seed.ts');
 const buildIdPath = resolve(webRoot, '.next/BUILD_ID');
 const mediaDir = resolve(webRoot, '.next/static/media');
 const flagAssetDir = resolve(webRoot, 'node_modules/flag-icons/flags/4x3');
@@ -27,41 +28,14 @@ const requireBuildArtifacts = process.env.CHECK_FLAG_BUNDLE_REQUIRE_BUILD === '1
 const layoutSource = readFileSync(layoutPath, 'utf8');
 const helperSource = readFileSync(helperPath, 'utf8');
 const cardSource = readFileSync(cardPath, 'utf8');
+const worldCupSeedSource = readFileSync(worldCupSeedPath, 'utf8');
 const helperGzipBytes = gzipSync(helperSource).length;
-const requiredFlagCodes = [
-  'qa',
-  'ec',
-  'sn',
-  'nl',
-  'gb-eng',
-  'ir',
-  'us',
-  'gb-wls',
-  'ar',
-  'sa',
-  'mx',
-  'pl',
-  'fr',
-  'au',
-  'dk',
-  'tn',
-  'es',
-  'de',
-  'jp',
-  'cr',
-  'be',
-  'hr',
-  'ma',
-  'ca',
-  'br',
-  'rs',
-  'ch',
-  'cm',
-  'pt',
-  'gh',
-  'uy',
-  'kr',
-];
+const requiredFlagCodes = Array.from(
+  new Set(
+    Array.from(worldCupSeedSource.matchAll(/flagCode:\s*'([^']+)'/gu), (match) => match[1]),
+  ),
+);
+assert.equal(requiredFlagCodes.length, 48, 'flag bundle 检查必须覆盖当前 48 支世界杯球队。');
 const expectedFlagAssetBuffers = requiredFlagCodes.map((code) =>
   Buffer.from(readFileSync(resolve(flagAssetDir, `${code}.svg`))),
 );

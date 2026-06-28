@@ -29,7 +29,7 @@ AdminEventOracle
 
 现有 `PredictionMarket` 是单合约多市场 + pool-based AMM 结构，世界杯能力新增独立 `EventMarket.sol`，镜像现有下注、结算、领奖流程，但将固定二元池扩展为 `uint128[] outcomePools` 和 `stakeByOutcome[marketId][user][outcomeIndex]`。
 
-这样可以保持 Crypto 市场零回归风险，同时让 1X2、二元让分和 32 选 1 冠军盘共享同一资金与结算模型。
+这样可以保持 Crypto 市场零回归风险，同时让 1X2、二元让分和 48 选 1 冠军盘共享同一资金与结算模型。
 
 ### 前端按品类与 marketKind 路由
 
@@ -59,9 +59,9 @@ World Cup 与 Crypto 使用同一 USDC token 地址，但分别由 `PredictionMa
 
 - 部署 `AdminEventOracle`
 - 部署绑定该 oracle 的 `EventMarket`
-- seed 48 场小组赛的 1X2 与 goals-25 市场、final-1 1X2 市场、winner 市场
+- seed 72 场小组赛的 1X2 与 goals-25 市场、final-1 1X2 市场、winner 市场
 - 回填 `web/lib/addresses.ts`
-- 测试网首笔下注使用 final-1 `marketId = 96`，outcomeIndex 0 表示 home / ARG
+- 测试网首笔下注使用 final-1 `marketId = 144`，outcomeIndex 0 表示 home / MATCH_101_W
 
 ## 风险与缓解
 

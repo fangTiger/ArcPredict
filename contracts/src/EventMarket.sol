@@ -121,7 +121,7 @@ contract EventMarket is Ownable2Step {
 
     /// @notice 创建一个新的多 outcome 市场。
     /// @param eventId 赛事唯一标识。
-    /// @param outcomeCount outcome 数量，必须在 [2, 32] 范围内。
+    /// @param outcomeCount outcome 数量，必须在 [2, 48] 范围内。
     /// @param betDeadline 截止下注时间。
     /// @param resolveAfter 最早允许结算时间。
     /// @param question 市场问题文本。
@@ -135,7 +135,7 @@ contract EventMarket is Ownable2Step {
     ) external onlyOwner returns (uint256 id) {
         if (marketCount >= MAX_MARKETS) revert MarketLimitReached();
         if (eventId == bytes32(0)) revert InvalidEventId();
-        if (outcomeCount < 2 || outcomeCount > 32) revert InvalidOutcomeCount();
+        if (outcomeCount < 2 || outcomeCount > 48) revert InvalidOutcomeCount();
         if (betDeadline <= block.timestamp) revert TimesInPast();
         if (resolveAfter <= betDeadline) revert InvalidTimeOrder();
         if (bytes(question).length > MAX_QUESTION_LEN) revert QuestionTooLong();

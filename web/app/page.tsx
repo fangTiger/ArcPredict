@@ -442,6 +442,7 @@ function HomePageContent() {
             <ThemeMarketBoard
               theme={featuredTheme}
               markets={featuredThemeMarkets}
+              variant="preview"
             />
           </div>
         ) : null}

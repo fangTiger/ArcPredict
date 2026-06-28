@@ -117,3 +117,27 @@ EventMarket：
 - finalize earliest at (UTC ISO): `2026-06-26T19:35:14Z` (= proposeBlockTimestamp + 72h)
 - scheduled finalize LaunchAgent run at: `2026-06-26T19:40:14Z` UTC / `2026-06-27T03:40:14+0800` CST
 - next steps: 调 `finalizeResult(...)`，再调 `EventMarket.resolve(96)`，然后 `claim(96)` 领取那笔 0.5 USDC。
+
+## Phase 10.7 Step 2: finalize + resolve + claim
+
+- propose tx hash: `0xb3111bdd4210dde973778e91957696b3b584cbddf74765d9da77080822e5a1c0`
+- finalize tx hash: `0x80e963ed91c5d67f106d5b5e96edad00ec785bcd87cbc34dc9054a622c958463`
+- finalize block number: `48859621`
+- finalize block timestamp (unix): `1782502811`
+- finalize block timestamp (UTC ISO): `2026-06-26T19:40:11Z`
+- oracle status before finalize: Proposed (`1`)
+- oracle status after finalize: Finalized (`3`)
+- resolve tx hash: `0x6484c0ae23ae723b84ca67e996554e4db792177493ddee82e5efd4b00e1ad64b`
+- resolve block number: `48859639`
+- resolve block timestamp (unix): `1782502820`
+- resolve block timestamp (UTC ISO): `2026-06-26T19:40:20Z`
+- claim tx hash: `0x470c3a37ee88852dd50de084c2aef0d2e5a5357d05e148afa45133cc303e8290`
+- claim block number: `48859661`
+- claim block timestamp (unix): `1782502831`
+- claim block timestamp (UTC ISO): `2026-06-26T19:40:31Z`
+- claimed market: `96`
+- claimed outcome: 0 (ARG / home)
+- pending payout before claim: `500000` raw USDC (0.500000 USDC)
+- USDC balance before claim: `10196687`
+- USDC balance after claim: `10694313`
+- USDC balance delta: `497626` raw USDC (0.497626 USDC)

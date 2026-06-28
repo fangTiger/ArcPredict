@@ -3,9 +3,7 @@
 ## Purpose
 
 ArcPredict 的 `event-oracle` 能力定义赛事结果结算源。它通过 `IEventOracle` 抽象隔离市场合约与具体预言机实现，MVP 使用 `AdminEventOracle`：owner 提交结果，经过 72 小时异议期和 100 USDC 质押挑战机制后最终化，供 `EventMarket` 读取并执行 payout。
-
 ## Requirements
-
 ### Requirement: IEventOracle 接口
 
 系统 SHALL 定义 `IEventOracle` Solidity 接口，作为赛事结算预言机的统一抽象。任何赛事预言机实现（MVP 的 `AdminEventOracle`、未来的 `UMAEventOracle` 等）MUST 实现该接口。接口至少 SHALL 包含：提交结果、挑战、owner 裁定、无挑战最终化、超时最终化、查询最终化结果、查询事件状态。
@@ -99,7 +97,7 @@ ArcPredict 的 `event-oracle` 能力定义赛事结果结算源。它通过 `IEv
 
 ### Requirement: 透明性与可审计
 
-`AdminEventOracle` 的所有状态变更（提交、挑战、撤销、确认、超时最终化、暂停）SHALL 通过 Solidity event 广播。前端 SHALL 在市场详情页显示 "Resolution Source: AdminEventOracle" 标识，并提供链接到链上事件历史。
+`AdminEventOracle` 的所有状态变更（提交、挑战、撤销、确认、超时最终化、暂停）SHALL 通过 Solidity event 广播。前端 SHALL 在市场详情页显示 "Resolution Source: AdminEventOracle" 标识，并提供链接到链上事件历史。当前端展示多个 EventMarket deployment 时，详情页 SHALL 使用当前 market row 的 `oracleAddress` 展示链接并查询 oracle 状态，而不是使用单一全局 oracle 地址。
 
 #### Scenario: 赛事状态事件发出
 - **WHEN** 任一状态变更方法成功执行
@@ -115,6 +113,11 @@ ArcPredict 的 `event-oracle` 能力定义赛事结果结算源。它通过 `IEv
 - **WHEN** 用户进入 World Cup 市场详情页
 - **THEN** 页面 SHALL 显式标注 "Resolution Source: AdminEventOracle (Owner + 72h Dispute Window)"
 - **AND** SHALL 提供链接到 `AdminEventOracle` 合约地址的区块浏览器
+
+#### Scenario: 多 deployment oracle 状态查询
+- **WHEN** 用户从 Macro 或 On-chain Tab 打开属于 `automated-v1` 的市场详情页
+- **THEN** 详情页 SHALL 使用 `automated-v1.oracleAddress` 查询 `getEventStatus`
+- **AND** SHALL NOT 使用 `worldcup-v1.oracleAddress`
 
 ### Requirement: 接口预留 UMA 升级路径
 

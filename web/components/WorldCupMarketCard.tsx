@@ -41,6 +41,14 @@ function marketTypeLabel(marketType: WorldCupMarketRow['marketType']): string {
   return marketType === 'totals' ? 'TOTALS' : marketType.toUpperCase();
 }
 
+function fixedOutcomeLabel(row: WorldCupMarketRow, outcomeIndex: number): string | undefined {
+  if (row.category !== 'worldcup' || row.marketType !== '1x2') {
+    return undefined;
+  }
+
+  return fixedOneXTwoLabels[outcomeIndex] ?? `Outcome ${outcomeIndex + 1}`;
+}
+
 function eventCategoryLabel(category: WorldCupMarketRow['category']): string {
   if (category === 'macro') {
     return 'Macro';
@@ -102,10 +110,7 @@ function OutcomeFlexButtons({
       <div className={`mt-4 grid w-full ${gridClassName} gap-2`}>
         {row.outcomes.map((outcome, outcomeIndex) => {
           const pct = Math.round(outcome.impliedProbability);
-          const label =
-            row.category === 'worldcup' && row.marketType === '1x2'
-              ? fixedOneXTwoLabels[outcomeIndex] ?? `Outcome ${outcomeIndex + 1}`
-              : outcome.label;
+          const label = fixedOutcomeLabel(row, outcomeIndex) ?? outcome.label;
           return (
             <button
               key={outcome.id}
@@ -160,6 +165,17 @@ export function WorldCupMarketCard({
   const detailHref = `/market/${row.id.toString()}?kind=event${deploymentQuery}`;
   const isWinnerMarket = row.marketType === 'winner';
   const richMarket = toRichMarketRef(row, now);
+  const topOutcomeIndex = row.outcomes.length > 0
+    ? row.outcomes.reduce(
+        (bestIndex, outcome, outcomeIndex) =>
+          outcome.impliedProbability > row.outcomes[bestIndex].impliedProbability ? outcomeIndex : bestIndex,
+        0,
+      )
+    : -1;
+  const marketBalanceLabel =
+    fixedOutcomeLabel(row, topOutcomeIndex)
+      ? `Leading outcome ${fixedOutcomeLabel(row, topOutcomeIndex)}`
+      : richMarket.skewLabel;
   const titleLabel =
     !isWorldCupMarket
       ? row.question
@@ -293,7 +309,7 @@ export function WorldCupMarketCard({
           </div>
           <div>
             <div className="mb-1 text-[11px] uppercase">Market balance</div>
-            <div className="font-medium text-ink">{richMarket.skewLabel}</div>
+            <div className="font-medium text-ink">{marketBalanceLabel}</div>
           </div>
           <div className="flex items-end sm:justify-end">
             <Link

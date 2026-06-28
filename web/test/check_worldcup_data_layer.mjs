@@ -140,11 +140,121 @@ assert(addressesSource.includes('export const ADMIN_EVENT_ORACLE_ADDRESS ='));
 assert(!addressesSource.includes('chainId'));
 
 const worldcupMarkets = loadTsModule(worldcupMarketsPath, true);
-assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(9001n), 30n);
-assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(9002n), 23n);
-assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(9006n), 96n);
-assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(9007n), 97n);
+const toAsciiBytes32 = (value) =>
+  `0x${Buffer.from(value, 'utf8').toString('hex').padEnd(64, '0')}`;
+const secondsForIso = (value) => BigInt(Math.floor(Date.parse(value) / 1000));
+const makeEventRow = ({ eventId, outcomeCount, question, resolveAfter, outcomePools }) => ({
+  id: 77n,
+  market: {
+    eventId,
+    outcomeCount,
+    betDeadline: resolveAfter - 900n,
+    resolveAfter,
+    outcomePools,
+    winnerPool: 0n,
+    protocolFee: 0n,
+    feeBpsSnapshot: 0,
+    feeRecipientSnapshot: '0x0000000000000000000000000000000000000000',
+    settledOutcome: 255,
+    settleTime: 0n,
+    question,
+  },
+  userOutcomeStakes: Array.from({ length: outcomeCount }, () => 0n),
+  claimed_: false,
+  pendingPayout: 0n,
+});
+const fallbackIdFor = (matchId, marketType = '1x2') => {
+  const row = worldcupMarkets.WORLDCUP_SKELETON_MARKETS.find(
+    (market) => market.matchId === matchId && market.marketType === marketType,
+  );
+  assert(row, `缺少 fallback World Cup 市场: ${matchId}:${marketType}`);
+  return row.id;
+};
+const fallbackWinnerId = () => {
+  const row = worldcupMarkets.WORLDCUP_SKELETON_MARKETS.find((market) => market.marketType === 'winner');
+  assert(row, '缺少 fallback World Cup 冠军盘');
+  return row.id;
+};
+assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(fallbackIdFor('group-l-5')), 140n);
+assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(fallbackIdFor('group-l-6')), 142n);
+assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(fallbackIdFor('group-k-5')), 128n);
+assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(fallbackIdFor('group-k-6')), 130n);
+assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(fallbackIdFor('group-j-5')), 116n);
+assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(fallbackIdFor('group-j-6')), 118n);
+assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(fallbackWinnerId()), 145n);
+assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(fallbackIdFor('r32-1')), fallbackIdFor('r32-1'));
+assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(fallbackIdFor('r32-16')), fallbackIdFor('r32-16'));
 assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(30n), 30n);
+
+const currentTournamentNow = BigInt(Math.floor(Date.parse('2026-06-28T06:00:00Z') / 1000));
+const expectedCurrentR32MatchIds = [
+  'r32-16',
+  'r32-15',
+  'r32-14',
+  'r32-13',
+  'r32-12',
+  'r32-11',
+  'r32-10',
+  'r32-9',
+  'r32-8',
+  'r32-7',
+  'r32-6',
+  'r32-5',
+  'r32-4',
+  'r32-3',
+  'r32-2',
+  'r32-1',
+];
+assert.deepEqual(
+  worldcupMarkets
+    .resolveWorldCupMarkets([], currentTournamentNow)
+    .filter((row) => row.marketType !== 'winner')
+    .map((row) => row.matchId),
+  expectedCurrentR32MatchIds,
+  '当前 fallback World Cup 市场只能包含还没过下注截止且对阵已确定的赛事。',
+);
+assert(
+  worldcupMarkets.resolveWorldCupMarkets([], currentTournamentNow).every(
+    (row) =>
+      row.marketType === 'winner' ||
+      (row.homeTeam?.teamId && row.awayTeam?.teamId && !row.question.includes('Quarter-final') && !row.question.includes('Final')),
+  ),
+  '当前 fallback 不能包含 Home/Away 或淘汰赛占位对阵。',
+);
+const seededPlaceholderResolveAfter =
+  secondsForIso('2026-07-19T19:00:00Z') + BigInt(150 * 60);
+const placeholderWorldCupRows = worldcupMarkets.resolveWorldCupMarkets(
+  [
+    makeEventRow({
+      eventId: toAsciiBytes32('worldcup:final-1:1x2'),
+      outcomeCount: 3,
+      question: 'MATCH_101_W vs MATCH_102_W 1X2',
+      resolveAfter: seededPlaceholderResolveAfter,
+      outcomePools: [0n, 0n, 0n],
+    }),
+    makeEventRow({
+      eventId: toAsciiBytes32('worldcup:qf-1:spread'),
+      outcomeCount: 2,
+      question: 'Quarter-final 1 handicap',
+      resolveAfter: seededPlaceholderResolveAfter,
+      outcomePools: [0n, 0n],
+    }),
+  ],
+  currentTournamentNow,
+);
+assert.deepEqual(
+  placeholderWorldCupRows
+    .filter((row) => row.category === 'worldcup' && row.marketType !== 'winner')
+    .map((row) => row.matchId),
+  expectedCurrentR32MatchIds,
+  '链上返回旧占位 World Cup rows 时，首页数据层必须回补所有未来已确定球队的真实赛注。',
+);
+assert(
+  placeholderWorldCupRows.every(
+    (row) => !row.question.includes('MATCH_') && !row.question.includes('Quarter-final 1'),
+  ),
+  '链上占位问题文本不能进入 World Cup 展示列表。',
+);
 
 const eventAbi = JSON.parse(readFileSync(eventAbiPath, 'utf8'));
 const oracleAbi = JSON.parse(readFileSync(oracleAbiPath, 'utf8'));
@@ -179,11 +289,11 @@ assert.deepEqual(
 assert.equal(eventSourceDefault.readLiveScoreCache('match-1', 61_500), null);
 assert.equal(
   eventSourceDefault.buildSportsDbEventUrl('group-a-1'),
-  'https://www.thesportsdb.com/api/v1/json/123/lookupevent.php?id=1543883',
+  null,
 );
 assert.equal(
   eventSourceDefault.resolveSportsDbEventId('group-a-1'),
-  '1543883',
+  null,
 );
 assert.equal(
   eventSourceDefault.resolveSportsDbEventId('qf-1'),

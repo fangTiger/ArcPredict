@@ -105,13 +105,13 @@
 - [x] 10.5 移动端可视化检查：卡片折叠展开、品类 Tab 切换、绿茵背景
 - [x] 10.6 比分 API 失败降级验证：断网/拔 key 后页面仍可正常下注领奖
   - 证据：`web/test/event-source.degradation.test.tsx` 与 `docs/qa/2026-06-23-phase7-10x-non-broadcast.md` §10.6；覆盖网络错误、4xx、5xx、429、timeout、空响应、非法 JSON；`pnpm exec vitest run test/event-source.degradation.test.tsx` 为 `7 passed`，相关组件/数据层回归为 `36 passed`。
-- [ ] 10.7 Phase 7c（post-archive smoke，不阻塞 archive）：测试网 finalize/claim
+- [x] 10.7 Phase 7c（post-archive smoke）：测试网 finalize/claim — 证据：`docs/qa/2026-06-13-phase7b-testnet-deploy.md` §Phase 10.7 Step 1 / Step 2；propose `0xb3111bdd4210dde973778e91957696b3b584cbddf74765d9da77080822e5a1c0`，finalize `0x80e963ed91c5d67f106d5b5e96edad00ec785bcd87cbc34dc9054a622c958463`，resolve `0x6484c0ae23ae723b84ca67e996554e4db792177493ddee82e5efd4b00e1ad64b`，claim `0x470c3a37ee88852dd50de084c2aef0d2e5a5357d05e148afa45133cc303e8290`
   - 注：post-archive smoke，不阻塞本次 `add-worldcup-category` 归档；等待 final-1 resolveAfter 与 72h dispute window 后补录。
-  - [ ] 10.7.1 propose outcome=ARG via AdminEventOracle 测试网
-  - [ ] 10.7.2 等待 72h dispute window 过
-  - [ ] 10.7.3 调 finalize
-  - [ ] 10.7.4 claim 7b 那笔下注
-  - [ ] 10.7.5 追加 "Phase 7c smoke" 章节到 7b 文档
+  - [x] 10.7.1 propose outcome=ARG via AdminEventOracle 测试网 — 证据：`docs/qa/2026-06-13-phase7b-testnet-deploy.md` §Phase 10.7 Step 1，tx `0xb3111bdd4210dde973778e91957696b3b584cbddf74765d9da77080822e5a1c0`
+  - [x] 10.7.2 等待 72h dispute window 过 — 证据：`docs/qa/2026-06-13-phase7b-testnet-deploy.md` §Phase 10.7 Step 1 / Step 2，finalize earliest 由 propose block timestamp + 72h 计算
+  - [x] 10.7.3 调 finalize — 证据：`docs/qa/2026-06-13-phase7b-testnet-deploy.md` §Phase 10.7 Step 2，finalize tx `0x80e963ed91c5d67f106d5b5e96edad00ec785bcd87cbc34dc9054a622c958463`
+  - [x] 10.7.4 claim 7b 那笔下注 — 证据：`docs/qa/2026-06-13-phase7b-testnet-deploy.md` §Phase 10.7 Step 2，resolve tx `0x6484c0ae23ae723b84ca67e996554e4db792177493ddee82e5efd4b00e1ad64b`，claim tx `0x470c3a37ee88852dd50de084c2aef0d2e5a5357d05e148afa45133cc303e8290`
+  - [x] 10.7.5 追加 "Phase 7c smoke" 章节到 7b 文档 — 证据：`docs/qa/2026-06-13-phase7b-testnet-deploy.md` §Phase 10.7 Step 1 / Step 2
 
 ## 11. 文档与归档
 

@@ -4,6 +4,10 @@ import type { ThemePack } from '../lib/themes';
 import type { ThemeMarketBoardEntry } from '../lib/themes/markets';
 import { MarketCategoryIcon } from './MarketCategoryIcon';
 
+const PREVIEW_MARKET_LIMIT = 3;
+
+type ThemeMarketBoardVariant = 'full' | 'preview';
+
 function categoryFromLabel(label: string) {
   if (label === 'Macro') {
     return 'macro' as const;
@@ -47,11 +51,11 @@ function renderMarket(market: ThemeMarketBoardEntry) {
       key: market.id,
       href: market.href,
       className:
-        'rounded-[26px] border border-hair bg-bg-1/45 px-4 py-4 transition hover:border-arc-glow/40 hover:bg-bg-1/70',
+        'group grid gap-3 rounded-[20px] border border-hair bg-bg-1/35 px-4 py-3 transition hover:border-arc-glow/40 hover:bg-bg-1/60 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center',
     },
     React.createElement(
       'div',
-      { className: 'flex items-center justify-between gap-3' },
+      { className: 'min-w-0' },
       React.createElement(
         'div',
         { className: 'inline-flex items-center gap-2' },
@@ -67,18 +71,18 @@ function renderMarket(market: ThemeMarketBoardEntry) {
         ),
       ),
       React.createElement(
-        'span',
-        {
-          className:
-            'rounded-full border border-hair px-2.5 py-1 text-[10px] uppercase text-ink-2',
-        },
-        market.statusLabel,
+        'div',
+        { className: 'mt-2 text-sm font-medium leading-6 text-ink transition group-hover:text-arc-glow sm:truncate' },
+        market.title,
       ),
     ),
     React.createElement(
-      'div',
-      { className: 'mt-4 text-base font-medium leading-7 text-ink' },
-      market.title,
+      'span',
+      {
+        className:
+          'justify-self-start rounded-full border border-hair px-2.5 py-1 text-[10px] uppercase text-ink-2 sm:justify-self-end',
+      },
+      market.statusLabel,
     ),
   );
 }
@@ -86,11 +90,17 @@ function renderMarket(market: ThemeMarketBoardEntry) {
 export function ThemeMarketBoard({
   theme,
   markets,
+  variant = 'full',
 }: {
   theme: ThemePack;
   markets: ThemeMarketBoardEntry[];
+  variant?: ThemeMarketBoardVariant;
 }) {
   const leadLabel = leadCategoryLabel(theme);
+  const themeHref = `/theme/${theme.themeId}`;
+  const previewMarkets = variant === 'preview' ? markets.slice(0, PREVIEW_MARKET_LIMIT) : markets;
+  const hiddenMarketCount = markets.length - previewMarkets.length;
+  const isPreviewLimited = hiddenMarketCount > 0;
 
   return React.createElement(
     'section',
@@ -167,7 +177,7 @@ export function ThemeMarketBoard({
         React.createElement(
           Link,
           {
-            href: `/theme/${theme.themeId}`,
+            href: themeHref,
             className:
               'mt-5 inline-flex rounded-full border border-arc-glow/35 bg-arc/10 px-4 py-2 text-sm text-arc-glow transition hover:border-arc-glow/55 hover:bg-arc/15 hover:text-ink',
           },
@@ -185,9 +195,44 @@ export function ThemeMarketBoard({
           'Theme pack is live. New markets land here as they open.',
         )
       : React.createElement(
-          'div',
-          { className: 'mt-5 grid gap-3 lg:grid-cols-2' },
-          markets.map(renderMarket),
+          React.Fragment,
+          null,
+          React.createElement(
+            'div',
+            { className: 'mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between' },
+            React.createElement(
+              'div',
+              { className: 'min-w-0' },
+              React.createElement(
+                'div',
+                { className: 'font-mono text-[11px] uppercase text-ink-3' },
+                'Live watchlist',
+              ),
+              React.createElement(
+                'div',
+                { className: 'mt-1 text-sm text-ink-2' },
+                isPreviewLimited
+                  ? `Showing ${previewMarkets.length} of ${markets.length}`
+                  : `${markets.length} market${markets.length === 1 ? '' : 's'} in this pack`,
+              ),
+            ),
+            isPreviewLimited
+              ? React.createElement(
+                  Link,
+                  {
+                    href: themeHref,
+                    className:
+                      'inline-flex shrink-0 rounded-full border border-arc-glow/35 bg-arc/10 px-4 py-2 text-sm text-arc-glow transition hover:border-arc-glow/55 hover:bg-arc/15 hover:text-ink',
+                  },
+                  `View all ${markets.length} markets`,
+                )
+              : null,
+          ),
+          React.createElement(
+            'div',
+            { className: 'mt-3 grid gap-2' },
+            previewMarkets.map(renderMarket),
+          ),
         ),
   );
 }

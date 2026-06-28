@@ -4,6 +4,12 @@ import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
+const sportsDbEventIdForMatchMock = vi.hoisted(() => vi.fn());
+
+vi.mock('../lib/worldcup-seed', () => ({
+  sportsDbEventIdForMatch: sportsDbEventIdForMatchMock,
+}));
+
 import {
   POLL_INTERVAL_MS,
   clearLiveScoreCache,
@@ -95,6 +101,9 @@ describe('useLiveScore', () => {
     window.history.replaceState({}, '', '/');
     setVisibility('visible');
     clearLiveScoreCache();
+    sportsDbEventIdForMatchMock.mockImplementation((matchId: string) =>
+      matchId === 'qf-1' ? null : '1543883',
+    );
     MockIntersectionObserver.instances = [];
     latestState = null;
 

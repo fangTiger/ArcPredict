@@ -14,11 +14,11 @@ contract Phase7E2EChallengePaths is Script, Test {
 
     uint128 internal constant INITIAL_BALANCE = 10_000 * 1e6;
     uint128 internal constant BET_AMOUNT = 100 * 1e6;
-    uint256 internal constant EXPECTED_MARKET_COUNT = 98;
+    uint256 internal constant EXPECTED_MARKET_COUNT = 146;
     bytes32 internal constant FINAL_1_EVENT_ID = 0x2b902d6a9c3a763f380d5c1af8475ea4efa1142488ebc730dc7c1c8851b061b1;
     string internal constant DEFAULT_SEED_PATH = "script/data/worldcup-seed.json";
     uint256 internal constant DEFAULT_FIRST_KICKOFF_DELAY_SECONDS = 1 days;
-    uint8 internal constant WINNER_OUTCOME_COUNT = 32;
+    uint8 internal constant WINNER_OUTCOME_COUNT = 48;
     uint64 internal constant BET_DEADLINE_OFFSET = 5 minutes;
     uint64 internal constant RESOLVE_AFTER_OFFSET = 150 minutes;
     uint64 internal constant WINNER_RESOLVE_AFTER_OFFSET = 30 days;
@@ -152,7 +152,7 @@ contract Phase7E2EChallengePaths is Script, Test {
         assertEq(_eventId("1x2", seed.finalMatchId), FINAL_1_EVENT_ID);
 
         scenario.usdc = new MockUSDC();
-        scenario.oracle = new AdminEventOracle(address(scenario.usdc), OWNER, FEE_RECIPIENT, BONUS_BANK, 32);
+        scenario.oracle = new AdminEventOracle(address(scenario.usdc), OWNER, FEE_RECIPIENT, BONUS_BANK, 48);
         scenario.market = new EventMarket(address(scenario.usdc), OWNER, FEE_RECIPIENT, address(scenario.oracle));
 
         assertEq(scenario.oracle.DISPUTE_WINDOW(), 72 hours);
@@ -369,7 +369,7 @@ contract Phase7E2EChallengePaths is Script, Test {
         }
 
         market.createMarket(
-            _eventId("winner", "worldcup-2022"),
+            _eventId("winner", "worldcup-2026"),
             WINNER_OUTCOME_COUNT,
             _checkedTimestamp(targetFirstKickoff - BET_DEADLINE_OFFSET),
             _checkedTimestamp(targetFirstKickoff + WINNER_RESOLVE_AFTER_OFFSET),

@@ -21,7 +21,7 @@ contract DeployWorldCup is Script {
         address ownerEoa = vm.addr(ownerPrivateKey);
 
         vm.startBroadcast(ownerPrivateKey);
-        AdminEventOracle adminEventOracle = new AdminEventOracle(usdc, ownerEoa, feeRecipient, bonusBank, 32);
+        AdminEventOracle adminEventOracle = new AdminEventOracle(usdc, ownerEoa, feeRecipient, bonusBank, 48);
         EventMarket eventMarket = new EventMarket(usdc, ownerEoa, feeRecipient, address(adminEventOracle));
         vm.stopBroadcast();
 

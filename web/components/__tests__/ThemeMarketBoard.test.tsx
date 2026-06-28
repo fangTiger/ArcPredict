@@ -19,6 +19,16 @@ const theme: ThemePack = {
   status: 'active',
 };
 
+function makeMarket(id: string, title: string) {
+  return {
+    id,
+    href: `/market/${id}?kind=event`,
+    title,
+    categoryLabel: 'On-chain',
+    statusLabel: 'Open market',
+  };
+}
+
 describe('ThemeMarketBoard', () => {
   it('renders a lead theme section and direct market links when markets are available', () => {
     render(
@@ -59,5 +69,29 @@ describe('ThemeMarketBoard', () => {
     expect(
       screen.getByText(/Theme pack is live\. New markets land here as they open\./i),
     ).toBeInTheDocument();
+  });
+
+  it('keeps the homepage preview short and links to the full theme page', () => {
+    render(
+      React.createElement(ThemeMarketBoard, {
+        theme,
+        markets: [
+          makeMarket('77', 'Will Ethereum TVL be >= $210.00B by 2026-09-22?'),
+          makeMarket('78', 'Will Ethereum TVL be >= $220.00B by 2026-09-23?'),
+          makeMarket('79', 'Will Ethereum TVL be >= $230.00B by 2026-09-24?'),
+          makeMarket('80', 'Will Arbitrum TVL be >= $18.00B by 2026-09-25?'),
+          makeMarket('81', 'Will Arbitrum TVL be >= $20.00B by 2026-09-26?'),
+        ],
+        variant: 'preview',
+      }),
+    );
+
+    expect(screen.getByText(/Showing 3 of 5/i)).toBeInTheDocument();
+    expect(screen.getByText(/Will Ethereum TVL be >= \$230\.00B/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Will Arbitrum TVL be >= \$18\.00B/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /View all 5 markets/i })).toHaveAttribute(
+      'href',
+      '/theme/arc-summer-onchain',
+    );
   });
 });

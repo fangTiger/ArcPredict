@@ -211,13 +211,13 @@ contract EventMarketCreateMarketTest is EventMarketTestBase {
         assertEq(m.outcomePools.length, 2);
     }
 
-    function test_create_Winner_32Outcomes() public {
-        uint256 id = _createMarket(WINNER_EVENT_ID, 32, 3 days, 4 days, "World Cup winner");
+    function test_create_Winner_48Outcomes() public {
+        uint256 id = _createMarket(WINNER_EVENT_ID, 48, 3 days, 4 days, "World Cup winner");
         EventMarket.EventMarketDef memory m = market.getMarket(id);
 
         assertEq(id, 0);
-        assertEq(m.outcomeCount, 32);
-        assertEq(m.outcomePools.length, 32);
+        assertEq(m.outcomeCount, 48);
+        assertEq(m.outcomePools.length, 48);
         assertEq(m.settledOutcome, market.UNRESOLVED_OUTCOME());
     }
 
@@ -250,7 +250,7 @@ contract EventMarketCreateMarketTest is EventMarketTestBase {
         vm.prank(owner);
         vm.expectRevert(EventMarket.InvalidOutcomeCount.selector);
         market.createMarket(
-            MATCH_EVENT_ID, 33, uint64(block.timestamp + 1 days), uint64(block.timestamp + 2 days), "bad"
+            MATCH_EVENT_ID, 49, uint64(block.timestamp + 1 days), uint64(block.timestamp + 2 days), "bad"
         );
     }
 
@@ -348,7 +348,7 @@ contract EventMarketCreateMarketTest is EventMarketTestBase {
     function test_marketsGetter_AndPagedAccess() public {
         uint256 firstId = _createMarket(MATCH_EVENT_ID, 3, 1 days, 1 days + 1 minutes, "Match 1");
         _createMarket(HANDICAP_EVENT_ID, 2, 2 days, 2 days + 1 minutes, "Match 2");
-        _createMarket(WINNER_EVENT_ID, 32, 3 days, 3 days + 1 minutes, "Winner");
+        _createMarket(WINNER_EVENT_ID, 48, 3 days, 3 days + 1 minutes, "Winner");
 
         (
             bytes32 eventId,

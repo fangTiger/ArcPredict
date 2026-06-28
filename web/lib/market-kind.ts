@@ -3,6 +3,7 @@ export type MarketCategory = 'crypto' | 'worldcup' | 'macro' | 'chain';
 
 export type WorldCupStage =
   | 'group'
+  | 'r32'
   | 'r16'
   | 'qf'
   | 'sf'
@@ -15,6 +16,7 @@ export const MARKET_CATEGORIES: MarketCategory[] = ['crypto', 'worldcup', 'macro
 export const WORLD_CUP_STAGE_FILTERS: WorldCupStageFilter[] = [
   'all',
   'group',
+  'r32',
   'r16',
   'qf',
   'sf',
@@ -25,6 +27,7 @@ export const WORLD_CUP_STAGE_FILTERS: WorldCupStageFilter[] = [
 const WORLD_CUP_STAGE_LABELS: Record<WorldCupStageFilter, string> = {
   all: 'All',
   group: 'Group',
+  r32: 'R32',
   r16: 'R16',
   qf: 'QF',
   sf: 'SF',
@@ -66,7 +69,7 @@ export function splitByMarketKind<T extends MarketKindCarrier>(
 export function isWorldCupStage(
   value: string | null | undefined,
 ): value is WorldCupStage {
-  return value === 'group' || value === 'r16' || value === 'qf' || value === 'sf' || value === 'final' || value === 'winner';
+  return value === 'group' || value === 'r32' || value === 'r16' || value === 'qf' || value === 'sf' || value === 'final' || value === 'winner';
 }
 
 export function isWorldCupStageFilter(

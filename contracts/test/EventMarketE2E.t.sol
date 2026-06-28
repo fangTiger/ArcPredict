@@ -25,7 +25,7 @@ contract EventMarketE2ETest is Test {
 
     function setUp() public {
         usdc = new MockUSDC();
-        oracle = new AdminEventOracle(address(usdc), owner, feeRecipient, bonusBank, 32);
+        oracle = new AdminEventOracle(address(usdc), owner, feeRecipient, bonusBank, 48);
         market = new EventMarket(address(usdc), owner, feeRecipient, address(oracle));
 
         address[4] memory seeded = [alice, bob, carol, bonusBank];
@@ -124,17 +124,17 @@ contract EventMarketE2ETest is Test {
         assertEq(usdc.balanceOf(feeRecipient), 40_000);
     }
 
-    function test_e2e_WinnerMarket_32Users_FinalizeAndChampionClaims() public {
+    function test_e2e_WinnerMarket_48Users_FinalizeAndChampionClaims() public {
         vm.prank(owner);
         uint256 id = market.createMarket(
             WINNER_EVENT_ID,
-            32,
+            48,
             uint64(block.timestamp + 1 hours),
             uint64(block.timestamp + 3 hours),
             "World Cup Winner"
         );
 
-        for (uint8 i = 0; i < 32; i++) {
+        for (uint8 i = 0; i < 48; i++) {
             address user = address(uint160(0xC100 + i));
             usdc.mint(user, INITIAL_USDC_BALANCE);
 
@@ -147,7 +147,7 @@ contract EventMarketE2ETest is Test {
 
         vm.warp(block.timestamp + 3 hours);
         vm.prank(owner);
-        oracle.proposeResult(WINNER_EVENT_ID, 17);
+        oracle.proposeResult(WINNER_EVENT_ID, 37);
 
         vm.warp(block.timestamp + oracle.DISPUTE_WINDOW());
         vm.prank(alice);
@@ -156,15 +156,15 @@ contract EventMarketE2ETest is Test {
         market.resolve(id);
 
         EventMarket.EventMarketDef memory m = market.getMarket(id);
-        assertEq(m.settledOutcome, 17);
-        assertEq(m.protocolFee, 310_000);
-        assertEq(m.winnerPool, 31_690_000);
+        assertEq(m.settledOutcome, 37);
+        assertEq(m.protocolFee, 470_000);
+        assertEq(m.winnerPool, 47_530_000);
 
-        address championBacker = address(uint160(0xC100 + 17));
+        address championBacker = address(uint160(0xC100 + 37));
         vm.prank(championBacker);
         market.claim(id);
 
-        assertEq(usdc.balanceOf(championBacker), INITIAL_USDC_BALANCE + 30_690_000);
-        assertEq(usdc.balanceOf(feeRecipient), 310_000);
+        assertEq(usdc.balanceOf(championBacker), INITIAL_USDC_BALANCE + 46_530_000);
+        assertEq(usdc.balanceOf(feeRecipient), 470_000);
     }
 }
