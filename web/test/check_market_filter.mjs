@@ -114,8 +114,9 @@ const cryptoMarkets = [
 const worldCupMarkets = [
   { id: 101, category: 'worldcup', stage: 'group', question: 'Argentina vs Mexico 1X2' },
   { id: 102, category: 'worldcup', stage: 'group', question: 'England -1.5 vs Wales' },
-  { id: 103, category: 'worldcup', stage: 'r16', question: 'Netherlands vs United States 1X2' },
-  { id: 104, category: 'worldcup', stage: 'winner', question: 'World Cup Winner' },
+  { id: 103, category: 'worldcup', stage: 'r32', question: 'South Africa vs Canada 1X2' },
+  { id: 104, category: 'worldcup', stage: 'r16', question: 'Netherlands vs United States 1X2' },
+  { id: 105, category: 'worldcup', stage: 'winner', question: 'World Cup Winner' },
 ];
 
 const idsOfCrypto = (asset, cadence) =>
@@ -145,10 +146,11 @@ assert(
   '未知 priceId 在指定 asset 下不应出现。',
 );
 assert.deepEqual(idsOfCrypto('SOL', 'daily'), [3], 'asset 过滤必须兼容大写 priceId 与 lowercase 映射。');
-assert.deepEqual(idsOfWorldCup('all'), [101, 102, 103], 'World Cup All 必须只返回具体比赛，冠军盘放在 Winner tab。');
+assert.deepEqual(idsOfWorldCup('all'), [101, 102, 103, 104], 'World Cup All 必须只返回具体比赛，冠军盘放在 Winner tab。');
 assert.deepEqual(idsOfWorldCup('group'), [101, 102], 'Stage=group 必须只返回小组赛。');
-assert.deepEqual(idsOfWorldCup('r16'), [103], 'Stage=r16 必须只返回十六强。');
-assert.deepEqual(idsOfWorldCup('winner'), [104], 'Stage=winner 必须只返回冠军盘。');
+assert.deepEqual(idsOfWorldCup('r32'), [103], 'Stage=r32 必须只返回三十二强。');
+assert.deepEqual(idsOfWorldCup('r16'), [104], 'Stage=r16 必须只返回十六强。');
+assert.deepEqual(idsOfWorldCup('winner'), [105], 'Stage=winner 必须只返回冠军盘。');
 assert.deepEqual(idsOfWorldCup('final'), [], '缺少对应阶段时必须返回空数组。');
 
 for (const token of [
@@ -165,6 +167,7 @@ for (const token of [
   'showCategoryTabs',
   'onCategoryChange',
   'onStageChange',
+  'R32',
   'R16',
   'Winner',
 ]) {

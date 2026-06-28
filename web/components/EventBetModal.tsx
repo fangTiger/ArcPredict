@@ -14,7 +14,7 @@ import EventMarketAbi from '@/lib/abis/EventMarket.json';
 import { EVENT_MARKET_ADDRESS, USDC_ADDRESS } from '@/lib/addresses';
 import { arcTestnet } from '@/lib/chain';
 import { fmtUsdc, parseUsdc } from '@/lib/format';
-import type { WorldCupMarketRow } from '@/lib/worldcup-markets';
+import { resolveWorldCupOnchainMarketId, type WorldCupMarketRow } from '@/lib/worldcup-markets';
 
 type EventBetModalProps = {
   row: WorldCupMarketRow;
@@ -27,6 +27,7 @@ type Step = 'idle' | 'approving' | 'betting' | 'success';
 const erc20Abi = ERC20Abi as Abi;
 const eventMarketAbi = EventMarketAbi as Abi;
 const MIN_BET_RAW = 100000n;
+const ZERO_EVENT_ID = `0x${'0'.repeat(64)}` as const;
 
 function safeParseUsdc(value: string): bigint | null {
   const trimmed = value.trim();
@@ -101,6 +102,11 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
   const { address, chainId } = useAccount();
   const { switchChainAsync } = useSwitchChain();
   const rowEventMarketAddress = row.eventMarketAddress ?? EVENT_MARKET_ADDRESS;
+  const hasOnchainBacking = row.eventId !== ZERO_EVENT_ID || !!row.deploymentId || !!row.eventMarketAddress;
+  const betMarketId = useMemo(
+    () => (hasOnchainBacking ? row.id : resolveWorldCupOnchainMarketId(row.id)),
+    [hasOnchainBacking, row.id],
+  );
   const eventMarketConfigured = rowEventMarketAddress !== zeroAddress;
 
   const {
@@ -184,6 +190,7 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
 
   const confirmDisabled =
     !eventMarketConfigured ||
+    !hasOnchainBacking ||
     !address ||
     isPending ||
     amountError !== null ||
@@ -219,7 +226,7 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
           address: rowEventMarketAddress,
           abi: eventMarketAbi,
           functionName: 'bet',
-          args: [row.id, outcomeIndex, parsedAmount],
+          args: [betMarketId, outcomeIndex, parsedAmount],
           chainId: arcTestnet.id,
         });
         setCurrentBetHash(hash);
@@ -235,10 +242,10 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
     currentApproveHash,
     approveReceipt.isSuccess,
     betWrite,
+    betMarketId,
     outcomeIndex,
     parsedAmount,
     refetchAllowance,
-    row.id,
     rowEventMarketAddress,
     step,
   ]);
@@ -288,6 +295,11 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
 
     if (!eventMarketConfigured) {
       setFeedback('EventMarket address is not configured for this deployment.');
+      return;
+    }
+
+    if (!hasOnchainBacking) {
+      setFeedback('This event market is not available on-chain yet.');
       return;
     }
 
@@ -365,7 +377,7 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
         address: rowEventMarketAddress,
         abi: eventMarketAbi,
         functionName: 'bet',
-        args: [row.id, outcomeIndex, parsedAmount],
+        args: [betMarketId, outcomeIndex, parsedAmount],
         chainId: arcTestnet.id,
       });
       setCurrentBetHash(hash);
@@ -408,6 +420,12 @@ export function EventBetModal({ row, outcomeIndex, onClose }: EventBetModalProps
         {!eventMarketConfigured ? (
           <div className="mb-4 rounded-[12px] border border-heat/30 bg-heat/10 px-3 py-2 text-sm text-heat">
             EventMarket address is not configured for this deployment. Add the deployed address before placing on-chain bets.
+          </div>
+        ) : null}
+
+        {eventMarketConfigured && !hasOnchainBacking ? (
+          <div className="mb-4 rounded-[12px] border border-heat/30 bg-heat/10 px-3 py-2 text-sm text-heat">
+            This event market is not available on-chain yet.
           </div>
         ) : null}
 

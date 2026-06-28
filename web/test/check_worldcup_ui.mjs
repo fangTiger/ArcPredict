@@ -97,14 +97,16 @@ assertIncludesAll('worldcup-markets.ts', worldCupMarketsSource, [
   'eventId',
   'question',
   'MATCH_BY_ID',
+  'skeletonOutcomes',
+  'buildTemplateOutcomes',
   'userOutcomeStakes',
 ]);
 
 assertMatches(
   'worldcup-markets.ts',
   worldCupMarketsSource,
-  /outcomes:\s*\[[\s\S]*impliedProbability/u,
-  'skeleton 数据必须包含 outcome impliedProbability。',
+  /createOutcome\([\s\S]*impliedProbability/u,
+  'skeleton 数据必须通过 createOutcome 生成 impliedProbability。',
 );
 
 assertExcludesAll('worldcup-markets.ts', worldCupMarketsSource, [

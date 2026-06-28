@@ -103,7 +103,7 @@ export const EVENT_INVALID_OUTCOME = 254;
 const toUnixSeconds = (iso: string) => BigInt(Math.floor(Date.parse(iso) / 1000));
 
 const MATCH_DURATION_SECONDS = 150n * 60n;
-const MATCH_ID_PATTERN = /\b(group-[a-h]-[1-6]|r16-[1-8]|qf-[1-4]|sf-[1-2]|final-[12])\b/iu;
+const MATCH_ID_PATTERN = /\b(group-[a-l]-[1-6]|r32-(?:[1-9]|1[0-6])|r16-[1-8]|qf-[1-4]|sf-[1-2]|final-[12])\b/iu;
 const WINNER_MARKET_PATTERN = /winner|champion|冠军/iu;
 const TOTAL_GOALS_MARKET_PATTERN = /(?:total\s+goals?|goals?)[\s-]*(?:over|o\/u)?\s*([0-9]+(?:\.[0-9]+)?)/iu;
 const SEEDED_MATCH_ID_BY_EVENT_HASH: Record<string, string> = {
@@ -162,40 +162,29 @@ const GENERIC_CHAIN_TEAM: WorldCupDisplayTeam = {
 const CHAIN_TVL_QUESTION_PATTERN =
   /^Will\s+(Ethereum|Arbitrum)\s+TVL\s+be\s+>=\s+\$([0-9]+(?:\.[0-9]+)?)B\s+by\s+(\d{4}-\d{2}-\d{2})\?$/iu;
 
-const winnerFavorites = [
-  { teamId: 'BRA', probability: 14.2 },
-  { teamId: 'ARG', probability: 12.8 },
-  { teamId: 'FRA', probability: 11.6 },
-  { teamId: 'ENG', probability: 9.1 },
-  { teamId: 'ESP', probability: 7.8 },
-  { teamId: 'GER', probability: 6.6 },
-  { teamId: 'POR', probability: 5.9 },
-  { teamId: 'CMR', probability: 4.4 },
-  { teamId: 'NED', probability: 3.9 },
-  { teamId: 'CRO', probability: 3.1 },
-  { teamId: 'BEL', probability: 2.8 },
-  { teamId: 'URU', probability: 2.4 },
-  { teamId: 'USA', probability: 2.2 },
-  { teamId: 'MEX', probability: 1.9 },
-  { teamId: 'DEN', probability: 1.8 },
-  { teamId: 'SEN', probability: 1.7 },
-  { teamId: 'SUI', probability: 1.6 },
-  { teamId: 'MAR', probability: 1.5 },
-  { teamId: 'POL', probability: 1.3 },
-  { teamId: 'JPN', probability: 1.2 },
-  { teamId: 'KOR', probability: 1.1 },
-  { teamId: 'CAN', probability: 1.0 },
-  { teamId: 'SRB', probability: 0.9 },
-  { teamId: 'ECU', probability: 0.8 },
-  { teamId: 'IRN', probability: 0.7 },
-  { teamId: 'WAL', probability: 0.7 },
-  { teamId: 'AUS', probability: 0.6 },
-  { teamId: 'TUN', probability: 0.5 },
-  { teamId: 'GHA', probability: 0.5 },
-  { teamId: 'CRC', probability: 0.4 },
-  { teamId: 'KSA', probability: 0.3 },
-  { teamId: 'QAT', probability: 0.2 },
-] as const;
+const winnerProbabilityByTeamId: Record<string, number> = {
+  BRA: 12.8,
+  ARG: 11.9,
+  FRA: 10.8,
+  ENG: 9.6,
+  ESP: 8.4,
+  GER: 7.2,
+  POR: 6.6,
+  NED: 5.4,
+  BEL: 4.6,
+  USA: 3.8,
+  CRO: 3.4,
+  URU: 3.0,
+  COL: 2.8,
+  MEX: 2.4,
+  SUI: 2.2,
+  MAR: 2.0,
+};
+
+const winnerFavorites = WORLDCUP_TEAMS.map((team) => ({
+  teamId: team.id,
+  probability: winnerProbabilityByTeamId[team.id] ?? 1.0,
+})).sort((left, right) => right.probability - left.probability);
 
 const createOutcome = (
   id: string,
@@ -239,169 +228,114 @@ function poolsFromOutcomes(
   });
 }
 
+function requiredSeedMatch(matchId: string): WorldCupMatch {
+  const match = MATCH_BY_ID(matchId);
+  if (!match) {
+    throw new Error(`缺少 World Cup seed match: ${matchId}`);
+  }
+  return match;
+}
+
+function betDeadlineBefore(kickoffTime: string, minutesBefore: number): bigint {
+  return toUnixSeconds(kickoffTime) - BigInt(minutesBefore * 60);
+}
+
+function skeletonOutcomes(
+  marketType: WorldCupMarketType,
+  homeTeam: WorldCupDisplayTeam,
+  awayTeam: WorldCupDisplayTeam | null,
+  question: string,
+): WorldCupMarketOutcome[] {
+  if (homeTeam.teamId && awayTeam?.teamId) {
+    return buildTemplateOutcomes(marketType, homeTeam, awayTeam, question);
+  }
+
+  if (marketType === 'spread') {
+    return [
+      createOutcome('home-cover', 'Home covers', 50),
+      createOutcome('away-cover', 'Away covers', 50),
+    ];
+  }
+
+  return [
+    createOutcome('home-win', 'Home Win', 33.4),
+    createOutcome('draw', 'Draw', 33.3),
+    createOutcome('away-win', 'Away Win', 33.3),
+  ];
+}
+
+function createSkeletonMatchRow({
+  id,
+  matchId,
+  marketType,
+  question,
+  liquidity,
+  minutesBeforeDeadline = 30,
+}: {
+  id: bigint;
+  matchId: string;
+  marketType: Exclude<WorldCupMarketType, 'winner'>;
+  question: string;
+  liquidity: bigint;
+  minutesBeforeDeadline?: number;
+}): WorldCupMarketRow {
+  const match = requiredSeedMatch(matchId);
+  const homeTeam = findTeam(match.homeTeam);
+  const awayTeam = findTeam(match.awayTeam);
+  const outcomes = skeletonOutcomes(marketType, homeTeam, awayTeam, question);
+
+  return {
+    id,
+    marketKind: 'event',
+    category: 'worldcup',
+    matchId,
+    stage: match.stage,
+    stageLabel: stageLabelForMatch(match.stage, match),
+    marketType,
+    question,
+    kickoffTime: match.kickoffTime,
+    betDeadline: betDeadlineBefore(match.kickoffTime, minutesBeforeDeadline),
+    eventId: '0x0000000000000000000000000000000000000000000000000000000000000000',
+    outcomePools: [],
+    userOutcomeStakes: Array.from({ length: outcomes.length }, () => 0n),
+    claimed_: false,
+    pendingPayout: 0n,
+    settledOutcome: EVENT_UNRESOLVED_OUTCOME,
+    homeTeam,
+    awayTeam,
+    outcomes,
+    liquidity,
+    positionLabel: 'No position',
+  };
+}
+
+const SCHEDULE_FALLBACK_ID_BASE = 9000n;
+
+function fallbackLiquidityForMatch(index: number): bigint {
+  return 110_000_000n + BigInt(index % 8) * 18_000_000n;
+}
+
+const skeletonMatchRows: WorldCupMarketRow[] = WORLDCUP_MATCHES.flatMap((match, index) => {
+  const homeTeam = findWorldCupTeam(match.homeTeam);
+  const awayTeam = findWorldCupTeam(match.awayTeam);
+
+  if (!homeTeam || !awayTeam) {
+    return [];
+  }
+
+  return createSkeletonMatchRow({
+    id: SCHEDULE_FALLBACK_ID_BASE + BigInt(index + 1),
+    matchId: match.matchId,
+    marketType: '1x2',
+    question: `${homeTeam.nameEn} vs ${awayTeam.nameEn} 1X2`,
+    liquidity: fallbackLiquidityForMatch(index),
+  });
+});
+
 const skeletonRows: WorldCupMarketRow[] = [
+  ...skeletonMatchRows,
   {
-    id: 9001n,
-    marketKind: 'event',
-    category: 'worldcup',
-    matchId: 'group-c-4',
-    stage: 'group',
-    stageLabel: 'Group A',
-    marketType: '1x2',
-    question: 'Argentina vs Mexico 1X2',
-    kickoffTime: '2026-06-18T19:00:00Z',
-    betDeadline: toUnixSeconds('2026-06-18T18:30:00Z'),
-    eventId: '0x0000000000000000000000000000000000000000000000000000000000000000',
-    outcomePools: [],
-    userOutcomeStakes: [0n, 0n, 0n],
-    claimed_: false,
-    pendingPayout: 0n,
-    settledOutcome: EVENT_UNRESOLVED_OUTCOME,
-    homeTeam: findTeam('ARG'),
-    awayTeam: findTeam('MEX'),
-    outcomes: [
-      createOutcome('arg-win', 'Home Win', 48.5, 'ARG'),
-      createOutcome('draw', 'Draw', 27.5),
-      createOutcome('mex-win', 'Away Win', 24.0, 'MEX'),
-    ],
-    liquidity: 182_000_000n,
-    positionLabel: 'No position',
-  },
-  {
-    id: 9002n,
-    marketKind: 'event',
-    category: 'worldcup',
-    matchId: 'group-b-6',
-    stage: 'group',
-    stageLabel: 'Group B',
-    marketType: 'spread',
-    question: 'England -1.5 vs Wales',
-    kickoffTime: '2026-06-19T15:00:00Z',
-    betDeadline: toUnixSeconds('2026-06-19T14:45:00Z'),
-    eventId: '0x0000000000000000000000000000000000000000000000000000000000000000',
-    outcomePools: [],
-    userOutcomeStakes: [0n, 0n],
-    claimed_: false,
-    pendingPayout: 0n,
-    settledOutcome: EVENT_UNRESOLVED_OUTCOME,
-    homeTeam: findTeam('ENG'),
-    awayTeam: findTeam('WAL'),
-    outcomes: [
-      createOutcome('eng-cover', 'England -1.5', 57.2, 'ENG'),
-      createOutcome('wal-cover', 'Wales +1.5', 42.8, 'WAL'),
-    ],
-    liquidity: 126_500_000n,
-    positionLabel: 'No position',
-  },
-  {
-    id: 9003n,
-    marketKind: 'event',
-    category: 'worldcup',
-    matchId: 'r16-1',
-    stage: 'r16',
-    stageLabel: 'R16',
-    marketType: '1x2',
-    question: 'Netherlands vs United States 1X2',
-    kickoffTime: '2026-06-24T19:00:00Z',
-    betDeadline: toUnixSeconds('2026-06-24T18:45:00Z'),
-    eventId: '0x0000000000000000000000000000000000000000000000000000000000000000',
-    outcomePools: [],
-    userOutcomeStakes: [0n, 0n, 0n],
-    claimed_: false,
-    pendingPayout: 0n,
-    settledOutcome: EVENT_UNRESOLVED_OUTCOME,
-    homeTeam: findTeam('NED'),
-    awayTeam: findTeam('USA'),
-    outcomes: [
-      createOutcome('ned-win', 'Home Win', 45.0, 'NED'),
-      createOutcome('r16-draw', 'Draw', 30.0),
-      createOutcome('usa-win', 'Away Win', 25.0, 'USA'),
-    ],
-    liquidity: 143_200_000n,
-    positionLabel: 'No position',
-  },
-  {
-    id: 9004n,
-    marketKind: 'event',
-    category: 'worldcup',
-    matchId: 'qf-1',
-    stage: 'qf',
-    stageLabel: 'QF',
-    marketType: '1x2',
-    question: 'Brazil vs Croatia 1X2',
-    kickoffTime: '2026-06-28T15:00:00Z',
-    betDeadline: toUnixSeconds('2026-06-28T14:40:00Z'),
-    eventId: '0x0000000000000000000000000000000000000000000000000000000000000000',
-    outcomePools: [],
-    userOutcomeStakes: [0n, 0n, 0n],
-    claimed_: false,
-    pendingPayout: 0n,
-    settledOutcome: EVENT_UNRESOLVED_OUTCOME,
-    homeTeam: findTeam('BRA'),
-    awayTeam: findTeam('CRO'),
-    outcomes: [
-      createOutcome('bra-win', 'Home Win', 52.0, 'BRA'),
-      createOutcome('qf-draw', 'Draw', 24.0),
-      createOutcome('cro-win', 'Away Win', 24.0, 'CRO'),
-    ],
-    liquidity: 210_000_000n,
-    positionLabel: 'No position',
-  },
-  {
-    id: 9005n,
-    marketKind: 'event',
-    category: 'worldcup',
-    matchId: 'sf-1',
-    stage: 'sf',
-    stageLabel: 'SF',
-    marketType: 'spread',
-    question: 'France -0.5 vs England',
-    kickoffTime: '2026-07-02T19:00:00Z',
-    betDeadline: toUnixSeconds('2026-07-02T18:45:00Z'),
-    eventId: '0x0000000000000000000000000000000000000000000000000000000000000000',
-    outcomePools: [],
-    userOutcomeStakes: [0n, 0n],
-    claimed_: false,
-    pendingPayout: 0n,
-    settledOutcome: EVENT_UNRESOLVED_OUTCOME,
-    homeTeam: findTeam('FRA'),
-    awayTeam: findTeam('ENG'),
-    outcomes: [
-      createOutcome('fra-cover', 'France -0.5', 54.0, 'FRA'),
-      createOutcome('eng-cover', 'England +0.5', 46.0, 'ENG'),
-    ],
-    liquidity: 198_400_000n,
-    positionLabel: 'No position',
-  },
-  {
-    id: 9006n,
-    marketKind: 'event',
-    category: 'worldcup',
-    matchId: 'final-1',
-    stage: 'final',
-    stageLabel: 'Final',
-    marketType: '1x2',
-    question: 'Argentina vs France Final 1X2',
-    kickoffTime: '2026-07-10T19:00:00Z',
-    betDeadline: toUnixSeconds('2026-07-10T18:45:00Z'),
-    eventId: '0x0000000000000000000000000000000000000000000000000000000000000000',
-    outcomePools: [],
-    userOutcomeStakes: [0n, 0n, 0n],
-    claimed_: false,
-    pendingPayout: 0n,
-    settledOutcome: EVENT_UNRESOLVED_OUTCOME,
-    homeTeam: findTeam('ARG'),
-    awayTeam: findTeam('FRA'),
-    outcomes: [
-      createOutcome('final-arg', 'Home Win', 37.5, 'ARG'),
-      createOutcome('final-draw', 'Draw', 29.0),
-      createOutcome('final-fra', 'Away Win', 33.5, 'FRA'),
-    ],
-    liquidity: 312_800_000n,
-    positionLabel: 'No position',
-  },
-  {
-    id: 9007n,
+    id: SCHEDULE_FALLBACK_ID_BASE + BigInt(WORLDCUP_MATCHES.length + 1),
     marketKind: 'event',
     category: 'worldcup',
     matchId: null,
@@ -409,17 +343,24 @@ const skeletonRows: WorldCupMarketRow[] = [
     stageLabel: 'Winner',
     marketType: 'winner',
     question: '2026 World Cup Winner',
-    kickoffTime: '2026-07-11T19:00:00Z',
-    betDeadline: toUnixSeconds('2026-07-11T18:45:00Z'),
+    kickoffTime: requiredSeedMatch('final-1').kickoffTime,
+    betDeadline: betDeadlineBefore(requiredSeedMatch('final-1').kickoffTime, 30),
     eventId: '0x0000000000000000000000000000000000000000000000000000000000000000',
     outcomePools: [],
     userOutcomeStakes: Array.from({ length: winnerFavorites.length }, () => 0n),
     claimed_: false,
     pendingPayout: 0n,
     settledOutcome: EVENT_UNRESOLVED_OUTCOME,
-    homeTeam: findTeam('ARG'),
-    awayTeam: findTeam('FRA'),
-    outcomes: winnerFavorites.map((entry) => createOutcome(entry.teamId.toLowerCase(), findTeam(entry.teamId).nameEn, entry.probability, entry.teamId)),
+    homeTeam: GENERIC_WINNER_TEAM,
+    awayTeam: null,
+    outcomes: winnerFavorites.map((entry) =>
+      createOutcome(
+        entry.teamId.toLowerCase(),
+        findTeam(entry.teamId).nameEn,
+        entry.probability,
+        entry.teamId,
+      ),
+    ),
     liquidity: 641_000_000n,
     positionLabel: 'No position',
   },
@@ -435,6 +376,7 @@ export const WORLDCUP_SKELETON_MARKETS: WorldCupMarketRow[] = skeletonRows.map((
 const GROUP_SEEDED_MATCH_IDS = WORLDCUP_MATCHES
   .filter((match) => match.stage === 'group')
   .map((match) => match.matchId);
+const SEEDED_GROUP_MARKET_COUNT = BigInt(GROUP_SEEDED_MATCH_IDS.length * 2);
 
 export function resolveWorldCupOnchainMarketId(id: bigint): bigint {
   const skeleton = WORLDCUP_SKELETON_MARKETS.find((market) => market.id === id);
@@ -444,11 +386,11 @@ export function resolveWorldCupOnchainMarketId(id: bigint): bigint {
   }
 
   if (skeleton.marketType === 'winner') {
-    return 97n;
+    return SEEDED_GROUP_MARKET_COUNT + 1n;
   }
 
   if (skeleton.matchId === 'final-1' && skeleton.marketType === '1x2') {
-    return 96n;
+    return SEEDED_GROUP_MARKET_COUNT;
   }
 
   if (!skeleton.matchId) {
@@ -470,7 +412,18 @@ export function getUpcomingWorldCupMarkets<T extends Pick<WorldCupMarketRow, 'id
   now: bigint = BigInt(Math.floor(Date.now() / 1000)),
 ): T[] {
   return markets
-    .filter((market) => market.settledOutcome === EVENT_UNRESOLVED_OUTCOME && market.betDeadline > now)
+    .filter((market) => {
+      if (market.settledOutcome !== EVENT_UNRESOLVED_OUTCOME) {
+        return false;
+      }
+
+      const kickoffTime =
+        'kickoffTime' in market && typeof market.kickoffTime === 'string'
+          ? toUnixSeconds(market.kickoffTime)
+          : null;
+
+      return kickoffTime ? kickoffTime > now : market.betDeadline > now;
+    })
     .sort((left, right) => {
       if (left.betDeadline !== right.betDeadline) {
         return left.betDeadline > right.betDeadline ? -1 : 1;
@@ -668,6 +621,10 @@ function inferGenericStage(
 
   const descriptor = `${readableEventId ?? ''} ${question}`.toLowerCase();
 
+  if (descriptor.includes('round of 32') || descriptor.includes('r32')) {
+    return 'r32';
+  }
+
   if (descriptor.includes('round of 16') || descriptor.includes('r16')) {
     return 'r16';
   }
@@ -740,6 +697,18 @@ function resolveTeams(
     homeTeam: findTeam(match.homeTeam),
     awayTeam: findTeam(match.awayTeam),
   };
+}
+
+function hasRenderableWorldCupParticipants(
+  marketType: WorldCupMarketType,
+  homeTeam: WorldCupDisplayTeam,
+  awayTeam: WorldCupDisplayTeam | null,
+): boolean {
+  if (marketType === 'winner') {
+    return true;
+  }
+
+  return Boolean(homeTeam.teamId && awayTeam?.teamId);
 }
 
 function buildTemplateOutcomes(
@@ -1019,14 +988,37 @@ function buildAutomatedTemplateOutcomes(
   );
 }
 
+function worldCupMarketKey(row: Pick<WorldCupMarketRow, 'marketType' | 'matchId'>): string {
+  return `${row.marketType}:${row.matchId ?? 'tournament'}`;
+}
+
+function isWorldCupMatchMarket(row: Pick<WorldCupMarketRow, 'category' | 'marketType'>): boolean {
+  return row.category === 'worldcup' && row.marketType !== 'winner';
+}
+
+function appendCurrentFallbackWorldCupMarkets(
+  rows: readonly WorldCupMarketRow[],
+  now: bigint,
+): WorldCupMarketRow[] {
+  const existingWorldCupKeys = new Set(
+    rows.filter((row) => row.category === 'worldcup').map((row) => worldCupMarketKey(row)),
+  );
+  const fallbackRows = getUpcomingWorldCupMarkets(WORLDCUP_SKELETON_MARKETS, now).filter(
+    (row) => !existingWorldCupKeys.has(worldCupMarketKey(row)),
+  );
+
+  return [...rows, ...fallbackRows];
+}
+
 export function resolveWorldCupMarkets(
   eventRows: readonly EventMarketDashboardRow[],
+  now: bigint = BigInt(Math.floor(Date.now() / 1000)),
 ): WorldCupMarketRow[] {
   if (eventRows.length === 0) {
-    return WORLDCUP_SKELETON_MARKETS;
+    return getUpcomingWorldCupMarkets(WORLDCUP_SKELETON_MARKETS, now);
   }
 
-  return eventRows.map((row) => {
+  const resolvedRows = eventRows.flatMap((row): WorldCupMarketRow[] => {
     const readableEventId = decodeReadableEventId(row.market.eventId);
     const category = inferEventCategory(row.market.question, readableEventId);
     const sourceIdentity = automatedSourceIdentity(category, row.market.question);
@@ -1042,6 +1034,14 @@ export function resolveWorldCupMarkets(
       category === 'worldcup'
         ? resolveTeams(marketType, match, row.market.question)
         : { homeTeam: automatedHomeTeam(category), awayTeam: null };
+
+    if (
+      category === 'worldcup' &&
+      !hasRenderableWorldCupParticipants(resolvedMarketType, homeTeam, awayTeam)
+    ) {
+      return [];
+    }
+
     const pools = normalizeOutcomePools(row, resolvedMarketType);
     const stakes = normalizeOutcomeStakes(row, pools.length);
     const totalPool = sum(pools);
@@ -1066,7 +1066,7 @@ export function resolveWorldCupMarkets(
     });
     const activeStake = sum(stakes);
 
-    return {
+    return [{
       id: row.id,
       deploymentId: row.deploymentId,
       eventMarketAddress: row.eventMarketAddress,
@@ -1093,8 +1093,10 @@ export function resolveWorldCupMarkets(
       liquidity: totalPool,
       positionLabel: activeStake > 0n ? `Position ${Number(activeStake) / 1_000_000} USDC` : 'No position',
       themeVisual: automatedThemeVisual(category, row.market.question, readableEventId),
-    };
+    }];
   });
+
+  return appendCurrentFallbackWorldCupMarkets(resolvedRows, now);
 }
 
 export function fallbackWinnerOutcomeTeam(

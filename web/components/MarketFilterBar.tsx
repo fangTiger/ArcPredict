@@ -50,10 +50,11 @@ const categoryOptions: { value: MarketCategory; label: string }[] = MARKET_CATEG
   value,
   label: categoryDisplayLabels[value],
 }));
-const stageOptions: WorldCupStageFilter[] = ['all', 'group', 'r16', 'qf', 'sf', 'final', 'winner'];
+const stageOptions: WorldCupStageFilter[] = ['all', 'group', 'r32', 'r16', 'qf', 'sf', 'final', 'winner'];
 const stageDisplayLabels: Record<WorldCupStageFilter, string> = {
   all: 'All',
   group: 'Group',
+  r32: 'R32',
   r16: 'R16',
   qf: 'QF',
   sf: 'SF',
