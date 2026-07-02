@@ -48,6 +48,16 @@ assertIncludesAll('page.tsx', pageSource, [
   'searchParams.get',
 ]);
 
+assertMatches(
+  'page.tsx',
+  pageSource,
+  /filterMarkets\(upcomingEventMarkets,[\s\S]*?\)\.map\(\(row\) => toRichMarketRef\(row, now\)\)/u,
+  'World Cup 的 Today/Trending/Closing Soon 展示区必须复用已按 kickoff 过滤的 upcomingEventMarkets。',
+);
+assertExcludesAll('page.tsx', pageSource, [
+  'filterMarkets(eventSourceMarkets,',
+]);
+
 assertIncludesAll('MarketFilterBar.tsx', marketFilterSource, [
   'Crypto',
   'World Cup',

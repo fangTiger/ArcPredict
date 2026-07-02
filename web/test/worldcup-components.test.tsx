@@ -157,24 +157,26 @@ const getUpcomingWorldCupMarkets = worldCupMarketsModule.getUpcomingWorldCupMark
 ) => Array<Record<string, unknown>>;
 
 const MATCH_LENGTH_SECONDS = 150 * 60;
-const CURRENT_R32_NOW = '2026-06-28T06:00:00Z';
+const CURRENT_R32_NOW = '2026-07-02T03:14:50Z';
 const EXPECTED_CURRENT_R32_MATCH_IDS = [
-  'r32-16',
-  'r32-15',
-  'r32-14',
-  'r32-13',
-  'r32-12',
   'r32-11',
-  'r32-10',
-  'r32-9',
-  'r32-8',
-  'r32-7',
-  'r32-6',
-  'r32-5',
-  'r32-4',
-  'r32-3',
-  'r32-2',
+  'r32-12',
+  'r32-13',
+  'r32-14',
+  'r32-15',
+  'r32-16',
+];
+const EXPIRED_CURRENT_R32_MATCH_IDS = [
   'r32-1',
+  'r32-2',
+  'r32-3',
+  'r32-4',
+  'r32-5',
+  'r32-6',
+  'r32-7',
+  'r32-8',
+  'r32-9',
+  'r32-10',
 ];
 
 const toAsciiBytes32 = (value: string): `0x${string}` =>
@@ -582,42 +584,47 @@ describe('worldcup components', () => {
     const rows = resolveWorldCupMarkets([], currentTournamentNow).filter((row) => row.marketType !== 'winner');
 
     expect(rows.map((row) => row.matchId)).toEqual(EXPECTED_CURRENT_R32_MATCH_IDS);
-    expect(rows).toHaveLength(16);
+    expect(rows).toHaveLength(6);
     expect(rows.every((row) => row.homeTeam.teamId && row.awayTeam?.teamId)).toBe(true);
+    expect(rows.map((row) => row.matchId)).not.toEqual(expect.arrayContaining(EXPIRED_CURRENT_R32_MATCH_IDS));
     expect(rows.map((row) => row.matchId)).not.toContain('r16-1');
     expect(rows.map((row) => row.question).join('\n')).not.toContain('GROUP_');
     expect(rows.map((row) => row.question).join('\n')).not.toContain('MATCH_');
   });
 
-  test('首页世界杯列表只展示未截止市场，并按最新比赛日期优先排序', () => {
+  test('首页世界杯列表只展示未截止市场，并按开赛时间正序排序', () => {
     const rows = [
       {
         id: 97n,
         category: 'worldcup',
         settledOutcome: 255,
         betDeadline: 3_000n,
+        kickoffTime: '2026-07-01T00:00:00Z',
       },
       {
         id: 96n,
         category: 'worldcup',
         settledOutcome: 255,
         betDeadline: 2_000n,
+        kickoffTime: '2026-06-30T18:00:00Z',
       },
       {
         id: 0n,
         category: 'worldcup',
         settledOutcome: 255,
         betDeadline: 3_000n,
+        kickoffTime: '2026-06-30T23:00:00Z',
       },
       {
         id: 3n,
         category: 'worldcup',
         settledOutcome: 0,
         betDeadline: 2_500n,
+        kickoffTime: '2026-06-30T20:00:00Z',
       },
     ];
 
-    expect(getUpcomingWorldCupMarkets(rows, 1_000n).map((row) => row.id)).toEqual([0n, 97n, 96n]);
+    expect(getUpcomingWorldCupMarkets(rows, 1_000n).map((row) => row.id)).toEqual([96n, 0n, 97n]);
   });
 
   test('World Cup 过滤栏在赛事品类下显示阶段按钮，关闭 tabs 时只保留 Crypto 过滤', async () => {
@@ -1055,7 +1062,7 @@ describe('worldcup components', () => {
     const matchRows = rows.filter((row) => row.category === 'worldcup' && row.marketType !== 'winner');
 
     expect(matchRows.map((row) => row.matchId)).toEqual(EXPECTED_CURRENT_R32_MATCH_IDS);
-    expect(matchRows).toHaveLength(16);
+    expect(matchRows).toHaveLength(6);
     expect(rows.map((row) => row.question)).not.toContain('MATCH_101_W vs MATCH_102_W 1X2');
     expect(rows.map((row) => row.question)).not.toContain('Quarter-final 1 handicap');
   });

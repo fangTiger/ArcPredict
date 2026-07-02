@@ -272,14 +272,14 @@ function HomePageContent() {
       return rows.map((row) => toRichMarketRef(row, now));
     }
 
-    return filterMarkets(eventSourceMarkets, {
+    return filterMarkets(upcomingEventMarkets, {
       category: effectiveCategory,
       stage: effectiveCategory === 'worldcup' ? stage : 'all',
       asset: 'all',
       cadence: 'all',
       priceIdToAsset: PYTH_PRICE_ID_TO_ASSET,
     }).map((row) => toRichMarketRef(row, now));
-  }, [effectiveCategory, eventSourceMarkets, now, rows, stage]);
+  }, [effectiveCategory, now, rows, stage, upcomingEventMarkets]);
   const todayBoard = useMemo(
     () => selectTodayBoard(richSectionMarkets, now),
     [richSectionMarkets, now],

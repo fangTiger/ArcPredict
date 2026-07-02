@@ -186,24 +186,26 @@ assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(fallbackIdFor('r32-1
 assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(fallbackIdFor('r32-16')), fallbackIdFor('r32-16'));
 assert.equal(worldcupMarkets.resolveWorldCupOnchainMarketId(30n), 30n);
 
-const currentTournamentNow = BigInt(Math.floor(Date.parse('2026-06-28T06:00:00Z') / 1000));
+const currentTournamentNow = BigInt(Math.floor(Date.parse('2026-07-02T03:14:50Z') / 1000));
 const expectedCurrentR32MatchIds = [
-  'r32-16',
-  'r32-15',
-  'r32-14',
-  'r32-13',
-  'r32-12',
   'r32-11',
-  'r32-10',
-  'r32-9',
-  'r32-8',
-  'r32-7',
-  'r32-6',
-  'r32-5',
-  'r32-4',
-  'r32-3',
-  'r32-2',
+  'r32-12',
+  'r32-13',
+  'r32-14',
+  'r32-15',
+  'r32-16',
+];
+const expiredCurrentR32MatchIds = [
   'r32-1',
+  'r32-2',
+  'r32-3',
+  'r32-4',
+  'r32-5',
+  'r32-6',
+  'r32-7',
+  'r32-8',
+  'r32-9',
+  'r32-10',
 ];
 assert.deepEqual(
   worldcupMarkets
@@ -212,6 +214,15 @@ assert.deepEqual(
     .map((row) => row.matchId),
   expectedCurrentR32MatchIds,
   '当前 fallback World Cup 市场只能包含还没过下注截止且对阵已确定的赛事。',
+);
+assert.deepEqual(
+  worldcupMarkets
+    .resolveWorldCupMarkets([], currentTournamentNow)
+    .filter((row) => row.marketType !== 'winner')
+    .map((row) => row.matchId)
+    .filter((matchId) => expiredCurrentR32MatchIds.includes(matchId)),
+  [],
+  '当前 fallback World Cup 市场不能包含已经开赛的 32 强场次。',
 );
 assert(
   worldcupMarkets.resolveWorldCupMarkets([], currentTournamentNow).every(

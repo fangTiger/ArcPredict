@@ -407,6 +407,15 @@ export function resolveWorldCupOnchainMarketId(id: bigint): bigint {
   return BigInt(groupIndex * 2 + marketOffset);
 }
 
+function marketTimelineTime<T extends Pick<WorldCupMarketRow, 'betDeadline'>>(market: T): bigint {
+  const kickoffTime =
+    'kickoffTime' in market && typeof market.kickoffTime === 'string'
+      ? toUnixSeconds(market.kickoffTime)
+      : null;
+
+  return kickoffTime ?? market.betDeadline;
+}
+
 export function getUpcomingWorldCupMarkets<T extends Pick<WorldCupMarketRow, 'id' | 'betDeadline' | 'settledOutcome'>>(
   markets: readonly T[],
   now: bigint = BigInt(Math.floor(Date.now() / 1000)),
@@ -422,11 +431,14 @@ export function getUpcomingWorldCupMarkets<T extends Pick<WorldCupMarketRow, 'id
           ? toUnixSeconds(market.kickoffTime)
           : null;
 
-      return kickoffTime ? kickoffTime > now : market.betDeadline > now;
+      return kickoffTime !== null ? kickoffTime > now : market.betDeadline > now;
     })
     .sort((left, right) => {
-      if (left.betDeadline !== right.betDeadline) {
-        return left.betDeadline > right.betDeadline ? -1 : 1;
+      const leftTime = marketTimelineTime(left);
+      const rightTime = marketTimelineTime(right);
+
+      if (leftTime !== rightTime) {
+        return leftTime < rightTime ? -1 : 1;
       }
 
       if (left.id === right.id) {
